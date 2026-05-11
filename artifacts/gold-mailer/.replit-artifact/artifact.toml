@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Gold Mailer"
+version = "1.0.0"
+id = "artifacts/gold-mailer"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 26040
+
+[services.development]
+run = "pnpm --filter @workspace/gold-mailer run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/gold-mailer", "run", "build" ]
+publicDir = "artifacts/gold-mailer/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "26040"
+BASE_PATH = "/"
