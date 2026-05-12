@@ -1,8 +1,22 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db, usersTable, stakesTable, transactionsTable } from "@workspace/db";
-import { eq, sum, count } from "drizzle-orm";
+import { eq, sum, count, and } from "drizzle-orm";
 import { requireAuth } from "../lib/auth-middleware";
+
+async function checkHasDeposited(userId: number): Promise<boolean> {
+  const result = await db
+    .select({ total: count() })
+    .from(transactionsTable)
+    .where(
+      and(
+        eq(transactionsTable.userId, userId),
+        eq(transactionsTable.type, "deposit"),
+        eq(transactionsTable.status, "approved"),
+      ),
+    );
+  return (result[0]?.total ?? 0) > 0;
+}
 
 const router = Router();
 
@@ -27,6 +41,7 @@ router.put("/user/profile", requireAuth, async (req, res) => {
     .where(eq(usersTable.id, req.session.userId!))
     .returning();
   const user = updated[0];
+  const hasDeposited = await checkHasDeposited(user.id);
   res.json({
     id: user.id,
     email: user.email,
@@ -40,6 +55,7 @@ router.put("/user/profile", requireAuth, async (req, res) => {
     profileComplete: user.profileComplete,
     cardAdded: user.cardAdded,
     balance: parseFloat(user.balance),
+    hasDeposited,
     createdAt: user.createdAt.toISOString(),
   });
 });

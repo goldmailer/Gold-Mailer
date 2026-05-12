@@ -34,7 +34,7 @@ export default function VerifyEmail() {
         setLocation("/setup-profile");
       },
       onError: (err: any) => {
-        toast({ title: "Verification failed", description: err?.response?.data?.error || "Invalid or expired code", variant: "destructive" });
+        toast({ title: "Verification failed", description: err?.data?.error || err?.message || "Invalid or expired code", variant: "destructive" });
       },
     },
   });

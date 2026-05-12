@@ -69,7 +69,7 @@ export default function Register() {
         setLocation("/verify-email");
       },
       onError: (err: any) => {
-        toast({ title: "Registration failed", description: err?.response?.data?.error || "Something went wrong", variant: "destructive" });
+        toast({ title: "Registration failed", description: err?.data?.error || err?.message || "Something went wrong", variant: "destructive" });
       },
     },
   });

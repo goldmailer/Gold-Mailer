@@ -77,7 +77,7 @@ export default function SetupProfile() {
         setLocation("/add-card");
       },
       onError: (err: any) => {
-        toast({ title: "Error", description: err?.response?.data?.error || "Failed to save profile", variant: "destructive" });
+        toast({ title: "Error", description: err?.data?.error || err?.message || "Failed to save profile", variant: "destructive" });
       },
     },
   });

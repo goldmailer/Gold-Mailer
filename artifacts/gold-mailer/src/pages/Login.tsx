@@ -44,7 +44,7 @@ export default function Login() {
         }
       },
       onError: (err: any) => {
-        toast({ title: "Login failed", description: err?.response?.data?.error || "Invalid credentials", variant: "destructive" });
+        toast({ title: "Login failed", description: err?.data?.error || err?.message || "Invalid credentials", variant: "destructive" });
       },
     },
   });

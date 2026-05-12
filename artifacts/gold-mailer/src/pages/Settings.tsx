@@ -26,7 +26,7 @@ export default function Settings() {
         setEmailForm({ newEmail: "" });
       },
       onError: (err: any) => {
-        toast({ title: "Failed to update email", description: err?.response?.data?.error || "Please try again", variant: "destructive" });
+        toast({ title: "Failed to update email", description: err?.data?.error || err?.message || "Please try again", variant: "destructive" });
       },
     },
   });
@@ -38,7 +38,7 @@ export default function Settings() {
         setPwForm({ currentPassword: "", newPassword: "" });
       },
       onError: (err: any) => {
-        toast({ title: "Failed to change password", description: err?.response?.data?.error || "Please try again", variant: "destructive" });
+        toast({ title: "Failed to change password", description: err?.data?.error || err?.message || "Please try again", variant: "destructive" });
       },
     },
   });

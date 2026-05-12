@@ -41,7 +41,7 @@ export default function Stake() {
         setAmount("");
       },
       onError: (err: any) => {
-        toast({ title: "Stake failed", description: err?.response?.data?.error || "Something went wrong", variant: "destructive" });
+        toast({ title: "Stake failed", description: err?.data?.error || err?.message || "Something went wrong", variant: "destructive" });
       },
     },
   });

@@ -27,7 +27,7 @@ export default function Deposit() {
         queryClient.invalidateQueries({ queryKey: getGetTransactionsQueryKey() });
       },
       onError: (err: any) => {
-        toast({ title: "Submission failed", description: err?.response?.data?.error || "Please try again", variant: "destructive" });
+        toast({ title: "Submission failed", description: err?.data?.error || err?.message || "Please try again", variant: "destructive" });
       },
     },
   });

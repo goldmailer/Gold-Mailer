@@ -37,7 +37,7 @@ export default function Withdraw() {
         queryClient.invalidateQueries({ queryKey: getGetTransactionsQueryKey() });
       },
       onError: (err: any) => {
-        toast({ title: "Withdrawal failed", description: err?.response?.data?.error || "Please try again", variant: "destructive" });
+        toast({ title: "Withdrawal failed", description: err?.data?.error || err?.message || "Please try again", variant: "destructive" });
       },
     },
   });
