@@ -3,12 +3,14 @@ import { useLocation } from "wouter";
 import { useVerifyEmail, useResendVerification } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { Mail, RefreshCw, AlertTriangle } from "lucide-react";
 import { Link } from "wouter";
 
 export default function VerifyEmail() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { login } = useAuth();
   const email = sessionStorage.getItem("verify_email") || "";
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [devCode, setDevCode] = useState<string | null>(
@@ -18,8 +20,16 @@ export default function VerifyEmail() {
 
   const verifyMutation = useVerifyEmail({
     mutation: {
-      onSuccess: () => {
+      onSuccess: async () => {
         sessionStorage.removeItem("verify_dev_code");
+        // Refresh auth state — server auto-logs in on verify
+        try {
+          const r = await fetch("/api/auth/me", { credentials: "include" });
+          if (r.ok) {
+            const user = await r.json();
+            login(user);
+          }
+        } catch {}
         toast({ title: "Email verified", description: "Your account is now verified." });
         setLocation("/setup-profile");
       },

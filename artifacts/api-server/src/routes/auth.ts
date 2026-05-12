@@ -89,6 +89,14 @@ router.post("/auth/verify-email", async (req, res) => {
   }
   await db.update(otpCodesTable).set({ used: true }).where(eq(otpCodesTable.id, otps[0].id));
   await db.update(usersTable).set({ isVerified: true }).where(eq(usersTable.email, email.toLowerCase()));
+
+  // Automatically log the user in so they can proceed to setup profile
+  const users = await db.select().from(usersTable).where(eq(usersTable.email, email.toLowerCase())).limit(1);
+  if (users.length > 0) {
+    req.session.userId = users[0].id;
+    req.session.isAdmin = users[0].isAdmin;
+  }
+
   res.json({ message: "Email verified successfully" });
 });
 
