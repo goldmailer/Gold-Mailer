@@ -8,7 +8,8 @@
     "start": "node artifacts/api-server/dist/index.mjs",
     "dev:api": "PORT=8080 pnpm --filter @workspace/api-server run dev",
     "dev:web": "PORT=5173 BASE_PATH=/ pnpm --filter @workspace/gold-mailer run dev",
-    "typecheck": "tsc --build && pnpm -r --filter \"./artifacts/**\" --if-present run typecheck"
+    "typecheck": "tsc --build && pnpm -r --filter \"./artifacts/**\" --if-present run typecheck",
+    "db:push": "drizzle-kit push --config=lib/db/drizzle.config.ts"
   },
   "devDependencies": {
     "typescript": "~5.9.2",
