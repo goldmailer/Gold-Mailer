@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { db, stakesTable, usersTable } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { db, stakesTable, usersTable, transactionsTable } from "@workspace/db";
+import { eq, sql, and, count } from "drizzle-orm";
 import { requireAuth } from "../lib/auth-middleware";
 
 const router = Router();
@@ -56,6 +56,23 @@ router.post("/stakes", requireAuth, async (req, res) => {
     res.status(401).json({ error: "User not found" });
     return;
   }
+
+  // Require at least one approved deposit before staking
+  const depositCheck = await db
+    .select({ total: count() })
+    .from(transactionsTable)
+    .where(
+      and(
+        eq(transactionsTable.userId, req.session.userId!),
+        eq(transactionsTable.type, "deposit"),
+        eq(transactionsTable.status, "approved"),
+      ),
+    );
+  if ((depositCheck[0]?.total ?? 0) === 0) {
+    res.status(403).json({ error: "You must make a deposit first before you can stake." });
+    return;
+  }
+
   const balance = parseFloat(users[0].balance);
   if (balance < amount) {
     res.status(400).json({ error: "Insufficient balance" });

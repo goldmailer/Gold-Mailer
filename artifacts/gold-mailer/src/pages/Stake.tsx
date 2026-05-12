@@ -6,7 +6,8 @@ import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { TrendingUp, Info } from "lucide-react";
+import { TrendingUp, Info, AlertTriangle } from "lucide-react";
+import { Link } from "wouter";
 
 const MIN = 2700;
 const MAX = 100000;
@@ -28,7 +29,7 @@ export default function Stake() {
 
   const numAmount = parseFloat(amount) || 0;
   const profit = numAmount >= MIN ? calcProfit(numAmount) : 0;
-  const isValid = numAmount >= MIN && numAmount <= MAX && numAmount <= (user?.balance ?? 0);
+  const isValid = numAmount >= MIN && numAmount <= MAX && numAmount <= (user?.balance ?? 0) && (user?.hasDeposited ?? false);
 
   const mutation = useCreateStake({
     mutation: {
@@ -52,6 +53,24 @@ export default function Stake() {
         <h1 className="text-2xl font-black mb-1">Create a Stake</h1>
         <p className="text-muted-foreground text-sm mb-8">Lock funds for 7 days and earn guaranteed profit</p>
 
+        {/* Deposit-first gate */}
+        {!user?.hasDeposited && (
+          <div className="bg-amber-500/10 border border-amber-500/40 rounded-xl p-5 mb-6 flex gap-4 items-start">
+            <AlertTriangle size={20} className="text-amber-400 mt-0.5 shrink-0" />
+            <div>
+              <p className="font-semibold text-amber-300 mb-1">Deposit required before staking</p>
+              <p className="text-sm text-muted-foreground mb-3">
+                You need to make a real deposit and have it approved by our team before you can start staking. Your signup bonus alone is not enough.
+              </p>
+              <Link href="/deposit">
+                <Button size="sm" className="bg-amber-500 hover:bg-amber-400 text-black font-bold">
+                  Make a Deposit
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Balance card */}
         <div className="bg-card border border-border rounded-xl p-5 mb-6 flex items-center justify-between">
           <div>
@@ -64,7 +83,7 @@ export default function Stake() {
         </div>
 
         {/* Amount input */}
-        <div className="bg-card border border-border rounded-2xl p-6 mb-6">
+        <div className={`bg-card border border-border rounded-2xl p-6 mb-6 ${!user?.hasDeposited ? "opacity-50 pointer-events-none" : ""}`}>
           <label className="block text-sm font-medium mb-3">Stake Amount (₦)</label>
           <div className="relative mb-2">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-lg">₦</span>
@@ -95,7 +114,7 @@ export default function Stake() {
         </div>
 
         {/* Profit preview */}
-        {numAmount >= MIN && (
+        {numAmount >= MIN && user?.hasDeposited && (
           <div className="bg-primary/10 border border-primary/30 rounded-xl p-5 mb-6 space-y-3">
             <h3 className="font-bold text-primary">Earnings Preview</h3>
             <div className="grid grid-cols-3 gap-4 text-center">
@@ -119,7 +138,7 @@ export default function Stake() {
           </div>
         )}
 
-        {numAmount > (user?.balance ?? 0) && numAmount > 0 && (
+        {numAmount > (user?.balance ?? 0) && numAmount > 0 && user?.hasDeposited && (
           <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-4 mb-4 text-destructive text-sm">
             Insufficient balance. You need {fmt(numAmount - (user?.balance ?? 0))} more.
           </div>

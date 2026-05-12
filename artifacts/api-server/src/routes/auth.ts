@@ -1,7 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
-import { db, usersTable, otpCodesTable } from "@workspace/db";
-import { eq, and, gt } from "drizzle-orm";
+import { db, usersTable, otpCodesTable, transactionsTable } from "@workspace/db";
+import { eq, and, gt, count } from "drizzle-orm";
 import { sendVerificationEmail, sendPasswordResetEmail } from "../lib/email";
 import { requireAuth } from "../lib/auth-middleware";
 
@@ -15,6 +15,20 @@ function otpExpiry(): Date {
   const d = new Date();
   d.setMinutes(d.getMinutes() + 20);
   return d;
+}
+
+async function checkHasDeposited(userId: number): Promise<boolean> {
+  const result = await db
+    .select({ total: count() })
+    .from(transactionsTable)
+    .where(
+      and(
+        eq(transactionsTable.userId, userId),
+        eq(transactionsTable.type, "deposit"),
+        eq(transactionsTable.status, "approved"),
+      ),
+    );
+  return (result[0]?.total ?? 0) > 0;
 }
 
 // POST /auth/register
@@ -154,6 +168,9 @@ router.post("/auth/login", async (req, res) => {
   }
   req.session.userId = user.id;
   req.session.isAdmin = user.isAdmin;
+
+  const hasDeposited = await checkHasDeposited(user.id);
+
   res.json({
     message: "Login successful",
     user: {
@@ -169,6 +186,7 @@ router.post("/auth/login", async (req, res) => {
       profileComplete: user.profileComplete,
       cardAdded: user.cardAdded,
       balance: parseFloat(user.balance),
+      hasDeposited,
       createdAt: user.createdAt.toISOString(),
     },
   });
@@ -241,6 +259,8 @@ router.get("/auth/me", requireAuth, async (req, res) => {
     return;
   }
   const user = users[0];
+  const hasDeposited = await checkHasDeposited(user.id);
+
   res.json({
     id: user.id,
     email: user.email,
@@ -254,6 +274,7 @@ router.get("/auth/me", requireAuth, async (req, res) => {
     profileComplete: user.profileComplete,
     cardAdded: user.cardAdded,
     balance: parseFloat(user.balance),
+    hasDeposited,
     createdAt: user.createdAt.toISOString(),
   });
 });

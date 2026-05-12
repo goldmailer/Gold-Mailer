@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Check } from "lucide-react";
+import { Check, AlertTriangle } from "lucide-react";
+import { Link } from "wouter";
 
 const NIGERIAN_BANKS = [
   "Access Bank","First Bank of Nigeria","Guaranty Trust Bank (GTBank)","Zenith Bank",
@@ -85,12 +86,30 @@ export default function Withdraw() {
         <h1 className="text-2xl font-black mb-1">Withdraw Funds</h1>
         <p className="text-muted-foreground text-sm mb-8">Send funds to your Nigerian bank account</p>
 
+        {/* Deposit-first gate */}
+        {!user?.hasDeposited && (
+          <div className="bg-amber-500/10 border border-amber-500/40 rounded-xl p-5 mb-6 flex gap-4 items-start">
+            <AlertTriangle size={20} className="text-amber-400 mt-0.5 shrink-0" />
+            <div>
+              <p className="font-semibold text-amber-300 mb-1">Deposit required before withdrawing</p>
+              <p className="text-sm text-muted-foreground mb-3">
+                You must make a real deposit and have it approved before you can withdraw funds. Your signup bonus alone does not qualify.
+              </p>
+              <Link href="/deposit">
+                <Button size="sm" className="bg-amber-500 hover:bg-amber-400 text-black font-bold">
+                  Make a Deposit
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )}
+
         <div className="bg-card border border-border rounded-xl p-4 mb-6 flex justify-between">
           <span className="text-sm text-muted-foreground">Available Balance</span>
           <span className="font-black text-primary" data-testid="text-balance">{fmt(user?.balance ?? 0)}</span>
         </div>
 
-        <div className="bg-card border border-border rounded-2xl p-6 space-y-5">
+        <div className={`bg-card border border-border rounded-2xl p-6 space-y-5 ${!user?.hasDeposited ? "opacity-50 pointer-events-none" : ""}`}>
           <div>
             <label className="text-sm font-medium mb-2 block">Amount (₦)</label>
             <div className="relative">
@@ -135,7 +154,7 @@ export default function Withdraw() {
           <Button
             className="w-full bg-primary text-primary-foreground hover:opacity-90 py-5 font-bold"
             onClick={handleSubmit}
-            disabled={mutation.isPending}
+            disabled={mutation.isPending || !user?.hasDeposited}
             data-testid="button-withdraw-submit"
           >
             {mutation.isPending ? "Submitting..." : "Submit Withdrawal Request"}

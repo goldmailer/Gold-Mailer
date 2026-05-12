@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, transactionsTable, usersTable, settingsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, and, count } from "drizzle-orm";
 import { requireAuth } from "../lib/auth-middleware";
 
 const router = Router();
@@ -41,6 +41,23 @@ router.post("/transactions/withdraw", requireAuth, async (req, res) => {
     res.status(400).json({ error: "All withdrawal fields are required" });
     return;
   }
+
+  // Require at least one approved deposit before withdrawing
+  const depositCheck = await db
+    .select({ total: count() })
+    .from(transactionsTable)
+    .where(
+      and(
+        eq(transactionsTable.userId, req.session.userId!),
+        eq(transactionsTable.type, "deposit"),
+        eq(transactionsTable.status, "approved"),
+      ),
+    );
+  if ((depositCheck[0]?.total ?? 0) === 0) {
+    res.status(403).json({ error: "You must make a deposit first before you can withdraw." });
+    return;
+  }
+
   const users = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!)).limit(1);
   if (users.length === 0) {
     res.status(401).json({ error: "User not found" });

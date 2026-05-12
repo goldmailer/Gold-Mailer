@@ -15,6 +15,7 @@ interface User {
   profileComplete: boolean;
   cardAdded: boolean;
   balance: number;
+  hasDeposited: boolean;
   createdAt: string;
 }
 

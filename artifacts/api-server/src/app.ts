@@ -62,7 +62,7 @@ const frontendDistPath = path.resolve(__serverDir, "../../gold-mailer/dist/publi
 if (fs.existsSync(frontendDistPath)) {
   app.use(express.static(frontendDistPath));
   // SPA fallback: send index.html for any non-API route so client-side routing works
-  app.get("*", (_req, res) => {
+  app.get("/*path", (_req, res) => {
     res.sendFile(path.join(frontendDistPath, "index.html"));
   });
 } else {
