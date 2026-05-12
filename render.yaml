@@ -2,6 +2,6 @@ services:
     - type: web
     name: goldmailer
     env: node
-    buildCommand: pnpm install --no-frozen-lockfile && pnpm dlx drizzle-kit push --config=lib/db/drizzle.config.ts && pnpm run build
-    startCommand: pnpm run start
+    buildCommand: 'pnpm install --no-frozen-lockfile && pnpm dlx drizzle-kit push --config=lib/db/drizzle.config.ts && pnpm run build'
+    startCommand: 'pnpm run start'
     plan: free
