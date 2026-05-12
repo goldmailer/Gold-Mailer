@@ -8,18 +8,18 @@
     "./schema": "./src/schema/index.ts"
   },
   "scripts": {
-    "push": "drizzle-kit push --config ./drizzle.config.ts",
-    "push-force": "drizzle-kit push --force --config ./drizzle.config.ts"
+    "push": "drizzle-kit push --config drizzle.config.ts",
+    "push-force": "drizzle-kit push --force --config drizzle.config.ts"
   },
   "dependencies": {
-    "drizzle-orm": "catalog:",
-    "drizzle-zod": "^0.8.3",
-    "pg": "^8.20.0",
-    "zod": "catalog:"
+    "drizzle-orm": "^0.30.10",
+    "drizzle-zod": "^0.5.0",
+    "pg": "^8.12.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/node": "catalog:",
-    "@types/pg": "^8.18.0",
-    "drizzle-kit": "^0.31.9"
+    "@types/node": "^20.12.12",
+    "@types/pg": "^8.11.6",
+    "drizzle-kit": "^0.21.4"
   }
 }
