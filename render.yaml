@@ -1,3 +1,0 @@
-buildCommand: 'pnpm install --no-frozen-lockfile && pnpm dlx drizzle-kit push --config=lib/db/drizzle.config.ts && pnpm run build'
-startCommand: 'pnpm run start'
-env: node
