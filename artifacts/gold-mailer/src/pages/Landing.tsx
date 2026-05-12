@@ -1,0 +1,258 @@
+import { useState } from "react";
+import { useLocation } from "wouter";
+import { Button } from "@/components/ui/button";
+import { Shield, TrendingUp, Zap, Star, ChevronRight, Lock, Globe, Award } from "lucide-react";
+
+const ADMIN_TAP_COUNT = 10;
+
+function formatNaira(amount: number) {
+  return `₦${amount.toLocaleString()}`;
+}
+
+export default function Landing() {
+  const [, setLocation] = useLocation();
+  const [tapCount, setTapCount] = useState(0);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pin, setPin] = useState("");
+  const [pinError, setPinError] = useState("");
+
+  const handleLogoTap = () => {
+    const newCount = tapCount + 1;
+    setTapCount(newCount);
+    if (newCount >= ADMIN_TAP_COUNT) {
+      setTapCount(0);
+      setShowPinModal(true);
+    }
+  };
+
+  const handlePinSubmit = () => {
+    if (pin === "2006") {
+      setShowPinModal(false);
+      setPin("");
+      setPinError("");
+      setLocation("/admin");
+    } else {
+      setPinError("Incorrect PIN. Access denied.");
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Navbar */}
+      <nav className="fixed top-0 left-0 right-0 z-30 border-b border-border/50 bg-background/80 backdrop-blur-md">
+        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+          <span className="text-primary font-bold text-xl tracking-widest">GOLDMAILER</span>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" onClick={() => setLocation("/login")} data-testid="button-nav-login">
+              Login
+            </Button>
+            <Button size="sm" onClick={() => setLocation("/register")} data-testid="button-nav-register"
+              className="bg-primary text-primary-foreground hover:opacity-90">
+              Get Started
+            </Button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero */}
+      <section className="pt-32 pb-24 px-4">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-sm font-medium mb-8">
+            <Star size={14} />
+            <span>Nigeria's Premier Staking Platform</span>
+          </div>
+          <h1 className="text-5xl md:text-7xl font-black tracking-tight mb-6 leading-tight">
+            Grow Your{" "}
+            <span className="text-primary">Wealth</span>{" "}
+            with Confidence
+          </h1>
+          <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
+            Stake your funds with Gold Mailer and earn guaranteed returns in 7 days.
+            Minimum deposit {formatNaira(2700)}. Professional, secure, and transparent.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Button
+              size="lg"
+              onClick={() => setLocation("/register")}
+              data-testid="button-hero-get-started"
+              className="bg-primary text-primary-foreground hover:opacity-90 px-10 py-6 text-lg font-bold gold-glow"
+            >
+              Get Started <ChevronRight size={20} className="ml-1" />
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => setLocation("/login")}
+              data-testid="button-hero-login"
+              className="px-10 py-6 text-lg"
+            >
+              Sign In
+            </Button>
+          </div>
+          <p className="mt-6 text-muted-foreground text-sm">
+            Get <span className="text-primary font-semibold">{formatNaira(3000)} signup bonus</span> when you add your card
+          </p>
+        </div>
+      </section>
+
+      {/* Stats */}
+      <section className="py-12 border-y border-border/50 bg-card/30">
+        <div className="max-w-5xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8">
+          {[
+            { label: "Minimum Stake", value: "₦2,700" },
+            { label: "7-Day Profit", value: "₦8,000+" },
+            { label: "Max Stake", value: "₦100,000" },
+            { label: "Daily Reward", value: "₦100" },
+          ].map(stat => (
+            <div key={stat.label} className="text-center">
+              <p className="text-2xl md:text-3xl font-black text-primary">{stat.value}</p>
+              <p className="text-muted-foreground text-sm mt-1">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="py-24 px-4">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-black mb-4">Why Gold Mailer?</h2>
+            <p className="text-muted-foreground text-lg">Built for serious investors who demand results</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                icon: Shield,
+                title: "Fully Secured",
+                desc: "Your funds are protected with bank-grade security and encrypted storage.",
+              },
+              {
+                icon: TrendingUp,
+                title: "Guaranteed Returns",
+                desc: "Stake ₦2,700 and earn ₦8,000 profit in just 7 days. Returns scale with your deposit.",
+              },
+              {
+                icon: Zap,
+                title: "Daily Rewards",
+                desc: "Claim ₦100 daily reward on every active stake. Consistent earnings every day.",
+              },
+              {
+                icon: Lock,
+                title: "Virtual Cards",
+                desc: "Add your debit card once and manage it as a virtual card on your dashboard.",
+              },
+              {
+                icon: Globe,
+                title: "Nigerian Banks",
+                desc: "Withdraw directly to any Nigerian bank account. All major banks supported.",
+              },
+              {
+                icon: Award,
+                title: "Signup Bonus",
+                desc: "Receive ₦3,000 instantly when you add your card. Start earning immediately.",
+              },
+            ].map(f => (
+              <div key={f.title} className="p-6 rounded-2xl bg-card border border-border hover:border-primary/40 transition-colors">
+                <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center mb-4">
+                  <f.icon size={22} className="text-primary" />
+                </div>
+                <h3 className="font-bold text-lg mb-2">{f.title}</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section className="py-24 px-4 bg-card/20">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-black mb-4">How It Works</h2>
+          </div>
+          <div className="grid md:grid-cols-4 gap-6">
+            {[
+              { step: "01", title: "Register", desc: "Create your account in minutes with just email and password." },
+              { step: "02", title: "Add Card", desc: "Add your debit card and claim your ₦3,000 signup bonus instantly." },
+              { step: "03", title: "Stake Funds", desc: "Deposit and stake from ₦2,700. Funds are locked for 7 days." },
+              { step: "04", title: "Earn Profit", desc: "Collect profits after 7 days plus ₦100 daily rewards." },
+            ].map(item => (
+              <div key={item.step} className="text-center">
+                <div className="w-14 h-14 rounded-full bg-primary/15 border-2 border-primary/30 flex items-center justify-center mx-auto mb-4">
+                  <span className="text-primary font-black text-lg">{item.step}</span>
+                </div>
+                <h3 className="font-bold mb-2">{item.title}</h3>
+                <p className="text-muted-foreground text-sm">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-24 px-4">
+        <div className="max-w-2xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-black mb-6">Ready to Start Earning?</h2>
+          <p className="text-muted-foreground mb-8">Join thousands of Nigerians growing their wealth with Gold Mailer.</p>
+          <Button
+            size="lg"
+            onClick={() => setLocation("/register")}
+            data-testid="button-cta-register"
+            className="bg-primary text-primary-foreground hover:opacity-90 px-12 py-6 text-lg font-bold gold-glow"
+          >
+            Open Account Now
+          </Button>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-border/50 py-10 px-4">
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+          <button
+            data-testid="button-footer-logo"
+            onClick={handleLogoTap}
+            className="text-muted-foreground text-sm font-medium tracking-widest select-none cursor-default"
+          >
+            GOLDMAILER
+          </button>
+          <p className="text-muted-foreground text-sm">
+            © {new Date().getFullYear()} Gold Mailer. All rights reserved.
+          </p>
+          <div className="flex gap-4 text-sm text-muted-foreground">
+            <span>Terms of Service</span>
+            <span>Privacy Policy</span>
+          </div>
+        </div>
+      </footer>
+
+      {/* Admin PIN Modal */}
+      {showPinModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-2xl p-8 w-full max-w-sm shadow-2xl">
+            <h2 className="text-lg font-bold mb-1 text-center">Admin Access</h2>
+            <p className="text-muted-foreground text-sm text-center mb-6">Enter your PIN to continue</p>
+            <input
+              type="password"
+              maxLength={4}
+              value={pin}
+              onChange={e => { setPin(e.target.value); setPinError(""); }}
+              placeholder="Enter PIN"
+              data-testid="input-admin-pin"
+              className="w-full px-4 py-3 rounded-lg bg-background border border-input text-center text-2xl tracking-widest focus:outline-none focus:ring-2 focus:ring-primary mb-3"
+              onKeyDown={e => e.key === "Enter" && handlePinSubmit()}
+            />
+            {pinError && <p className="text-destructive text-sm text-center mb-3">{pinError}</p>}
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => { setShowPinModal(false); setPin(""); setPinError(""); }}>
+                Cancel
+              </Button>
+              <Button className="flex-1 bg-primary text-primary-foreground" onClick={handlePinSubmit} data-testid="button-admin-pin-submit">
+                Access
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

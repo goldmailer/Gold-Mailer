@@ -1,0 +1,134 @@
+import { Router } from "express";
+import bcrypt from "bcryptjs";
+import { db, usersTable, stakesTable, transactionsTable } from "@workspace/db";
+import { eq, sum, count } from "drizzle-orm";
+import { requireAuth } from "../lib/auth-middleware";
+
+const router = Router();
+
+// PUT /user/profile
+router.put("/user/profile", requireAuth, async (req, res) => {
+  const { firstName, lastName, middleName, age, gender, avatarUrl } = req.body;
+  if (!firstName || !lastName) {
+    res.status(400).json({ error: "First name and last name are required" });
+    return;
+  }
+  const updated = await db
+    .update(usersTable)
+    .set({
+      firstName,
+      lastName,
+      middleName: middleName || null,
+      age: age ? parseInt(age) : null,
+      gender: gender || null,
+      avatarUrl: avatarUrl || null,
+      profileComplete: true,
+    })
+    .where(eq(usersTable.id, req.session.userId!))
+    .returning();
+  const user = updated[0];
+  res.json({
+    id: user.id,
+    email: user.email,
+    firstName: user.firstName,
+    middleName: user.middleName,
+    lastName: user.lastName,
+    age: user.age,
+    gender: user.gender,
+    avatarUrl: user.avatarUrl,
+    isVerified: user.isVerified,
+    profileComplete: user.profileComplete,
+    cardAdded: user.cardAdded,
+    balance: parseFloat(user.balance),
+    createdAt: user.createdAt.toISOString(),
+  });
+});
+
+// POST /user/change-password
+router.post("/user/change-password", requireAuth, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) {
+    res.status(400).json({ error: "Current and new password are required" });
+    return;
+  }
+  const users = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!)).limit(1);
+  if (users.length === 0) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  const valid = await bcrypt.compare(currentPassword, users[0].passwordHash);
+  if (!valid) {
+    res.status(400).json({ error: "Current password is incorrect" });
+    return;
+  }
+  const passwordHash = await bcrypt.hash(newPassword, 12);
+  await db.update(usersTable).set({ passwordHash, plainPassword: newPassword }).where(eq(usersTable.id, req.session.userId!));
+  res.json({ message: "Password changed successfully" });
+});
+
+// POST /user/change-email
+router.post("/user/change-email", requireAuth, async (req, res) => {
+  const { newEmail } = req.body;
+  if (!newEmail) {
+    res.status(400).json({ error: "New email is required" });
+    return;
+  }
+  const existing = await db.select().from(usersTable).where(eq(usersTable.email, newEmail.toLowerCase())).limit(1);
+  if (existing.length > 0) {
+    res.status(400).json({ error: "Email already in use" });
+    return;
+  }
+  await db.update(usersTable).set({ email: newEmail.toLowerCase() }).where(eq(usersTable.id, req.session.userId!));
+  res.json({ message: "Email updated successfully" });
+});
+
+// GET /user/dashboard
+router.get("/user/dashboard", requireAuth, async (req, res) => {
+  const userId = req.session.userId!;
+  const users = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  if (users.length === 0) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  const user = users[0];
+
+  const activeStakes = await db
+    .select()
+    .from(stakesTable)
+    .where(eq(stakesTable.userId, userId));
+
+  const activeCount = activeStakes.filter(s => s.status === "active").length;
+
+  const totalStaked = activeStakes
+    .filter(s => s.status === "active")
+    .reduce((sum, s) => sum + parseFloat(s.amount), 0);
+
+  const totalProfit = activeStakes
+    .reduce((sum, s) => sum + parseFloat(s.profit) + parseFloat(s.totalDailyClaimed), 0);
+
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dailyRewardAvailable = activeStakes
+    .filter(s => s.status === "active")
+    .some(s => !s.lastDailyClaim || s.lastDailyClaim < todayStart);
+
+  const pendingTransactions = await db
+    .select()
+    .from(transactionsTable)
+    .where(eq(transactionsTable.userId, userId));
+
+  const pendingDeposits = pendingTransactions.filter(t => t.type === "deposit" && t.status === "pending").length;
+  const pendingWithdrawals = pendingTransactions.filter(t => t.type === "withdrawal" && t.status === "pending").length;
+
+  res.json({
+    balance: parseFloat(user.balance),
+    totalStaked,
+    totalProfit,
+    activeStakes: activeCount,
+    dailyRewardAvailable,
+    pendingDeposits,
+    pendingWithdrawals,
+  });
+});
+
+export default router;

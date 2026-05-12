@@ -1,22 +1,33 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Gold Mailer API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: user
+    description: User profile operations
+  - name: card
+    description: Virtual card operations
+  - name: staking
+    description: Staking operations
+  - name: transactions
+    description: Deposit and withdrawal operations
+  - name: admin
+    description: Admin panel operations
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +35,528 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: User registered, verification email sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthMessage"
+        "400":
+          description: Invalid input or email already exists
+
+  /auth/verify-email:
+    post:
+      operationId: verifyEmail
+      tags: [auth]
+      summary: Verify email with OTP code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyEmailInput"
+      responses:
+        "200":
+          description: Email verified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthMessage"
+        "400":
+          description: Invalid or expired code
+
+  /auth/resend-verification:
+    post:
+      operationId: resendVerification
+      tags: [auth]
+      summary: Resend verification code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailInput"
+      responses:
+        "200":
+          description: Code resent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthMessage"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResult"
+        "401":
+          description: Invalid credentials
+
+  /auth/forgot-password:
+    post:
+      operationId: forgotPassword
+      tags: [auth]
+      summary: Request password reset email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailInput"
+      responses:
+        "200":
+          description: Reset email sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthMessage"
+
+  /auth/reset-password:
+    post:
+      operationId: resetPassword
+      tags: [auth]
+      summary: Reset password with OTP code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordInput"
+      responses:
+        "200":
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthMessage"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout current user
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthMessage"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current authenticated user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not authenticated
+
+  /user/profile:
+    put:
+      operationId: updateProfile
+      tags: [user]
+      summary: Update user profile (name, age, gender, avatar)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileInput"
+      responses:
+        "200":
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /user/change-password:
+    post:
+      operationId: changePassword
+      tags: [user]
+      summary: Change password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordInput"
+      responses:
+        "200":
+          description: Password changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthMessage"
+
+  /user/change-email:
+    post:
+      operationId: changeEmail
+      tags: [user]
+      summary: Change email address
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangeEmailInput"
+      responses:
+        "200":
+          description: Email change request sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthMessage"
+
+  /user/dashboard:
+    get:
+      operationId: getDashboard
+      tags: [user]
+      summary: Get user dashboard summary (balance, stakes, profits)
+      responses:
+        "200":
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardData"
+
+  /cards:
+    get:
+      operationId: getCards
+      tags: [card]
+      summary: Get all user virtual cards
+      responses:
+        "200":
+          description: List of cards
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Card"
+
+    post:
+      operationId: addCard
+      tags: [card]
+      summary: Add a new virtual card
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CardInput"
+      responses:
+        "201":
+          description: Card added with ₦3000 signup bonus
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Card"
+
+  /cards/{id}:
+    get:
+      operationId: getCard
+      tags: [card]
+      summary: Get full card details including sensitive info
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Full card details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardFull"
+
+  /stakes:
+    get:
+      operationId: getStakes
+      tags: [staking]
+      summary: Get all user stakes
+      responses:
+        "200":
+          description: List of stakes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Stake"
+
+    post:
+      operationId: createStake
+      tags: [staking]
+      summary: Create a new stake (min ₦2700, max ₦100000, 7 day lock)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StakeInput"
+      responses:
+        "201":
+          description: Stake created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stake"
+        "400":
+          description: Insufficient balance or invalid amount
+
+  /stakes/{id}/claim-daily:
+    post:
+      operationId: claimDailyReward
+      tags: [staking]
+      summary: Claim daily reward of ₦100 for a stake
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Daily reward claimed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RewardClaim"
+
+  /transactions/deposit:
+    post:
+      operationId: submitDeposit
+      tags: [transactions]
+      summary: Submit a deposit with transaction ID proof
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DepositInput"
+      responses:
+        "201":
+          description: Deposit submitted for approval
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+
+  /transactions/withdraw:
+    post:
+      operationId: submitWithdrawal
+      tags: [transactions]
+      summary: Submit a withdrawal request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WithdrawalInput"
+      responses:
+        "201":
+          description: Withdrawal submitted for approval
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+
+  /transactions:
+    get:
+      operationId: getTransactions
+      tags: [transactions]
+      summary: Get user transaction history
+      responses:
+        "200":
+          description: Transaction list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Transaction"
+
+  /settings/deposit-account:
+    get:
+      operationId: getDepositAccount
+      tags: [transactions]
+      summary: Get the deposit bank account details
+      responses:
+        "200":
+          description: Deposit account info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DepositAccount"
+
+  /admin/users:
+    get:
+      operationId: adminGetUsers
+      tags: [admin]
+      summary: Get all users with plain credentials
+      responses:
+        "200":
+          description: All users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminUser"
+
+  /admin/users/{id}:
+    delete:
+      operationId: adminDeleteUser
+      tags: [admin]
+      summary: Delete a user account
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthMessage"
+
+  /admin/users/{id}/balance:
+    post:
+      operationId: adminTopUpBalance
+      tags: [admin]
+      summary: Top up user balance
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BalanceTopUp"
+      responses:
+        "200":
+          description: Balance updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+
+  /admin/transactions:
+    get:
+      operationId: adminGetTransactions
+      tags: [admin]
+      summary: Get all pending transactions
+      responses:
+        "200":
+          description: All transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Transaction"
+
+  /admin/transactions/{id}/approve:
+    post:
+      operationId: adminApproveTransaction
+      tags: [admin]
+      summary: Approve a deposit or withdrawal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Transaction approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+
+  /admin/transactions/{id}/decline:
+    post:
+      operationId: adminDeclineTransaction
+      tags: [admin]
+      summary: Decline a deposit or withdrawal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Transaction declined
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+
+  /admin/deposit-account:
+    put:
+      operationId: adminSetDepositAccount
+      tags: [admin]
+      summary: Set the deposit bank account details
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DepositAccount"
+      responses:
+        "200":
+          description: Deposit account updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DepositAccount"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +567,359 @@ components:
       required:
         - status
 
+    AuthMessage:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+
+    RegisterInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    VerifyEmailInput:
+      type: object
+      required: [email, code]
+      properties:
+        email:
+          type: string
+          format: email
+        code:
+          type: string
+
+    EmailInput:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+
+    ResetPasswordInput:
+      type: object
+      required: [email, code, newPassword]
+      properties:
+        email:
+          type: string
+        code:
+          type: string
+        newPassword:
+          type: string
+          minLength: 6
+
+    ChangePasswordInput:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword:
+          type: string
+        newPassword:
+          type: string
+          minLength: 6
+
+    ChangeEmailInput:
+      type: object
+      required: [newEmail]
+      properties:
+        newEmail:
+          type: string
+          format: email
+
+    LoginResult:
+      type: object
+      required: [user, message]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        message:
+          type: string
+
+    User:
+      type: object
+      required: [id, email, isVerified, profileComplete, cardAdded, balance, createdAt]
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        firstName:
+          type: ["string", "null"]
+        middleName:
+          type: ["string", "null"]
+        lastName:
+          type: ["string", "null"]
+        age:
+          type: ["integer", "null"]
+        gender:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        isVerified:
+          type: boolean
+        profileComplete:
+          type: boolean
+        cardAdded:
+          type: boolean
+        balance:
+          type: number
+        createdAt:
+          type: string
+
+    ProfileInput:
+      type: object
+      required: [firstName, lastName]
+      properties:
+        firstName:
+          type: string
+        middleName:
+          type: string
+        lastName:
+          type: string
+        age:
+          type: integer
+        gender:
+          type: string
+        avatarUrl:
+          type: string
+
+    DashboardData:
+      type: object
+      required: [balance, totalStaked, totalProfit, activeStakes, dailyRewardAvailable, pendingDeposits, pendingWithdrawals]
+      properties:
+        balance:
+          type: number
+        totalStaked:
+          type: number
+        totalProfit:
+          type: number
+        activeStakes:
+          type: integer
+        dailyRewardAvailable:
+          type: boolean
+        pendingDeposits:
+          type: integer
+        pendingWithdrawals:
+          type: integer
+
+    Card:
+      type: object
+      required: [id, cardholderName, lastFour, expiryDate, createdAt]
+      properties:
+        id:
+          type: integer
+        cardholderName:
+          type: string
+        lastFour:
+          type: string
+        expiryDate:
+          type: string
+        billingCity:
+          type: ["string", "null"]
+        billingCountry:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    CardFull:
+      type: object
+      required: [id, cardholderName, cardNumber, expiryDate, cvv, billingAddress1, billingCity, billingState, billingCountry, billingZip]
+      properties:
+        id:
+          type: integer
+        cardholderName:
+          type: string
+        cardNumber:
+          type: string
+        expiryDate:
+          type: string
+        cvv:
+          type: string
+        billingAddress1:
+          type: string
+        billingAddress2:
+          type: ["string", "null"]
+        billingCity:
+          type: string
+        billingState:
+          type: string
+        billingCountry:
+          type: string
+        billingZip:
+          type: string
+        aptNumber:
+          type: ["string", "null"]
+
+    CardInput:
+      type: object
+      required: [cardholderName, cardNumber, expiryDate, cvv, billingAddress1, billingCity, billingState, billingCountry, billingZip]
+      properties:
+        cardholderName:
+          type: string
+        cardNumber:
+          type: string
+        expiryDate:
+          type: string
+        cvv:
+          type: string
+        billingAddress1:
+          type: string
+        billingAddress2:
+          type: string
+        billingCity:
+          type: string
+        billingState:
+          type: string
+        billingCountry:
+          type: string
+        billingZip:
+          type: string
+        aptNumber:
+          type: string
+
+    Stake:
+      type: object
+      required: [id, amount, profit, status, startDate, endDate, dailyClaimedToday, totalDailyClaimed]
+      properties:
+        id:
+          type: integer
+        amount:
+          type: number
+        profit:
+          type: number
+        status:
+          type: string
+        startDate:
+          type: string
+        endDate:
+          type: string
+        dailyClaimedToday:
+          type: boolean
+        totalDailyClaimed:
+          type: number
+        daysRemaining:
+          type: integer
+
+    StakeInput:
+      type: object
+      required: [amount]
+      properties:
+        amount:
+          type: number
+
+    RewardClaim:
+      type: object
+      required: [message, amount, newBalance]
+      properties:
+        message:
+          type: string
+        amount:
+          type: number
+        newBalance:
+          type: number
+
+    Transaction:
+      type: object
+      required: [id, type, amount, status, createdAt]
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        amount:
+          type: number
+        status:
+          type: string
+        transactionId:
+          type: ["string", "null"]
+        bankName:
+          type: ["string", "null"]
+        accountNumber:
+          type: ["string", "null"]
+        accountName:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    DepositInput:
+      type: object
+      required: [amount, transactionId]
+      properties:
+        amount:
+          type: number
+        transactionId:
+          type: string
+
+    WithdrawalInput:
+      type: object
+      required: [amount, bankName, accountNumber, accountName]
+      properties:
+        amount:
+          type: number
+        bankName:
+          type: string
+        accountNumber:
+          type: string
+        accountName:
+          type: string
+
+    DepositAccount:
+      type: object
+      required: [bankName, accountNumber, accountName]
+      properties:
+        bankName:
+          type: string
+        accountNumber:
+          type: string
+        accountName:
+          type: string
+
+    AdminUser:
+      type: object
+      required: [id, email, plainPassword, balance, isVerified, profileComplete, createdAt]
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        plainPassword:
+          type: string
+        firstName:
+          type: ["string", "null"]
+        lastName:
+          type: ["string", "null"]
+        balance:
+          type: number
+        isVerified:
+          type: boolean
+        profileComplete:
+          type: boolean
+        createdAt:
+          type: string
+
+    BalanceTopUp:
+      type: object
+      required: [amount]
+      properties:
+        amount:
+          type: number
