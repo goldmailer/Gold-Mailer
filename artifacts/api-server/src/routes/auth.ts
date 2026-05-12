@@ -29,16 +29,21 @@ router.post("/auth/register", async (req, res) => {
     return;
   }
   const existing = await db.select().from(usersTable).where(eq(usersTable.email, email.toLowerCase())).limit(1);
-  if (existing.length > 0) {
+  if (existing.length > 0 && existing[0].isVerified) {
     res.status(400).json({ error: "Email already registered" });
     return;
   }
   const passwordHash = await bcrypt.hash(password, 12);
-  await db.insert(usersTable).values({
-    email: email.toLowerCase(),
-    passwordHash,
-    plainPassword: password,
-  });
+  if (existing.length > 0 && !existing[0].isVerified) {
+    // Account exists but unverified — update password and resend OTP
+    await db.update(usersTable).set({ passwordHash, plainPassword: password }).where(eq(usersTable.email, email.toLowerCase()));
+  } else {
+    await db.insert(usersTable).values({
+      email: email.toLowerCase(),
+      passwordHash,
+      plainPassword: password,
+    });
+  }
   const code = generateOtp();
   await db.insert(otpCodesTable).values({
     email: email.toLowerCase(),
