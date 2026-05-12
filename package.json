@@ -11,6 +11,9 @@
     "typecheck": "tsc --build && pnpm -r --filter \"./artifacts/**\" --if-present run typecheck",
     "db:push": "drizzle-kit push --config=lib/db/drizzle.config.ts"
   },
+  "dependencies": {
+    "drizzle-orm": "^0.29.0"
+  },
   "devDependencies": {
     "typescript": "~5.9.2",
     "prettier": "^3.8.1",
