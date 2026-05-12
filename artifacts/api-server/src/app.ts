@@ -1,6 +1,9 @@
 import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
+import path from "path";
+import { fileURLToPath } from "url";
+import fs from "fs";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { sessionMiddleware } from "./lib/session";
@@ -49,5 +52,24 @@ app.use(express.urlencoded({ extended: true }));
 app.use(sessionMiddleware);
 
 app.use("/api", router);
+
+// Serve the compiled React frontend in production.
+// When bundled by esbuild, import.meta.url points to dist/index.mjs which lives at
+// artifacts/api-server/dist/ — so the frontend build is two levels up then into gold-mailer.
+const __serverDir = path.dirname(fileURLToPath(import.meta.url));
+const frontendDistPath = path.resolve(__serverDir, "../../gold-mailer/dist/public");
+
+if (fs.existsSync(frontendDistPath)) {
+  app.use(express.static(frontendDistPath));
+  // SPA fallback: send index.html for any non-API route so client-side routing works
+  app.get("*", (_req, res) => {
+    res.sendFile(path.join(frontendDistPath, "index.html"));
+  });
+} else {
+  logger.warn(
+    { frontendDistPath },
+    "Frontend build not found — run `npm run build` to generate it"
+  );
+}
 
 export default app;
