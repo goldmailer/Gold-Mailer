@@ -69,8 +69,10 @@ export default function Admin() {
   const [depositForm, setDepositForm] = useState({ bankName: "", accountNumber: "", accountName: "" });
   const [formInitialized, setFormInitialized] = useState(false);
 
-  const { data: users, isLoading: usersLoading } = useAdminGetUsers();
-  const { data: transactions, isLoading: txLoading } = useAdminGetTransactions();
+  const { data: usersRaw, isLoading: usersLoading, isError: usersError } = useAdminGetUsers();
+  const { data: transactionsRaw, isLoading: txLoading, isError: txError } = useAdminGetTransactions();
+  const users = Array.isArray(usersRaw) ? usersRaw : [];
+  const transactions = Array.isArray(transactionsRaw) ? transactionsRaw : [];
   const { data: depositAccount } = useGetDepositAccount({ query: { queryKey: getGetDepositAccountQueryKey() } });
 
   useEffect(() => {
