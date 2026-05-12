@@ -3,8 +3,8 @@ services:
     name: goldmailer
     env: node
     plan: free
-    buildCommand: 'pnpm install --no-frozen-lockfile && cd lib/db && pnpm dlx drizzle-kit push --config=drizzle.config.ts && cd ../.. && pnpm run build'
-    startCommand: 'pnpm run start'
+    buildCommand: 'cd src && pnpm install --no-frozen-lockfile && pnpm dlx drizzle-kit push --config=lib/db/drizzle.config.ts && cd .. && pnpm run build'
+    startCommand: 'cd src && pnpm run start'
     envVars:
             - key: NODE_VERSION
         value: '20'
