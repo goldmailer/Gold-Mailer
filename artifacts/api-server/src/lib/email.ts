@@ -2,7 +2,7 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM = "Gold Mailer <noreply@mail.goldmailer.xyz>";
+const FROM = "Gold Mailer <noreply@goldmailer.xyz>";
 
 export async function sendVerificationEmail(email: string, code: string) {
   const { error } = await resend.emails.send({

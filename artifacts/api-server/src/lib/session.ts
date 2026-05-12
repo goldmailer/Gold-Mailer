@@ -8,7 +8,7 @@ export const sessionMiddleware = session({
   store: new PgSession({
     pool,
     tableName: "user_sessions",
-    createTableIfMissing: true,
+    createTableIfMissing: false,
   }),
   secret: process.env.SESSION_SECRET || "goldmailer-secret-key-2024",
   resave: false,

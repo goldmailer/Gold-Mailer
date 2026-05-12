@@ -62,7 +62,7 @@ A full-stack Nigerian staking platform where users deposit funds, stake them for
 - Dark mode by default (gold #F5C518 accent, near-black background)
 - No emojis in the UI
 - All amounts in Nigerian Naira with ₦ symbol and commas (e.g. ₦2,700)
-- Emails sent from noreply@mail.goldmailer.xyz
+- Emails sent from noreply@goldmailer.xyz
 
 ## Gotchas
 

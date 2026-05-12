@@ -5,6 +5,7 @@ import {
 } from "@workspace/api-client-react";
 import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { TrendingUp, Wallet, Clock, Gift, ChevronRight, AlertCircle } from "lucide-react";
@@ -55,11 +56,15 @@ export default function Dashboard() {
             <div className="flex items-end gap-4 flex-wrap">
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Available Balance</p>
-                <p className="text-4xl font-black text-primary" data-testid="text-balance">
-                  {dashLoading ? "..." : fmt(dash?.balance ?? 0)}
-                </p>
+                {dashLoading ? (
+                  <Skeleton className="h-10 w-44 mt-1" />
+                ) : (
+                  <p className="text-4xl font-black text-primary" data-testid="text-balance">
+                    {fmt(dash?.balance ?? 0)}
+                  </p>
+                )}
               </div>
-              {dash?.dailyRewardAvailable && (
+              {!dashLoading && dash?.dailyRewardAvailable && (
                 <div className="mb-1">
                   <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-primary text-xs font-medium animate-pulse">
                     <Gift size={12} />
@@ -82,9 +87,13 @@ export default function Dashboard() {
             ].map(stat => (
               <div key={stat.label} className="bg-card border border-border rounded-xl p-4">
                 <div className={`${stat.color} mb-2`}><stat.icon size={20} /></div>
-                <p className="text-xl font-black text-foreground" data-testid={`stat-${stat.label.toLowerCase().replace(/\s/g, "-")}`}>
-                  {dashLoading ? "—" : stat.value}
-                </p>
+                {dashLoading ? (
+                  <Skeleton className="h-7 w-24 mb-1" />
+                ) : (
+                  <p className="text-xl font-black text-foreground" data-testid={`stat-${stat.label.toLowerCase().replace(/\s/g, "-")}`}>
+                    {stat.value}
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
               </div>
             ))}

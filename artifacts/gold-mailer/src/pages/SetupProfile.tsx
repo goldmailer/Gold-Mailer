@@ -1,18 +1,18 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useLocation, Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useUpdateProfile, getGetMeQueryKey } from "@workspace/api-client-react";
+import { useUpdateProfile, getGetMeQueryKey, useGetMe } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { User, Camera } from "lucide-react";
-import { useState } from "react";
 
 const schema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -24,6 +24,36 @@ const schema = z.object({
 });
 type FormData = z.infer<typeof schema>;
 
+function ProfileSkeleton() {
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-lg">
+        <div className="text-center mb-8">
+          <Skeleton className="h-8 w-40 mx-auto mb-4" />
+          <Skeleton className="h-6 w-56 mx-auto mb-2" />
+          <Skeleton className="h-4 w-44 mx-auto" />
+        </div>
+        <div className="bg-card border border-border rounded-2xl p-8 shadow-xl space-y-6">
+          <div className="flex flex-col items-center gap-2">
+            <Skeleton className="w-24 h-24 rounded-full" />
+            <Skeleton className="h-3 w-36" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2"><Skeleton className="h-4 w-20" /><Skeleton className="h-10 w-full" /></div>
+            <div className="space-y-2"><Skeleton className="h-4 w-20" /><Skeleton className="h-10 w-full" /></div>
+          </div>
+          <div className="space-y-2"><Skeleton className="h-4 w-28" /><Skeleton className="h-10 w-full" /></div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2"><Skeleton className="h-4 w-12" /><Skeleton className="h-10 w-full" /></div>
+            <div className="space-y-2"><Skeleton className="h-4 w-16" /><Skeleton className="h-10 w-full" /></div>
+          </div>
+          <Skeleton className="h-12 w-full rounded-lg" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SetupProfile() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -31,6 +61,8 @@ export default function SetupProfile() {
   const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string>("");
+
+  const { isLoading } = useGetMe();
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -66,6 +98,8 @@ export default function SetupProfile() {
     mutation.mutate({ data });
   };
 
+  if (isLoading) return <ProfileSkeleton />;
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
@@ -76,7 +110,6 @@ export default function SetupProfile() {
         </div>
 
         <div className="bg-card border border-border rounded-2xl p-8 shadow-xl">
-          {/* Avatar */}
           <div className="flex flex-col items-center mb-8">
             <button
               type="button"
