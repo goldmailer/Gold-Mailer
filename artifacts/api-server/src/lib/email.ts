@@ -1,10 +1,17 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResend(): Resend {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) {
+    throw new Error("RESEND_API_KEY is not set. Email sending is unavailable.");
+  }
+  return new Resend(key);
+}
 
 const FROM = "Gold Mailer <noreply@goldmailer.xyz>";
 
 export async function sendVerificationEmail(email: string, code: string) {
+  const resend = getResend();
   const { error } = await resend.emails.send({
     from: FROM,
     to: email,
@@ -32,6 +39,7 @@ export async function sendVerificationEmail(email: string, code: string) {
 }
 
 export async function sendPasswordResetEmail(email: string, code: string) {
+  const resend = getResend();
   const { error } = await resend.emails.send({
     from: FROM,
     to: email,

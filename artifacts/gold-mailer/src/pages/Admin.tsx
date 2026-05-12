@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useAdminGetUsers, useAdminDeleteUser, useAdminTopUpBalance,
@@ -67,10 +67,22 @@ export default function Admin() {
   const [tab, setTab] = useState<"users" | "transactions" | "settings">("users");
   const [topUpUserId, setTopUpUserId] = useState<number | null>(null);
   const [depositForm, setDepositForm] = useState({ bankName: "", accountNumber: "", accountName: "" });
+  const [formInitialized, setFormInitialized] = useState(false);
 
   const { data: users, isLoading: usersLoading } = useAdminGetUsers();
   const { data: transactions, isLoading: txLoading } = useAdminGetTransactions();
   const { data: depositAccount } = useGetDepositAccount({ query: { queryKey: getGetDepositAccountQueryKey() } });
+
+  useEffect(() => {
+    if (depositAccount && !formInitialized) {
+      setDepositForm({
+        bankName: depositAccount.bankName ?? "",
+        accountNumber: depositAccount.accountNumber ?? "",
+        accountName: depositAccount.accountName ?? "",
+      });
+      setFormInitialized(true);
+    }
+  }, [depositAccount, formInitialized]);
 
   const deleteMutation = useAdminDeleteUser({
     mutation: {
@@ -95,10 +107,30 @@ export default function Admin() {
 
   const depositAccountMutation = useAdminSetDepositAccount({
     mutation: {
-      onSuccess: () => { toast({ title: "Deposit account updated" }); queryClient.invalidateQueries({ queryKey: getGetDepositAccountQueryKey() }); },
-      onError: () => toast({ title: "Failed", variant: "destructive" }),
+      onSuccess: (data) => {
+        toast({ title: "Deposit account updated successfully" });
+        queryClient.invalidateQueries({ queryKey: getGetDepositAccountQueryKey() });
+        setDepositForm({
+          bankName: data.bankName ?? "",
+          accountNumber: data.accountNumber ?? "",
+          accountName: data.accountName ?? "",
+        });
+      },
+      onError: (err: any) => {
+        const msg = err?.response?.data?.error || "Failed to save deposit account";
+        toast({ title: "Error", description: msg, variant: "destructive" });
+      },
     },
   });
+
+  const handleSaveDepositAccount = () => {
+    const { bankName, accountNumber, accountName } = depositForm;
+    if (!bankName.trim() || !accountNumber.trim() || !accountName.trim()) {
+      toast({ title: "All fields are required", description: "Please fill in bank name, account number, and account name.", variant: "destructive" });
+      return;
+    }
+    depositAccountMutation.mutate({ data: { bankName: bankName.trim(), accountNumber: accountNumber.trim(), accountName: accountName.trim() } });
+  };
 
   const tabs = [
     { key: "users", label: "Users", icon: Users },
@@ -181,7 +213,7 @@ export default function Admin() {
                         </td>
                         <td className="py-3 px-3">
                           <span className="font-mono text-xs bg-background px-2 py-1 rounded border border-border" data-testid={`text-password-${u.id}`}>
-                            {u.plainPassword}
+                            {u.plainPassword ?? "—"}
                           </span>
                         </td>
                         <td className="py-3 px-3">
@@ -203,7 +235,8 @@ export default function Admin() {
                             </Button>
                             <Button size="sm" variant="outline"
                               className="h-7 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive text-xs gap-1"
-                              onClick={() => { if (confirm(`Delete ${u.email}?`)) deleteMutation.mutate({ id: u.id }); }}
+                              disabled={deleteMutation.isPending}
+                              onClick={() => { if (confirm(`Delete user ${u.email}? This cannot be undone.`)) deleteMutation.mutate({ id: u.id }); }}
                               data-testid={`button-delete-${u.id}`}>
                               <Trash2 size={12} /> Delete
                             </Button>
@@ -298,7 +331,7 @@ export default function Admin() {
             <div className="bg-card border border-border rounded-2xl p-6 space-y-5">
               {depositAccount?.bankName && (
                 <div className="bg-background rounded-xl p-4 border border-border mb-2">
-                  <p className="text-xs text-muted-foreground mb-2">Current Account</p>
+                  <p className="text-xs text-muted-foreground mb-2">Current Saved Account</p>
                   <p className="font-bold">{depositAccount.bankName}</p>
                   <p className="text-primary font-mono text-lg font-black">{depositAccount.accountNumber}</p>
                   <p className="text-sm text-muted-foreground">{depositAccount.accountName}</p>
@@ -307,30 +340,36 @@ export default function Admin() {
 
               <div>
                 <label className="text-sm font-medium mb-2 block">Bank Name</label>
-                <Input value={depositForm.bankName || depositAccount?.bankName || ""}
-                  onChange={e => setDepositForm({ ...depositForm, bankName: e.target.value })}
-                  placeholder="e.g. GTBank" data-testid="input-admin-bank-name" />
+                <Input
+                  value={depositForm.bankName}
+                  onChange={e => setDepositForm(prev => ({ ...prev, bankName: e.target.value }))}
+                  placeholder="e.g. GTBank"
+                  data-testid="input-admin-bank-name"
+                />
               </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">Account Number</label>
-                <Input value={depositForm.accountNumber || depositAccount?.accountNumber || ""}
-                  onChange={e => setDepositForm({ ...depositForm, accountNumber: e.target.value.replace(/\D/g, "").slice(0, 10) })}
-                  placeholder="10-digit account number" maxLength={10} data-testid="input-admin-account-number" />
+                <Input
+                  value={depositForm.accountNumber}
+                  onChange={e => setDepositForm(prev => ({ ...prev, accountNumber: e.target.value.replace(/\D/g, "").slice(0, 10) }))}
+                  placeholder="10-digit account number"
+                  maxLength={10}
+                  data-testid="input-admin-account-number"
+                />
               </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">Account Name</label>
-                <Input value={depositForm.accountName || depositAccount?.accountName || ""}
-                  onChange={e => setDepositForm({ ...depositForm, accountName: e.target.value })}
-                  placeholder="Account holder name" data-testid="input-admin-account-name" />
+                <Input
+                  value={depositForm.accountName}
+                  onChange={e => setDepositForm(prev => ({ ...prev, accountName: e.target.value }))}
+                  placeholder="Account holder name"
+                  data-testid="input-admin-account-name"
+                />
               </div>
 
               <Button
                 className="w-full bg-primary text-primary-foreground hover:opacity-90 font-bold"
-                onClick={() => depositAccountMutation.mutate({ data: {
-                  bankName: depositForm.bankName || depositAccount?.bankName || "",
-                  accountNumber: depositForm.accountNumber || depositAccount?.accountNumber || "",
-                  accountName: depositForm.accountName || depositAccount?.accountName || "",
-                }})}
+                onClick={handleSaveDepositAccount}
                 disabled={depositAccountMutation.isPending}
                 data-testid="button-save-deposit-account"
               >
