@@ -58,9 +58,14 @@ export default function Register() {
 
   const registerMutation = useRegister({
     mutation: {
-      onSuccess: () => {
+      onSuccess: (data: any) => {
         const email = form.getValues("email");
         sessionStorage.setItem("verify_email", email);
+        if (data?.devCode) {
+          sessionStorage.setItem("verify_dev_code", data.devCode);
+        } else {
+          sessionStorage.removeItem("verify_dev_code");
+        }
         setLocation("/verify-email");
       },
       onError: (err: any) => {

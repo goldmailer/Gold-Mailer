@@ -46,12 +46,19 @@ router.post("/auth/register", async (req, res) => {
     type: "verify_email",
     expiresAt: otpExpiry(),
   });
+  let emailError = false;
   try {
     await sendVerificationEmail(email.toLowerCase(), code);
   } catch (err) {
+    emailError = true;
     req.log.error({ err }, "Failed to send verification email");
+    req.log.warn({ email: email.toLowerCase(), otp: code }, "EMAIL FAILED — OTP code for manual use");
   }
-  res.status(201).json({ message: "Registration successful. Check your email for the verification code." });
+  const isDev = process.env.NODE_ENV !== "production";
+  res.status(201).json({
+    message: "Registration successful. Check your email for the verification code.",
+    ...(isDev && emailError ? { devCode: code } : {}),
+  });
 });
 
 // POST /auth/verify-email
@@ -99,12 +106,19 @@ router.post("/auth/resend-verification", async (req, res) => {
     type: "verify_email",
     expiresAt: otpExpiry(),
   });
+  let emailError = false;
   try {
     await sendVerificationEmail(email.toLowerCase(), code);
   } catch (err) {
+    emailError = true;
     req.log.error({ err }, "Failed to send verification email");
+    req.log.warn({ email: email.toLowerCase(), otp: code }, "EMAIL FAILED — OTP code for manual use");
   }
-  res.json({ message: "Verification code resent. Check your email." });
+  const isDev = process.env.NODE_ENV !== "production";
+  res.json({
+    message: "Verification code resent. Check your email.",
+    ...(isDev && emailError ? { devCode: code } : {}),
+  });
 });
 
 // POST /auth/login

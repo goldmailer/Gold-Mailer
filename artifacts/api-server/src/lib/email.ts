@@ -5,7 +5,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = "Gold Mailer <noreply@mail.goldmailer.xyz>";
 
 export async function sendVerificationEmail(email: string, code: string) {
-  await resend.emails.send({
+  const { error } = await resend.emails.send({
     from: FROM,
     to: email,
     subject: "Verify your Gold Mailer account",
@@ -26,10 +26,13 @@ export async function sendVerificationEmail(email: string, code: string) {
       </div>
     `,
   });
+  if (error) {
+    throw new Error(error.message);
+  }
 }
 
 export async function sendPasswordResetEmail(email: string, code: string) {
-  await resend.emails.send({
+  const { error } = await resend.emails.send({
     from: FROM,
     to: email,
     subject: "Reset your Gold Mailer password",
@@ -50,4 +53,7 @@ export async function sendPasswordResetEmail(email: string, code: string) {
       </div>
     `,
   });
+  if (error) {
+    throw new Error(error.message);
+  }
 }

@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useVerifyEmail, useResendVerification } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, RefreshCw } from "lucide-react";
+import { Mail, RefreshCw, AlertTriangle } from "lucide-react";
 import { Link } from "wouter";
 
 export default function VerifyEmail() {
@@ -11,11 +11,15 @@ export default function VerifyEmail() {
   const { toast } = useToast();
   const email = sessionStorage.getItem("verify_email") || "";
   const [code, setCode] = useState(["", "", "", "", "", ""]);
+  const [devCode, setDevCode] = useState<string | null>(
+    sessionStorage.getItem("verify_dev_code") || null
+  );
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
 
   const verifyMutation = useVerifyEmail({
     mutation: {
       onSuccess: () => {
+        sessionStorage.removeItem("verify_dev_code");
         toast({ title: "Email verified", description: "Your account is now verified." });
         setLocation("/setup-profile");
       },
@@ -27,8 +31,14 @@ export default function VerifyEmail() {
 
   const resendMutation = useResendVerification({
     mutation: {
-      onSuccess: () => {
-        toast({ title: "Code resent", description: "Check your email for a new verification code." });
+      onSuccess: (data: any) => {
+        if (data?.devCode) {
+          setDevCode(data.devCode);
+          sessionStorage.setItem("verify_dev_code", data.devCode);
+          toast({ title: "New code generated", description: "Email delivery is unavailable — use the code shown below." });
+        } else {
+          toast({ title: "Code resent", description: "Check your email for a new verification code." });
+        }
       },
       onError: () => {
         toast({ title: "Failed to resend", description: "Please try again later.", variant: "destructive" });
@@ -58,6 +68,13 @@ export default function VerifyEmail() {
     inputs.current[Math.min(text.length, 5)]?.focus();
   };
 
+  const fillDevCode = () => {
+    if (!devCode) return;
+    const digits = devCode.split("");
+    setCode(digits);
+    inputs.current[5]?.focus();
+  };
+
   const handleSubmit = () => {
     const fullCode = code.join("");
     if (fullCode.length !== 6) {
@@ -85,6 +102,23 @@ export default function VerifyEmail() {
             We sent a 6-digit code to
           </p>
           <p className="text-primary font-medium text-sm mb-6 truncate">{email || "your email address"}</p>
+
+          {devCode && (
+            <button
+              onClick={fillDevCode}
+              className="w-full mb-5 p-3 rounded-xl border border-yellow-500/40 bg-yellow-500/10 text-left flex items-start gap-3 hover:bg-yellow-500/15 transition-colors"
+            >
+              <AlertTriangle size={16} className="text-yellow-500 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-yellow-500 text-xs font-semibold mb-1">Email delivery unavailable</p>
+                <p className="text-muted-foreground text-xs">
+                  Your verification code is{" "}
+                  <span className="text-white font-bold text-sm tracking-widest">{devCode}</span>
+                  {" "}— tap to fill automatically.
+                </p>
+              </div>
+            </button>
+          )}
 
           <div className="flex gap-2 justify-center mb-2" onPaste={handlePaste}>
             {code.map((digit, idx) => (
