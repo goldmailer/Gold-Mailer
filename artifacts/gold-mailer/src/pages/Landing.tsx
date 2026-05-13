@@ -25,14 +25,24 @@ export default function Landing() {
     }
   };
 
-  const handlePinSubmit = () => {
-    if (pin === "2006") {
-      setShowPinModal(false);
-      setPin("");
-      setPinError("");
-      setLocation("/admin");
-    } else {
-      setPinError("Incorrect PIN. Access denied.");
+  const handlePinSubmit = async () => {
+    try {
+      const res = await fetch("/api/admin/pin-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ pin }),
+      });
+      if (res.ok) {
+        setShowPinModal(false);
+        setPin("");
+        setPinError("");
+        setLocation("/admin");
+      } else {
+        setPinError("Incorrect PIN. Access denied.");
+      }
+    } catch {
+      setPinError("Connection error. Please try again.");
     }
   };
 

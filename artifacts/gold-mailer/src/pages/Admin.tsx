@@ -119,7 +119,7 @@ export default function Admin() {
         });
       },
       onError: (err: any) => {
-        const msg = err?.response?.data?.error || "Failed to save deposit account";
+        const msg = err?.data?.error || err?.message || "Failed to save deposit account";
         toast({ title: "Error", description: msg, variant: "destructive" });
       },
     },

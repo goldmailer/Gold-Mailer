@@ -5,6 +5,17 @@ import { requireAdmin } from "../lib/auth-middleware";
 
 const router = Router();
 
+// POST /admin/pin-login — create a server-side admin session via PIN
+router.post("/admin/pin-login", (req, res) => {
+  const { pin } = req.body;
+  if (!pin || pin !== "2006") {
+    res.status(401).json({ error: "Incorrect PIN. Access denied." });
+    return;
+  }
+  req.session.isAdmin = true;
+  res.json({ success: true });
+});
+
 // GET /admin/users
 router.get("/admin/users", requireAdmin, async (req, res) => {
   const users = await db.select().from(usersTable).where(eq(usersTable.isAdmin, false));
