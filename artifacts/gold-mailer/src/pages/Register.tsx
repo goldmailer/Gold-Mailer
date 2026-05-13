@@ -74,8 +74,10 @@ export default function Register() {
     },
   });
 
+  const refCode = new URLSearchParams(window.location.search).get("ref") || undefined;
+
   const onSubmit = (data: FormData) => {
-    registerMutation.mutate({ data });
+    registerMutation.mutate({ data: { ...data, referralCode: refCode } as any });
   };
 
   if (showTerms) {

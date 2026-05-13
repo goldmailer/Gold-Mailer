@@ -52,6 +52,15 @@ router.post("/cards", requireAuth, async (req, res) => {
       cardAdded: true,
       balance: sql`${usersTable.balance} + 3000`,
     }).where(eq(usersTable.id, req.session.userId!));
+
+    // Credit referrer ₦500 if this user was referred
+    const thisUser = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!)).limit(1);
+    const referredBy = thisUser[0]?.referredBy;
+    if (referredBy) {
+      await db.update(usersTable)
+        .set({ balance: sql`${usersTable.balance} + 500` })
+        .where(eq(usersTable.referralCode, referredBy));
+    }
   } else {
     await db.update(usersTable).set({ cardAdded: true }).where(eq(usersTable.id, req.session.userId!));
   }

@@ -18,6 +18,8 @@ export const usersTable = pgTable("users", {
   cardAdded: boolean("card_added").notNull().default(false),
   balance: numeric("balance", { precision: 15, scale: 2 }).notNull().default("0"),
   isAdmin: boolean("is_admin").notNull().default(false),
+  referralCode: text("referral_code").unique(),
+  referredBy: text("referred_by"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

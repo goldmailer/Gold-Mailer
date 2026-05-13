@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetDashboard, useGetStakes, useClaimDailyReward,
@@ -8,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { TrendingUp, Wallet, Clock, Gift, ChevronRight, AlertCircle } from "lucide-react";
+import { TrendingUp, Wallet, Clock, Gift, ChevronRight, AlertCircle, Copy, Check, Users } from "lucide-react";
 import { Link } from "wouter";
 
 function fmt(n: number) {
@@ -24,6 +25,19 @@ export default function Dashboard() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
+
+  const referralLink = user?.referralCode
+    ? `${window.location.origin}/register?ref=${user.referralCode}`
+    : null;
+
+  function copyReferralLink() {
+    if (!referralLink) return;
+    navigator.clipboard.writeText(referralLink).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
 
   const { data: dash, isLoading: dashLoading } = useGetDashboard();
   const { data: stakes, isLoading: stakesLoading } = useGetStakes();
@@ -37,7 +51,7 @@ export default function Dashboard() {
         queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
       },
       onError: (err: any) => {
-        toast({ title: "Cannot claim", description: err?.response?.data?.error || "Already claimed today", variant: "destructive" });
+        toast({ title: "Cannot claim", description: err?.data?.error || err?.message || "Already claimed today", variant: "destructive" });
       },
     },
   });
@@ -115,6 +129,34 @@ export default function Dashboard() {
               </Link>
             ))}
           </div>
+
+          {/* Referral card */}
+          {referralLink && (
+            <div className="bg-card border border-border rounded-2xl p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center">
+                  <Users size={20} className="text-primary" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-base">Refer a Friend</h2>
+                  <p className="text-xs text-muted-foreground">Earn ₦500 for every friend who joins and adds a card</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 bg-background border border-border rounded-xl px-4 py-3">
+                <p className="text-sm text-muted-foreground flex-1 truncate">{referralLink}</p>
+                <button
+                  onClick={copyReferralLink}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:opacity-80 transition-opacity shrink-0"
+                >
+                  {copied ? <Check size={14} /> : <Copy size={14} />}
+                  {copied ? "Copied!" : "Copy"}
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-3">
+                Your referral code: <span className="font-mono font-bold text-foreground">{user?.referralCode}</span>
+              </p>
+            </div>
+          )}
 
           {/* Active stakes */}
           <div>

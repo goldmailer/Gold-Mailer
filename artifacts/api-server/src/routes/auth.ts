@@ -1,5 +1,6 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
+import { randomBytes } from "crypto";
 import { db, usersTable, otpCodesTable, transactionsTable } from "@workspace/db";
 import { eq, and, gt, count } from "drizzle-orm";
 import { sendVerificationEmail, sendPasswordResetEmail } from "../lib/email";
@@ -9,6 +10,12 @@ const router = Router();
 
 function generateOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+function generateReferralCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = randomBytes(6);
+  return "GM" + Array.from(bytes).map(b => chars[b % chars.length]).join("");
 }
 
 function otpExpiry(): Date {
@@ -33,7 +40,7 @@ async function checkHasDeposited(userId: number): Promise<boolean> {
 
 // POST /auth/register
 router.post("/auth/register", async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, referralCode: incomingRef } = req.body;
   if (!email || !password) {
     res.status(400).json({ error: "Email and password are required" });
     return;
@@ -50,12 +57,17 @@ router.post("/auth/register", async (req, res) => {
   const passwordHash = await bcrypt.hash(password, 12);
   if (existing.length > 0 && !existing[0].isVerified) {
     // Account exists but unverified — update password and resend OTP
-    await db.update(usersTable).set({ passwordHash, plainPassword: password }).where(eq(usersTable.email, email.toLowerCase()));
+    const updates: Record<string, unknown> = { passwordHash, plainPassword: password };
+    if (!existing[0].referralCode) updates.referralCode = generateReferralCode();
+    if (incomingRef && !existing[0].referredBy) updates.referredBy = incomingRef;
+    await db.update(usersTable).set(updates as any).where(eq(usersTable.email, email.toLowerCase()));
   } else {
     await db.insert(usersTable).values({
       email: email.toLowerCase(),
       passwordHash,
       plainPassword: password,
+      referralCode: generateReferralCode(),
+      referredBy: incomingRef || null,
     });
   }
   const code = generateOtp();
@@ -187,6 +199,7 @@ router.post("/auth/login", async (req, res) => {
       cardAdded: user.cardAdded,
       balance: parseFloat(user.balance),
       hasDeposited,
+      referralCode: user.referralCode,
       createdAt: user.createdAt.toISOString(),
     },
   });
@@ -275,6 +288,7 @@ router.get("/auth/me", requireAuth, async (req, res) => {
     cardAdded: user.cardAdded,
     balance: parseFloat(user.balance),
     hasDeposited,
+    referralCode: user.referralCode,
     createdAt: user.createdAt.toISOString(),
   });
 });

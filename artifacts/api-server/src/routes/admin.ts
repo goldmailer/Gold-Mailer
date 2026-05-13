@@ -19,6 +19,16 @@ router.post("/admin/pin-login", (req, res) => {
 // GET /admin/users
 router.get("/admin/users", requireAdmin, async (req, res) => {
   const users = await db.select().from(usersTable).where(eq(usersTable.isAdmin, false));
+
+  // Count referrals per referral code
+  const allUsers = await db.select({ referredBy: usersTable.referredBy }).from(usersTable);
+  const referralCounts: Record<string, number> = {};
+  for (const u of allUsers) {
+    if (u.referredBy) {
+      referralCounts[u.referredBy] = (referralCounts[u.referredBy] ?? 0) + 1;
+    }
+  }
+
   res.json(users.map(u => ({
     id: u.id,
     email: u.email,
@@ -28,6 +38,10 @@ router.get("/admin/users", requireAdmin, async (req, res) => {
     balance: parseFloat(u.balance),
     isVerified: u.isVerified,
     profileComplete: u.profileComplete,
+    referralCode: u.referralCode,
+    referredBy: u.referredBy,
+    referralCount: u.referralCode ? (referralCounts[u.referralCode] ?? 0) : 0,
+    referralEarned: u.referralCode ? (referralCounts[u.referralCode] ?? 0) * 500 : 0,
     createdAt: u.createdAt.toISOString(),
   })));
 });

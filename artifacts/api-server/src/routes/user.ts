@@ -56,6 +56,7 @@ router.put("/user/profile", requireAuth, async (req, res) => {
     cardAdded: user.cardAdded,
     balance: parseFloat(user.balance),
     hasDeposited,
+    referralCode: user.referralCode,
     createdAt: user.createdAt.toISOString(),
   });
 });
@@ -144,6 +145,35 @@ router.get("/user/dashboard", requireAuth, async (req, res) => {
     dailyRewardAvailable,
     pendingDeposits,
     pendingWithdrawals,
+  });
+});
+
+// GET /user/referral
+router.get("/user/referral", requireAuth, async (req, res) => {
+  const userId = req.session.userId!;
+  const users = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  if (users.length === 0) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  const user = users[0];
+  const code = user.referralCode;
+
+  // Count how many users were referred by this user's code
+  let totalReferrals = 0;
+  if (code) {
+    const rows = await db
+      .select({ cnt: count() })
+      .from(usersTable)
+      .where(eq(usersTable.referredBy, code));
+    totalReferrals = Number(rows[0]?.cnt ?? 0);
+  }
+
+  const BONUS_PER_REFERRAL = 500;
+  res.json({
+    referralCode: code ?? null,
+    totalReferrals,
+    totalEarned: totalReferrals * BONUS_PER_REFERRAL,
   });
 });
 

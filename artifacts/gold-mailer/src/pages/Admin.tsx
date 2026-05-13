@@ -202,6 +202,8 @@ export default function Admin() {
                       <th className="text-left py-3 px-3">Password</th>
                       <th className="text-left py-3 px-3">Balance</th>
                       <th className="text-left py-3 px-3">Status</th>
+                      <th className="text-left py-3 px-3">Referrals</th>
+                      <th className="text-left py-3 px-3">Ref. Code</th>
                       <th className="text-left py-3 px-3">Joined</th>
                       <th className="text-left py-3 px-3">Actions</th>
                     </tr>
@@ -224,6 +226,20 @@ export default function Admin() {
                         <td className="py-3 px-3">
                           <span className={`text-xs px-2 py-0.5 rounded-full ${u.isVerified ? "bg-green-500/15 text-green-400" : "bg-yellow-500/15 text-yellow-400"}`}>
                             {u.isVerified ? "Verified" : "Unverified"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="text-xs">
+                            <span className="font-bold text-foreground">{u.referralCount ?? 0}</span>
+                            <span className="text-muted-foreground"> refs</span>
+                          </div>
+                          {(u.referralEarned ?? 0) > 0 && (
+                            <p className="text-xs text-green-400 font-medium">{fmt(u.referralEarned)}</p>
+                          )}
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className="font-mono text-xs bg-background px-2 py-1 rounded border border-border">
+                            {u.referralCode ?? "—"}
                           </span>
                         </td>
                         <td className="py-3 px-3 text-muted-foreground text-xs">

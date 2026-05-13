@@ -16,6 +16,7 @@ interface User {
   cardAdded: boolean;
   balance: number;
   hasDeposited: boolean;
+  referralCode: string | null;
   createdAt: string;
 }
 
