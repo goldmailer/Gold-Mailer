@@ -22,7 +22,13 @@ const router = Router();
 
 // PUT /user/profile
 router.put("/user/profile", requireAuth, async (req, res) => {
-  const { firstName, lastName, middleName, age, gender, avatarUrl } = req.body;
+  const { firstName, lastName, middleName, age, gender } = req.body;
+  // Reject base64 data URLs — they are too large for the DB and a security risk
+  let avatarUrl: string | null = req.body.avatarUrl || null;
+  if (avatarUrl && avatarUrl.startsWith("data:")) avatarUrl = null;
+  // Also cap any URL to 2000 chars
+  if (avatarUrl && avatarUrl.length > 2000) avatarUrl = null;
+
   if (!firstName || !lastName) {
     res.status(400).json({ error: "First name and last name are required" });
     return;

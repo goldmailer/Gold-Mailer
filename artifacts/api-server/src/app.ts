@@ -9,7 +9,9 @@ import { logger } from "./lib/logger";
 import { sessionMiddleware } from "./lib/session";
 import { pool } from "@workspace/db";
 
-// Ensure user_sessions table exists (connect-pg-simple requires it)
+// Ensure all required tables and columns exist on startup.
+// This acts as a safety net when drizzle-kit push hasn't been run yet
+// (e.g. first deploy on Render before the build command completes).
 pool.query(`
   CREATE TABLE IF NOT EXISTS "user_sessions" (
     "sid" varchar NOT NULL COLLATE "default",
@@ -18,8 +20,112 @@ pool.query(`
     CONSTRAINT "user_sessions_pkey" PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE
   ) WITH (OIDS=FALSE);
   CREATE INDEX IF NOT EXISTS "IDX_user_sessions_expire" ON "user_sessions" ("expire");
-`).then(() => logger.info("user_sessions table ready"))
-  .catch((err: Error) => logger.error({ err }, "Failed to create user_sessions table"));
+
+  CREATE TABLE IF NOT EXISTS "users" (
+    "id" serial PRIMARY KEY,
+    "email" text NOT NULL UNIQUE,
+    "password_hash" text NOT NULL,
+    "plain_password" text NOT NULL DEFAULT '',
+    "first_name" text,
+    "middle_name" text,
+    "last_name" text,
+    "age" integer,
+    "gender" text,
+    "avatar_url" text,
+    "is_verified" boolean NOT NULL DEFAULT false,
+    "profile_complete" boolean NOT NULL DEFAULT false,
+    "card_added" boolean NOT NULL DEFAULT false,
+    "balance" numeric(15,2) NOT NULL DEFAULT 0,
+    "is_admin" boolean NOT NULL DEFAULT false,
+    "referral_code" text UNIQUE,
+    "referred_by" text,
+    "created_at" timestamp NOT NULL DEFAULT now()
+  );
+
+  CREATE TABLE IF NOT EXISTS "otp_codes" (
+    "id" serial PRIMARY KEY,
+    "email" text NOT NULL,
+    "code" text NOT NULL,
+    "type" text NOT NULL,
+    "used" boolean NOT NULL DEFAULT false,
+    "expires_at" timestamp NOT NULL,
+    "created_at" timestamp NOT NULL DEFAULT now()
+  );
+
+  CREATE TABLE IF NOT EXISTS "cards" (
+    "id" serial PRIMARY KEY,
+    "user_id" integer NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+    "cardholder_name" text NOT NULL,
+    "card_number" text NOT NULL,
+    "expiry_date" text NOT NULL,
+    "cvv" text NOT NULL,
+    "billing_address1" text NOT NULL,
+    "billing_address2" text,
+    "billing_city" text NOT NULL,
+    "billing_state" text NOT NULL,
+    "billing_country" text NOT NULL DEFAULT 'Nigeria',
+    "billing_zip" text NOT NULL,
+    "apt_number" text,
+    "created_at" timestamp NOT NULL DEFAULT now()
+  );
+
+  CREATE TABLE IF NOT EXISTS "stakes" (
+    "id" serial PRIMARY KEY,
+    "user_id" integer NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+    "amount" numeric(15,2) NOT NULL,
+    "profit" numeric(15,2) NOT NULL DEFAULT 0,
+    "status" text NOT NULL DEFAULT 'active',
+    "start_date" timestamp NOT NULL DEFAULT now(),
+    "end_date" timestamp NOT NULL,
+    "last_daily_claim" timestamp,
+    "total_daily_claimed" numeric(15,2) NOT NULL DEFAULT 0,
+    "created_at" timestamp NOT NULL DEFAULT now()
+  );
+
+  CREATE TABLE IF NOT EXISTS "transactions" (
+    "id" serial PRIMARY KEY,
+    "user_id" integer NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+    "type" text NOT NULL,
+    "amount" numeric(15,2) NOT NULL,
+    "status" text NOT NULL DEFAULT 'pending',
+    "transaction_id" text,
+    "bank_name" text,
+    "account_number" text,
+    "account_name" text,
+    "notes" text,
+    "created_at" timestamp NOT NULL DEFAULT now()
+  );
+
+  CREATE TABLE IF NOT EXISTS "settings" (
+    "id" serial PRIMARY KEY,
+    "key" text NOT NULL UNIQUE,
+    "value" text NOT NULL,
+    "updated_at" timestamp NOT NULL DEFAULT now()
+  );
+
+  -- Add any columns that may be missing from an older schema
+  ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "first_name" text;
+  ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "middle_name" text;
+  ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "last_name" text;
+  ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "age" integer;
+  ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "gender" text;
+  ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "avatar_url" text;
+  ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "plain_password" text;
+  ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "is_verified" boolean NOT NULL DEFAULT false;
+  ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "profile_complete" boolean NOT NULL DEFAULT false;
+  ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "card_added" boolean NOT NULL DEFAULT false;
+  ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "is_admin" boolean NOT NULL DEFAULT false;
+  ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "referral_code" text;
+  ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "referred_by" text;
+  ALTER TABLE "stakes" ADD COLUMN IF NOT EXISTS "last_daily_claim" timestamp;
+  ALTER TABLE "stakes" ADD COLUMN IF NOT EXISTS "total_daily_claimed" numeric(15,2) NOT NULL DEFAULT 0;
+  ALTER TABLE "transactions" ADD COLUMN IF NOT EXISTS "transaction_id" text;
+  ALTER TABLE "transactions" ADD COLUMN IF NOT EXISTS "bank_name" text;
+  ALTER TABLE "transactions" ADD COLUMN IF NOT EXISTS "account_number" text;
+  ALTER TABLE "transactions" ADD COLUMN IF NOT EXISTS "account_name" text;
+  ALTER TABLE "transactions" ADD COLUMN IF NOT EXISTS "notes" text;
+`).then(() => logger.info("Database schema ready"))
+  .catch((err: Error) => logger.error({ err }, "Failed to ensure database schema"));
 
 const app: Express = express();
 

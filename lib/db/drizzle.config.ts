@@ -5,10 +5,15 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL, ensure the database is provisioned");
 }
 
+const isLocalDb =
+  process.env.DATABASE_URL.includes("localhost") ||
+  process.env.DATABASE_URL.includes("127.0.0.1");
+
 export default defineConfig({
   schema: path.join(__dirname, "./src/schema/index.ts"),
   dialect: "postgresql",
   dbCredentials: {
     url: process.env.DATABASE_URL,
+    ...(isLocalDb ? {} : { ssl: { rejectUnauthorized: false } }),
   },
 });

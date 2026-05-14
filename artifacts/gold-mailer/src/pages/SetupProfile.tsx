@@ -85,13 +85,11 @@ export default function SetupProfile() {
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const url = ev.target?.result as string;
-      setPreview(url);
-      form.setValue("avatarUrl", url);
-    };
-    reader.readAsDataURL(file);
+    // Only use image as a local preview — do not store base64 in the DB
+    const objectUrl = URL.createObjectURL(file);
+    setPreview(objectUrl);
+    // Clear avatarUrl so we don't attempt to save a massive base64 string
+    form.setValue("avatarUrl", "");
   };
 
   const onSubmit = (data: FormData) => {
