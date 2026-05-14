@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import path from "path";
@@ -22,6 +22,9 @@ pool.query(`
   .catch((err: Error) => logger.error({ err }, "Failed to create user_sessions table"));
 
 const app: Express = express();
+
+// Trust Render's proxy so that req.secure / cookies work correctly
+app.set("trust proxy", 1);
 
 app.use(
   pinoHttp({
@@ -71,5 +74,13 @@ if (fs.existsSync(frontendDistPath)) {
     "Frontend build not found — run `npm run build` to generate it"
   );
 }
+
+// Global JSON error handler — must be last, after all routes
+// Prevents Express from returning HTML error pages (e.g. "Internal Server Error")
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  logger.error({ err }, "Unhandled error");
+  const status = (err as any).status ?? (err as any).statusCode ?? 500;
+  res.status(status).json({ error: err.message || "Internal server error" });
+});
 
 export default app;
