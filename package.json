@@ -12,7 +12,7 @@
     "db:push": "drizzle-kit push --config=lib/db/drizzle.config.ts"
   },
   "dependencies": {
-    "drizzle-orm": "^0.29.0"
+    "drizzle-orm": "catalog:"
   },
   "devDependencies": {
     "typescript": "~5.9.2",

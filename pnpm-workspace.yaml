@@ -38,3 +38,12 @@ onlyBuiltDependencies:
 overrides:
   # drizzle-kit uses esbuild internally on an older version that's vulnerable
   '@esbuild-kit/esm-loader': 'npm:tsx@^4.21.0'
+  # Security: fix transitive vulnerable dependencies
+  path-to-regexp: '>=8.4.0'
+  fast-uri: '>=3.1.2'
+  'picomatch@^2': '2.3.2'
+  'picomatch@^4': '4.0.4'
+  lodash: '>=4.18.0'
+  'brace-expansion@^2': '2.0.3'
+  postcss: '>=8.5.10'
+  yaml: '>=2.8.3'

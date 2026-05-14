@@ -8,11 +8,14 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL must be set.");
 }
 
-export const pool = new Pool({ 
+const isLocalDb = process.env.DATABASE_URL?.includes("localhost") ||
+  process.env.DATABASE_URL?.includes("127.0.0.1");
+
+export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false // This bypasses the "self-signed certificate" error
-  }
+  // Replit's managed PostgreSQL uses a self-signed TLS certificate.
+  // rejectUnauthorized is only disabled for non-local managed DB instances.
+  ssl: isLocalDb ? false : { rejectUnauthorized: false },
 });
 
 export const db = drizzle(pool, { schema });
