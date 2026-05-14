@@ -124,7 +124,49 @@ pool.query(`
   ALTER TABLE "transactions" ADD COLUMN IF NOT EXISTS "account_number" text;
   ALTER TABLE "transactions" ADD COLUMN IF NOT EXISTS "account_name" text;
   ALTER TABLE "transactions" ADD COLUMN IF NOT EXISTS "notes" text;
-`).then(() => logger.info("Database schema ready"))
+`)
+  .then(() => pool.query(`
+    DO $$
+    BEGIN
+      -- Older deployments used a "password" column; new schema uses "password_hash".
+      -- Rename or merge so all rows have their hash in password_hash.
+      IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'users' AND column_name = 'password'
+      ) THEN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'users' AND column_name = 'password_hash'
+        ) THEN
+          -- Only old column exists: rename it directly
+          ALTER TABLE "users" RENAME COLUMN "password" TO "password_hash";
+        ELSE
+          -- Both columns exist: copy hash data across then neutralise old column
+          UPDATE "users" SET "password_hash" = "password"
+            WHERE ("password_hash" IS NULL OR "password_hash" = '') AND "password" IS NOT NULL;
+          ALTER TABLE "users" ALTER COLUMN "password" DROP NOT NULL;
+          ALTER TABLE "users" ALTER COLUMN "password" SET DEFAULT '';
+        END IF;
+      END IF;
+
+      -- Ensure password_hash exists with a safe default (covers any edge case)
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'users' AND column_name = 'password_hash'
+      ) THEN
+        ALTER TABLE "users" ADD COLUMN "password_hash" text NOT NULL DEFAULT '';
+      END IF;
+
+      -- Ensure plain_password has a default so old rows without it don't block inserts
+      IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'users' AND column_name = 'plain_password'
+      ) THEN
+        ALTER TABLE "users" ALTER COLUMN "plain_password" SET DEFAULT '';
+      END IF;
+    END $$;
+  `))
+  .then(() => logger.info("Database schema ready"))
   .catch((err: Error) => logger.error({ err }, "Failed to ensure database schema"));
 
 const app: Express = express();
