@@ -5,7 +5,7 @@ import { useLogout, getGetMeQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   LayoutDashboard, CreditCard, TrendingUp, ArrowDownCircle,
-  ArrowUpCircle, List, Settings, LogOut, Menu, X, User
+  ArrowUpCircle, List, Settings, LogOut, Menu, X, User, Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -16,6 +16,7 @@ const navItems = [
   { href: "/deposit", label: "Deposit", icon: ArrowDownCircle },
   { href: "/withdraw", label: "Withdraw", icon: ArrowUpCircle },
   { href: "/transactions", label: "Transactions", icon: List },
+  { href: "/referrals", label: "Referrals", icon: Users },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

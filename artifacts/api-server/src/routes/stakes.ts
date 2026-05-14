@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, stakesTable, usersTable, transactionsTable } from "@workspace/db";
-import { eq, sql, and, count } from "drizzle-orm";
+import { eq, sql, and, count, sum } from "drizzle-orm";
 import { requireAuth } from "../lib/auth-middleware";
 
 const router = Router();
@@ -57,9 +57,9 @@ router.post("/stakes", requireAuth, async (req, res) => {
     return;
   }
 
-  // Require at least one approved deposit before staking
+  // Require at least ₦2,700 in approved deposits before staking
   const depositCheck = await db
-    .select({ total: count() })
+    .select({ total: sum(transactionsTable.amount) })
     .from(transactionsTable)
     .where(
       and(
@@ -68,8 +68,9 @@ router.post("/stakes", requireAuth, async (req, res) => {
         eq(transactionsTable.status, "approved"),
       ),
     );
-  if ((depositCheck[0]?.total ?? 0) === 0) {
-    res.status(403).json({ error: "You must make a deposit first before you can stake." });
+  const totalDeposited = parseFloat(depositCheck[0]?.total ?? "0");
+  if (totalDeposited < MIN_STAKE) {
+    res.status(403).json({ error: `You need at least ₦${MIN_STAKE.toLocaleString()} in approved deposits before you can stake.` });
     return;
   }
 

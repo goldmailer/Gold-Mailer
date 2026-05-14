@@ -165,7 +165,6 @@ router.get("/user/referral", requireAuth, async (req, res) => {
   const user = users[0];
   const code = user.referralCode;
 
-  // Count how many users were referred by this user's code
   let totalReferrals = 0;
   if (code) {
     const rows = await db
@@ -180,6 +179,35 @@ router.get("/user/referral", requireAuth, async (req, res) => {
     referralCode: code ?? null,
     totalReferrals,
     totalEarned: totalReferrals * BONUS_PER_REFERRAL,
+  });
+});
+
+// GET /user/referrals — list of users referred by the current user
+router.get("/user/referrals", requireAuth, async (req, res) => {
+  const userId = req.session.userId!;
+  const me = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  if (me.length === 0) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  const code = me[0].referralCode;
+
+  let referrals: Array<{ email: string; joinedAt: string }> = [];
+  if (code) {
+    const rows = await db
+      .select({ email: usersTable.email, createdAt: usersTable.createdAt })
+      .from(usersTable)
+      .where(eq(usersTable.referredBy, code));
+    referrals = rows.map(r => ({
+      email: r.email,
+      joinedAt: r.createdAt.toISOString(),
+    }));
+  }
+
+  res.json({
+    referralCode: code ?? null,
+    referrals,
+    totalReferrals: referrals.length,
   });
 });
 

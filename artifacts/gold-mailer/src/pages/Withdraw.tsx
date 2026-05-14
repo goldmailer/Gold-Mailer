@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useSubmitWithdrawal, getGetTransactionsQueryKey } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Sidebar } from "@/components/Sidebar";
@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Check, AlertTriangle } from "lucide-react";
+import { Check, AlertTriangle, Info } from "lucide-react";
 import { Link } from "wouter";
+
+const FIRST_MIN = 10700;
 
 const NIGERIAN_BANKS = [
   "Access Bank","First Bank of Nigeria","Guaranty Trust Bank (GTBank)","Zenith Bank",
@@ -30,11 +32,28 @@ export default function Withdraw() {
   const [success, setSuccess] = useState(false);
   const [form, setForm] = useState({ amount: "", bankName: "", accountNumber: "", accountName: "" });
 
+  // Determine if this is the user's first withdrawal (no approved withdrawals yet)
+  const { data: txData } = useQuery<any[]>({
+    queryKey: ["transactions-for-withdraw-check"],
+    queryFn: async () => {
+      const res = await fetch("/api/transactions", { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!user?.hasDeposited,
+  });
+  const hasApprovedWithdrawal = (txData ?? []).some(
+    (t: any) => t.type === "withdrawal" && t.status === "approved"
+  );
+  const minWithdraw = hasApprovedWithdrawal ? 1 : FIRST_MIN;
+  const enteredAmount = parseFloat(form.amount) || 0;
+
   const mutation = useSubmitWithdrawal({
     mutation: {
       onSuccess: () => {
         setSuccess(true);
         queryClient.invalidateQueries({ queryKey: getGetTransactionsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: ["transactions-for-withdraw-check"] });
       },
       onError: (err: any) => {
         toast({ title: "Withdrawal failed", description: err?.data?.error || err?.message || "Please try again", variant: "destructive" });
@@ -47,12 +66,22 @@ export default function Withdraw() {
       toast({ title: "All fields are required", variant: "destructive" });
       return;
     }
-    if (parseFloat(form.amount) > (user?.balance ?? 0)) {
+    if (enteredAmount < minWithdraw) {
+      toast({
+        title: "Amount too low",
+        description: hasApprovedWithdrawal
+          ? `Minimum withdrawal is ₦1`
+          : `Your first withdrawal must be at least ₦${FIRST_MIN.toLocaleString()}`,
+        variant: "destructive",
+      });
+      return;
+    }
+    if (enteredAmount > (user?.balance ?? 0)) {
       toast({ title: "Insufficient balance", variant: "destructive" });
       return;
     }
     mutation.mutate({ data: {
-      amount: parseFloat(form.amount),
+      amount: enteredAmount,
       bankName: form.bankName,
       accountNumber: form.accountNumber,
       accountName: form.accountName,
@@ -104,6 +133,20 @@ export default function Withdraw() {
           </div>
         )}
 
+        {/* First-withdrawal minimum notice */}
+        {user?.hasDeposited && !hasApprovedWithdrawal && (
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 mb-6 flex gap-3 items-start">
+            <Info size={18} className="text-blue-400 mt-0.5 shrink-0" />
+            <div>
+              <p className="font-semibold text-blue-300 text-sm mb-0.5">First withdrawal minimum</p>
+              <p className="text-sm text-muted-foreground">
+                Your first withdrawal must be at least <span className="text-foreground font-bold">₦{FIRST_MIN.toLocaleString()}</span>.
+                After it is approved you can withdraw any amount.
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="bg-card border border-border rounded-xl p-4 mb-6 flex justify-between">
           <span className="text-sm text-muted-foreground">Available Balance</span>
           <span className="font-black text-primary" data-testid="text-balance">{fmt(user?.balance ?? 0)}</span>
@@ -111,14 +154,26 @@ export default function Withdraw() {
 
         <div className={`bg-card border border-border rounded-2xl p-6 space-y-5 ${!user?.hasDeposited ? "opacity-50 pointer-events-none" : ""}`}>
           <div>
-            <label className="text-sm font-medium mb-2 block">Amount (₦)</label>
+            <label className="text-sm font-medium mb-2 block">
+              Amount (₦)
+              {!hasApprovedWithdrawal && user?.hasDeposited && (
+                <span className="ml-2 text-xs text-muted-foreground font-normal">
+                  — min ₦{FIRST_MIN.toLocaleString()} for first withdrawal
+                </span>
+              )}
+            </label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">₦</span>
               <Input type="number" value={form.amount}
                 onChange={e => setForm({ ...form, amount: e.target.value })}
                 placeholder="0.00" className="pl-7" data-testid="input-withdraw-amount" />
             </div>
-            {parseFloat(form.amount) > (user?.balance ?? 0) && form.amount && (
+            {enteredAmount > 0 && enteredAmount < minWithdraw && user?.hasDeposited && (
+              <p className="text-destructive text-xs mt-1">
+                Minimum for first withdrawal is ₦{FIRST_MIN.toLocaleString()}
+              </p>
+            )}
+            {enteredAmount > (user?.balance ?? 0) && form.amount && (
               <p className="text-destructive text-xs mt-1">Exceeds available balance</p>
             )}
           </div>
@@ -154,7 +209,11 @@ export default function Withdraw() {
           <Button
             className="w-full bg-primary text-primary-foreground hover:opacity-90 py-5 font-bold"
             onClick={handleSubmit}
-            disabled={mutation.isPending || !user?.hasDeposited}
+            disabled={
+              mutation.isPending ||
+              !user?.hasDeposited ||
+              (enteredAmount > 0 && enteredAmount < minWithdraw)
+            }
             data-testid="button-withdraw-submit"
           >
             {mutation.isPending ? "Submitting..." : "Submit Withdrawal Request"}

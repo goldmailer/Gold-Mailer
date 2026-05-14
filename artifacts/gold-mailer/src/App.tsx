@@ -20,6 +20,7 @@ import Deposit from "@/pages/Deposit";
 import Withdraw from "@/pages/Withdraw";
 import Transactions from "@/pages/Transactions";
 import Settings from "@/pages/Settings";
+import Referrals from "@/pages/Referrals";
 import Admin from "@/pages/Admin";
 import NotFound from "@/pages/not-found";
 
@@ -64,6 +65,9 @@ function Router() {
       </Route>
       <Route path="/settings">
         <ProtectedRoute><Settings /></ProtectedRoute>
+      </Route>
+      <Route path="/referrals">
+        <ProtectedRoute><Referrals /></ProtectedRoute>
       </Route>
 
       <Route path="/admin" component={Admin} />
