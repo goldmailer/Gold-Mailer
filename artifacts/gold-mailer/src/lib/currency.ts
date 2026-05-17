@@ -9,15 +9,16 @@ export const COUNTRY_CONFIG: Record<
     minStake: number;
     maxStake: number;
     signupBonus: number;
+    referralBonus: number;
     baseProfit: number;
     dailyReward: number;
     firstWithdrawMin: number;
   }
 > = {
-  NG: { symbol: "₦", name: "Nigeria", flag: "🇳🇬", minStake: 2700, maxStake: 100000, signupBonus: 3000, baseProfit: 8000, dailyReward: 100, firstWithdrawMin: 10700 },
-  US: { symbol: "$", name: "United States", flag: "🇺🇸", minStake: 3, maxStake: 100, signupBonus: 3, baseProfit: 8, dailyReward: 0.1, firstWithdrawMin: 10 },
-  UK: { symbol: "£", name: "United Kingdom", flag: "🇬🇧", minStake: 3, maxStake: 100, signupBonus: 3, baseProfit: 8, dailyReward: 0.1, firstWithdrawMin: 10 },
-  CA: { symbol: "C$", name: "Canada", flag: "🇨🇦", minStake: 3, maxStake: 100, signupBonus: 3, baseProfit: 8, dailyReward: 0.1, firstWithdrawMin: 10 },
+  NG: { symbol: "₦", name: "Nigeria", flag: "🇳🇬", minStake: 2700, maxStake: 100000, signupBonus: 3000, referralBonus: 500, baseProfit: 8000, dailyReward: 100, firstWithdrawMin: 10700 },
+  US: { symbol: "$", name: "United States", flag: "🇺🇸", minStake: 3, maxStake: 100, signupBonus: 3, referralBonus: 0.5, baseProfit: 8, dailyReward: 0.1, firstWithdrawMin: 10 },
+  UK: { symbol: "£", name: "United Kingdom", flag: "🇬🇧", minStake: 3, maxStake: 100, signupBonus: 3, referralBonus: 0.5, baseProfit: 8, dailyReward: 0.1, firstWithdrawMin: 10 },
+  CA: { symbol: "C$", name: "Canada", flag: "🇨🇦", minStake: 3, maxStake: 100, signupBonus: 3, referralBonus: 0.5, baseProfit: 8, dailyReward: 0.1, firstWithdrawMin: 10 },
 };
 
 export function getConfig(country?: string | null) {
