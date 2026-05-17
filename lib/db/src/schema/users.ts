@@ -20,6 +20,8 @@ export const usersTable = pgTable("users", {
   isAdmin: boolean("is_admin").notNull().default(false),
   referralCode: text("referral_code").unique(),
   referredBy: text("referred_by"),
+  country: text("country").default("NG"),
+  phone: text("phone"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

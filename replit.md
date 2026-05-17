@@ -44,15 +44,27 @@ A full-stack Nigerian staking platform where users deposit funds, stake them for
 - Daily rewards: ₦100/day per active stake, claimed individually, resets at midnight.
 - Admin session flag (isAdmin) set at login — admin routes protected by requireAdmin middleware.
 
+## Multi-country / Currency support
+
+- Countries: Nigeria (NG / ₦), USA (US / $), United Kingdom (UK / £), Canada (CA / C$)
+- Country selected during profile setup — determines all currency display and staking limits
+- Currency config lives in `artifacts/gold-mailer/src/lib/currency.ts` (frontend) and `artifacts/api-server/src/lib/currency.ts` (backend)
+- Per-country stake limits: NG min ₦2,700 / max ₦100,000 | US/UK/CA min 3 / max 100
+- Per-country signup bonus: NG ₦3,000 | others 3 (symbol)
+- Per-country daily reward: NG ₦100 | others 0.10
+- Per-country first withdrawal min: NG ₦10,700 | others 10
+- `users` table has `country text DEFAULT 'NG'` and `phone text` columns
+- Withdraw page shows Nigerian banks for NG users, international banks for others
+
 ## Product
 
-- Landing page with staking stats and feature highlights
-- Register (email + password) → verify email (6-digit OTP via Resend) → setup profile → add card → dashboard
-- Dashboard: balance, active stakes, total profit, daily reward claims
+- Landing page updated to "The Global Staking Platform" — supports NG/US/UK/CA
+- Register (email + password) → verify email (6-digit OTP via Resend) → setup profile (incl. country + phone) → add card → dashboard
+- Dashboard: balance, active stakes, total profit, daily reward claims — all currency-aware
 - Virtual cards page: glossy card UI with masked number, "View Details" modal shows full card data
-- Stake: min ₦2,700, max ₦100,000, 7-day lock, profit preview scales as you type
+- Stake: per-country min/max, 7-day lock, profit preview scales as you type
 - Deposit: copy admin bank account → enter transaction ID → submit for approval
-- Withdraw: enter bank details → submit for admin approval
+- Withdraw: enter bank details → submit for admin approval; bank list adapts to user's country
 - Transactions: history with pending/approved/declined status badges
 - Settings: change email and password
 - Admin panel (PIN: 2006): manage users, approve/decline transactions, set deposit account
@@ -60,8 +72,8 @@ A full-stack Nigerian staking platform where users deposit funds, stake them for
 ## User preferences
 
 - Dark mode by default (gold #F5C518 accent, near-black background)
-- No emojis in the UI
-- All amounts in Nigerian Naira with ₦ symbol and commas (e.g. ₦2,700)
+- No emojis in the UI (exception: country flags on landing page)
+- Amounts shown in user's local currency based on their country setting
 - Emails sent from noreply@goldmailer.xyz
 
 ## Gotchas

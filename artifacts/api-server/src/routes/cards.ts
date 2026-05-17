@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, cardsTable, usersTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { requireAuth } from "../lib/auth-middleware";
+import { getCountryConfig } from "../lib/currency";
 
 const router = Router();
 
@@ -46,19 +47,24 @@ router.post("/cards", requireAuth, async (req, res) => {
     aptNumber: aptNumber || null,
   }).returning();
 
-  // Mark card added and give ₦3000 signup bonus for first card
+  // Mark card added and give currency-appropriate signup bonus for first card
   if (isFirstCard) {
+    // Fetch user to get their country
+    const thisUser = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!)).limit(1);
+    const cfg = getCountryConfig(thisUser[0]?.country);
+
     await db.update(usersTable).set({
       cardAdded: true,
-      balance: sql`${usersTable.balance} + 3000`,
+      balance: sql`${usersTable.balance} + ${cfg.signupBonus}`,
     }).where(eq(usersTable.id, req.session.userId!));
 
-    // Credit referrer ₦500 if this user was referred
-    const thisUser = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!)).limit(1);
+    // Credit referrer with their own currency-appropriate bonus
     const referredBy = thisUser[0]?.referredBy;
     if (referredBy) {
+      const referrer = await db.select().from(usersTable).where(eq(usersTable.referralCode, referredBy)).limit(1);
+      const referrerCfg = getCountryConfig(referrer[0]?.country);
       await db.update(usersTable)
-        .set({ balance: sql`${usersTable.balance} + 500` })
+        .set({ balance: sql`${usersTable.balance} + ${referrerCfg.referralBonus}` })
         .where(eq(usersTable.referralCode, referredBy));
     }
   } else {

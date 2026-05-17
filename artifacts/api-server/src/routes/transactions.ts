@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, transactionsTable, usersTable, settingsTable } from "@workspace/db";
 import { eq, and, count } from "drizzle-orm";
 import { requireAuth } from "../lib/auth-middleware";
+import { getCountryConfig } from "../lib/currency";
 
 const router = Router();
 
@@ -34,8 +35,6 @@ router.post("/transactions/deposit", requireAuth, async (req, res) => {
   });
 });
 
-const FIRST_WITHDRAWAL_MIN = 10700;
-
 // POST /transactions/withdraw
 router.post("/transactions/withdraw", requireAuth, async (req, res) => {
   const { amount, bankName, accountNumber, accountName } = req.body;
@@ -60,7 +59,16 @@ router.post("/transactions/withdraw", requireAuth, async (req, res) => {
     return;
   }
 
-  // First withdrawal must be at least ₦10,700
+  // Fetch user to get country config for first withdrawal minimum
+  const users = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!)).limit(1);
+  if (users.length === 0) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  const cfg = getCountryConfig(users[0].country);
+  const FIRST_WITHDRAWAL_MIN = cfg.firstWithdrawMin;
+
+  // First withdrawal must meet minimum
   const prevWithdrawals = await db
     .select({ total: count() })
     .from(transactionsTable)
@@ -74,16 +82,11 @@ router.post("/transactions/withdraw", requireAuth, async (req, res) => {
   const isFirstWithdrawal = (prevWithdrawals[0]?.total ?? 0) === 0;
   if (isFirstWithdrawal && parseFloat(amount) < FIRST_WITHDRAWAL_MIN) {
     res.status(400).json({
-      error: `Your first withdrawal must be at least ₦${FIRST_WITHDRAWAL_MIN.toLocaleString()}. After your first approved withdrawal, you can withdraw any amount.`,
+      error: `Your first withdrawal must be at least ${cfg.symbol}${FIRST_WITHDRAWAL_MIN.toLocaleString()}. After your first approved withdrawal, you can withdraw any amount.`,
     });
     return;
   }
 
-  const users = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!)).limit(1);
-  if (users.length === 0) {
-    res.status(401).json({ error: "User not found" });
-    return;
-  }
   const balance = parseFloat(users[0].balance);
   if (balance < parseFloat(amount)) {
     res.status(400).json({ error: "Insufficient balance" });

@@ -9,6 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { getConfig } from "@/lib/currency";
 import { CreditCard, Gift } from "lucide-react";
 
 const schema = z.object({
@@ -26,6 +27,13 @@ const schema = z.object({
 });
 type FormData = z.infer<typeof schema>;
 
+const COUNTRY_BILLING_NAME: Record<string, string> = {
+  NG: "Nigeria",
+  US: "United States",
+  UK: "United Kingdom",
+  CA: "Canada",
+};
+
 function formatCardNumber(value: string) {
   return value.replace(/\D/g, "").replace(/(.{4})/g, "$1 ").trim().slice(0, 19);
 }
@@ -39,15 +47,21 @@ function formatExpiry(value: string) {
 export default function AddCard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { updateUser } = useAuth();
+  const { updateUser, user } = useAuth();
   const queryClient = useQueryClient();
+
+  const cfg = getConfig(user?.country);
+  const billingCountryName = COUNTRY_BILLING_NAME[user?.country?.toUpperCase() ?? "NG"] ?? "Nigeria";
+  const bonusDisplay = user?.country && user.country !== "NG"
+    ? `${cfg.symbol}${cfg.signupBonus.toFixed(2)}`
+    : `${cfg.symbol}${cfg.signupBonus.toLocaleString()}`;
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       cardholderName: "", cardNumber: "", expiryDate: "", cvv: "",
       billingAddress1: "", billingAddress2: "", billingCity: "",
-      billingState: "", billingCountry: "Nigeria", billingZip: "", aptNumber: "",
+      billingState: "", billingCountry: billingCountryName, billingZip: "", aptNumber: "",
     },
   });
 
@@ -56,7 +70,7 @@ export default function AddCard() {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetCardsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
-        toast({ title: "Card added!", description: "₦3,000 signup bonus has been added to your balance." });
+        toast({ title: "Card added!", description: `${bonusDisplay} signup bonus has been added to your balance.` });
         fetch("/api/auth/me", { credentials: "include" }).then(r => r.json()).then(updateUser).catch(() => {});
         setLocation("/dashboard");
       },
@@ -79,7 +93,7 @@ export default function AddCard() {
           <h1 className="text-2xl font-bold mt-4 mb-2">Add Your Card</h1>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary text-sm">
             <Gift size={14} />
-            <span>Claim ₦3,000 signup bonus</span>
+            <span>Claim {bonusDisplay} signup bonus</span>
           </div>
         </div>
 
@@ -169,28 +183,28 @@ export default function AddCard() {
                 <FormField control={form.control} name="billingCity" render={({ field }) => (
                   <FormItem>
                     <FormLabel>City</FormLabel>
-                    <FormControl><Input {...field} placeholder="Lagos" data-testid="input-city" /></FormControl>
+                    <FormControl><Input {...field} placeholder="City" data-testid="input-city" /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
                 <FormField control={form.control} name="billingState" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>State</FormLabel>
-                    <FormControl><Input {...field} placeholder="Lagos State" data-testid="input-state" /></FormControl>
+                    <FormLabel>State / Province</FormLabel>
+                    <FormControl><Input {...field} placeholder="State" data-testid="input-state" /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
                 <FormField control={form.control} name="billingCountry" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Country</FormLabel>
-                    <FormControl><Input {...field} disabled value="Nigeria" data-testid="input-country" /></FormControl>
+                    <FormControl><Input {...field} disabled value={billingCountryName} data-testid="input-country" /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
                 <FormField control={form.control} name="billingZip" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>ZIP Code</FormLabel>
-                    <FormControl><Input {...field} placeholder="100001" data-testid="input-zip" /></FormControl>
+                    <FormLabel>ZIP / Postal Code</FormLabel>
+                    <FormControl><Input {...field} placeholder="00000" data-testid="input-zip" /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
@@ -205,7 +219,7 @@ export default function AddCard() {
 
               <Button type="submit" className="w-full bg-primary text-primary-foreground hover:opacity-90 py-5 font-bold mt-4"
                 disabled={mutation.isPending} data-testid="button-add-card-submit">
-                {mutation.isPending ? "Adding Card..." : "Add Card & Claim ₦3,000 Bonus"}
+                {mutation.isPending ? "Adding Card..." : `Add Card & Claim ${bonusDisplay} Bonus`}
               </Button>
             </form>
           </Form>

@@ -22,7 +22,7 @@ const router = Router();
 
 // PUT /user/profile
 router.put("/user/profile", requireAuth, async (req, res) => {
-  const { firstName, lastName, middleName, age, gender } = req.body;
+  const { firstName, lastName, middleName, age, gender, country, phone } = req.body;
   // Reject base64 data URLs — they are too large for the DB and a security risk
   let avatarUrl: string | null = req.body.avatarUrl || null;
   if (avatarUrl && avatarUrl.startsWith("data:")) avatarUrl = null;
@@ -42,6 +42,8 @@ router.put("/user/profile", requireAuth, async (req, res) => {
       age: age ? parseInt(age) : null,
       gender: gender || null,
       avatarUrl: avatarUrl || null,
+      country: country || "NG",
+      phone: phone || null,
       profileComplete: true,
     })
     .where(eq(usersTable.id, req.session.userId!))
@@ -63,6 +65,8 @@ router.put("/user/profile", requireAuth, async (req, res) => {
     balance: parseFloat(user.balance),
     hasDeposited,
     referralCode: user.referralCode,
+    country: user.country ?? "NG",
+    phone: user.phone ?? null,
     createdAt: user.createdAt.toISOString(),
   });
 });

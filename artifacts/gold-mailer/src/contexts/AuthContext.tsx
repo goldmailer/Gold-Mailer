@@ -17,6 +17,8 @@ interface User {
   balance: number;
   hasDeposited: boolean;
   referralCode: string | null;
+  country: string | null;
+  phone: string | null;
   createdAt: string;
 }
 

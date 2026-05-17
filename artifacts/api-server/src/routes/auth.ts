@@ -200,6 +200,8 @@ router.post("/auth/login", async (req, res) => {
       balance: parseFloat(user.balance),
       hasDeposited,
       referralCode: user.referralCode,
+      country: user.country ?? "NG",
+      phone: user.phone ?? null,
       createdAt: user.createdAt.toISOString(),
     },
   });
@@ -289,6 +291,8 @@ router.get("/auth/me", requireAuth, async (req, res) => {
     balance: parseFloat(user.balance),
     hasDeposited,
     referralCode: user.referralCode,
+    country: user.country ?? "NG",
+    phone: user.phone ?? null,
     createdAt: user.createdAt.toISOString(),
   });
 });

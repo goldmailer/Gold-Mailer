@@ -5,10 +5,6 @@ import { Shield, TrendingUp, Zap, Star, ChevronRight, Lock, Globe, Award } from 
 
 const ADMIN_TAP_COUNT = 10;
 
-function formatNaira(amount: number) {
-  return `₦${amount.toLocaleString()}`;
-}
-
 export default function Landing() {
   const [, setLocation] = useLocation();
   const [tapCount, setTapCount] = useState(0);
@@ -69,7 +65,7 @@ export default function Landing() {
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-sm font-medium mb-8">
             <Star size={14} />
-            <span>Nigeria's Premier Staking Platform</span>
+            <span>The Global Staking Platform</span>
           </div>
           <h1 className="text-5xl md:text-7xl font-black tracking-tight mb-6 leading-tight">
             Grow Your{" "}
@@ -78,7 +74,7 @@ export default function Landing() {
           </h1>
           <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
             Stake your funds with Gold Mailer and earn guaranteed returns in 7 days.
-            Minimum deposit {formatNaira(2700)}. Professional, secure, and transparent.
+            Available in Nigeria, USA, UK, and Canada. Professional, secure, and transparent.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button
@@ -100,7 +96,7 @@ export default function Landing() {
             </Button>
           </div>
           <p className="mt-6 text-muted-foreground text-sm">
-            Get <span className="text-primary font-semibold">{formatNaira(3000)} signup bonus</span> when you add your card
+            Get a <span className="text-primary font-semibold">signup bonus</span> when you add your card
           </p>
         </div>
       </section>
@@ -109,10 +105,10 @@ export default function Landing() {
       <section className="py-12 border-y border-border/50 bg-card/30">
         <div className="max-w-5xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8">
           {[
-            { label: "Minimum Stake", value: "₦2,700" },
-            { label: "7-Day Profit", value: "₦8,000+" },
-            { label: "Max Stake", value: "₦100,000" },
-            { label: "Daily Reward", value: "₦100" },
+            { label: "Minimum Stake", value: "From $3 / ₦2,700" },
+            { label: "7-Day Profit", value: "Up to 3x+" },
+            { label: "Countries", value: "4" },
+            { label: "Daily Reward", value: "Claimed daily" },
           ].map(stat => (
             <div key={stat.label} className="text-center">
               <p className="text-2xl md:text-3xl font-black text-primary">{stat.value}</p>
@@ -139,12 +135,12 @@ export default function Landing() {
               {
                 icon: TrendingUp,
                 title: "Guaranteed Returns",
-                desc: "Stake ₦2,700 and earn ₦8,000 profit in just 7 days. Returns scale with your deposit.",
+                desc: "Stake your funds and earn guaranteed profit in just 7 days. Returns scale with your deposit.",
               },
               {
                 icon: Zap,
                 title: "Daily Rewards",
-                desc: "Claim ₦100 daily reward on every active stake. Consistent earnings every day.",
+                desc: "Claim your daily reward on every active stake. Consistent earnings every single day.",
               },
               {
                 icon: Lock,
@@ -153,13 +149,13 @@ export default function Landing() {
               },
               {
                 icon: Globe,
-                title: "Nigerian Banks",
-                desc: "Withdraw directly to any Nigerian bank account. All major banks supported.",
+                title: "Global Platform",
+                desc: "Available in Nigeria, USA, UK, and Canada. Withdraw to your local bank account.",
               },
               {
                 icon: Award,
                 title: "Signup Bonus",
-                desc: "Receive ₦3,000 instantly when you add your card. Start earning immediately.",
+                desc: "Receive a signup bonus instantly when you add your card. Start earning immediately.",
               },
             ].map(f => (
               <div key={f.title} className="p-6 rounded-2xl bg-card border border-border hover:border-primary/40 transition-colors">
@@ -183,9 +179,9 @@ export default function Landing() {
           <div className="grid md:grid-cols-4 gap-6">
             {[
               { step: "01", title: "Register", desc: "Create your account in minutes with just email and password." },
-              { step: "02", title: "Add Card", desc: "Add your debit card and claim your ₦3,000 signup bonus instantly." },
-              { step: "03", title: "Stake Funds", desc: "Deposit and stake from ₦2,700. Funds are locked for 7 days." },
-              { step: "04", title: "Earn Profit", desc: "Collect profits after 7 days plus ₦100 daily rewards." },
+              { step: "02", title: "Add Card", desc: "Add your debit card and claim your signup bonus instantly." },
+              { step: "03", title: "Stake Funds", desc: "Deposit and stake in your local currency. Funds are locked for 7 days." },
+              { step: "04", title: "Earn Profit", desc: "Collect profits after 7 days plus daily rewards, every day." },
             ].map(item => (
               <div key={item.step} className="text-center">
                 <div className="w-14 h-14 rounded-full bg-primary/15 border-2 border-primary/30 flex items-center justify-center mx-auto mb-4">
@@ -199,11 +195,33 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Supported countries */}
+      <section className="py-16 px-4">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-2xl md:text-3xl font-black mb-4">Available In</h2>
+          <p className="text-muted-foreground mb-8">Stake and earn in your local currency</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { flag: "🇳🇬", name: "Nigeria", currency: "₦ Naira" },
+              { flag: "🇺🇸", name: "United States", currency: "$ Dollar" },
+              { flag: "🇬🇧", name: "United Kingdom", currency: "£ Pound" },
+              { flag: "🇨🇦", name: "Canada", currency: "C$ Dollar" },
+            ].map(c => (
+              <div key={c.name} className="p-4 rounded-xl bg-card border border-border">
+                <p className="text-3xl mb-2">{c.flag}</p>
+                <p className="font-semibold text-sm">{c.name}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{c.currency}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="py-24 px-4">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-black mb-6">Ready to Start Earning?</h2>
-          <p className="text-muted-foreground mb-8">Join thousands of Nigerians growing their wealth with Gold Mailer.</p>
+          <p className="text-muted-foreground mb-8">Join thousands of investors growing their wealth with Gold Mailer.</p>
           <Button
             size="lg"
             onClick={() => setLocation("/register")}

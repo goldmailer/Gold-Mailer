@@ -7,10 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { getConfig, fmt as currencyFmt } from "@/lib/currency";
 import { Check, AlertTriangle, Info } from "lucide-react";
 import { Link } from "wouter";
-
-const FIRST_MIN = 10700;
 
 const NIGERIAN_BANKS = [
   "Access Bank","First Bank of Nigeria","Guaranty Trust Bank (GTBank)","Zenith Bank",
@@ -21,9 +20,12 @@ const NIGERIAN_BANKS = [
   "VFD Microfinance Bank","Providus Bank","SunTrust Bank","Coronation Bank","Titan Trust Bank",
 ];
 
-function fmt(n: number) {
-  return `₦${n.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
+const INTERNATIONAL_BANKS = [
+  "Chase Bank","Bank of America","Wells Fargo","Citibank","US Bank",
+  "Barclays","HSBC","Lloyds Bank","NatWest","Santander UK",
+  "TD Bank","RBC Royal Bank","Scotiabank","BMO Bank","CIBC",
+  "Other",
+];
 
 export default function Withdraw() {
   const { user } = useAuth();
@@ -32,7 +34,12 @@ export default function Withdraw() {
   const [success, setSuccess] = useState(false);
   const [form, setForm] = useState({ amount: "", bankName: "", accountNumber: "", accountName: "" });
 
-  // Determine if this is the user's first withdrawal (no approved withdrawals yet)
+  const cfg = getConfig(user?.country);
+  const fmt = (n: number) => currencyFmt(n, user?.country);
+  const isNGN = !user?.country || user.country === "NG";
+  const bankList = isNGN ? NIGERIAN_BANKS : INTERNATIONAL_BANKS;
+
+  // Determine if this is the user's first withdrawal
   const { data: txData } = useQuery<any[]>({
     queryKey: ["transactions-for-withdraw-check"],
     queryFn: async () => {
@@ -45,7 +52,8 @@ export default function Withdraw() {
   const hasApprovedWithdrawal = (txData ?? []).some(
     (t: any) => t.type === "withdrawal" && t.status === "approved"
   );
-  const minWithdraw = hasApprovedWithdrawal ? 1 : FIRST_MIN;
+  const FIRST_MIN = cfg.firstWithdrawMin;
+  const minWithdraw = hasApprovedWithdrawal ? 0.01 : FIRST_MIN;
   const enteredAmount = parseFloat(form.amount) || 0;
 
   const mutation = useSubmitWithdrawal({
@@ -70,8 +78,8 @@ export default function Withdraw() {
       toast({
         title: "Amount too low",
         description: hasApprovedWithdrawal
-          ? `Minimum withdrawal is ₦1`
-          : `Your first withdrawal must be at least ₦${FIRST_MIN.toLocaleString()}`,
+          ? `Minimum withdrawal is ${fmt(0.01)}`
+          : `Your first withdrawal must be at least ${fmt(FIRST_MIN)}`,
         variant: "destructive",
       });
       return;
@@ -113,7 +121,9 @@ export default function Withdraw() {
       <Sidebar />
       <main className="pl-16 pt-16 max-w-xl mx-auto px-4 py-8">
         <h1 className="text-2xl font-black mb-1">Withdraw Funds</h1>
-        <p className="text-muted-foreground text-sm mb-8">Send funds to your Nigerian bank account</p>
+        <p className="text-muted-foreground text-sm mb-8">
+          Send funds to your {isNGN ? "Nigerian" : "local"} bank account
+        </p>
 
         {/* Deposit-first gate */}
         {!user?.hasDeposited && (
@@ -140,7 +150,7 @@ export default function Withdraw() {
             <div>
               <p className="font-semibold text-blue-300 text-sm mb-0.5">First withdrawal minimum</p>
               <p className="text-sm text-muted-foreground">
-                Your first withdrawal must be at least <span className="text-foreground font-bold">₦{FIRST_MIN.toLocaleString()}</span>.
+                Your first withdrawal must be at least <span className="text-foreground font-bold">{fmt(FIRST_MIN)}</span>.
                 After it is approved you can withdraw any amount.
               </p>
             </div>
@@ -155,22 +165,22 @@ export default function Withdraw() {
         <div className={`bg-card border border-border rounded-2xl p-6 space-y-5 ${!user?.hasDeposited ? "opacity-50 pointer-events-none" : ""}`}>
           <div>
             <label className="text-sm font-medium mb-2 block">
-              Amount (₦)
+              Amount ({cfg.symbol})
               {!hasApprovedWithdrawal && user?.hasDeposited && (
                 <span className="ml-2 text-xs text-muted-foreground font-normal">
-                  — min ₦{FIRST_MIN.toLocaleString()} for first withdrawal
+                  — min {fmt(FIRST_MIN)} for first withdrawal
                 </span>
               )}
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">₦</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">{cfg.symbol}</span>
               <Input type="number" value={form.amount}
                 onChange={e => setForm({ ...form, amount: e.target.value })}
-                placeholder="0.00" className="pl-7" data-testid="input-withdraw-amount" />
+                placeholder="0.00" className="pl-8" data-testid="input-withdraw-amount" />
             </div>
             {enteredAmount > 0 && enteredAmount < minWithdraw && user?.hasDeposited && (
               <p className="text-destructive text-xs mt-1">
-                Minimum for first withdrawal is ₦{FIRST_MIN.toLocaleString()}
+                Minimum for first withdrawal is {fmt(FIRST_MIN)}
               </p>
             )}
             {enteredAmount > (user?.balance ?? 0) && form.amount && (
@@ -182,10 +192,10 @@ export default function Withdraw() {
             <label className="text-sm font-medium mb-2 block">Select Bank</label>
             <Select value={form.bankName} onValueChange={val => setForm({ ...form, bankName: val })}>
               <SelectTrigger data-testid="select-bank">
-                <SelectValue placeholder="Select Nigerian bank" />
+                <SelectValue placeholder="Select your bank" />
               </SelectTrigger>
               <SelectContent>
-                {NIGERIAN_BANKS.map(bank => (
+                {bankList.map(bank => (
                   <SelectItem key={bank} value={bank}>{bank}</SelectItem>
                 ))}
               </SelectContent>
@@ -195,8 +205,8 @@ export default function Withdraw() {
           <div>
             <label className="text-sm font-medium mb-2 block">Account Number</label>
             <Input value={form.accountNumber}
-              onChange={e => setForm({ ...form, accountNumber: e.target.value.replace(/\D/g, "").slice(0, 10) })}
-              placeholder="10-digit account number" maxLength={10} data-testid="input-account-number" />
+              onChange={e => setForm({ ...form, accountNumber: e.target.value.slice(0, 20) })}
+              placeholder={isNGN ? "10-digit account number" : "Account number"} data-testid="input-account-number" />
           </div>
 
           <div>

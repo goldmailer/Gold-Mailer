@@ -1,20 +1,12 @@
 import { Router } from "express";
 import { db, stakesTable, usersTable, transactionsTable } from "@workspace/db";
-import { eq, sql, and, count, sum } from "drizzle-orm";
+import { eq, sql, and, sum } from "drizzle-orm";
 import { requireAuth } from "../lib/auth-middleware";
+import { getCountryConfig } from "../lib/currency";
 
 const router = Router();
 
-const MIN_STAKE = 2700;
-const MAX_STAKE = 100000;
 const STAKE_DAYS = 7;
-const BASE_PROFIT = 8000; // profit for ₦2700 stake
-const DAILY_REWARD = 100;
-
-function calcProfit(amount: number): number {
-  // Scale profit proportionally: ₦8000 profit for ₦2700
-  return Math.floor((amount / MIN_STAKE) * BASE_PROFIT);
-}
 
 // GET /stakes
 router.get("/stakes", requireAuth, async (req, res) => {
@@ -42,22 +34,25 @@ router.get("/stakes", requireAuth, async (req, res) => {
 // POST /stakes
 router.post("/stakes", requireAuth, async (req, res) => {
   const amount = parseFloat(req.body.amount);
-  if (isNaN(amount) || amount < MIN_STAKE) {
-    res.status(400).json({ error: `Minimum stake amount is ₦${MIN_STAKE.toLocaleString()}` });
-    return;
-  }
-  if (amount > MAX_STAKE) {
-    res.status(400).json({ error: `Maximum stake amount is ₦${MAX_STAKE.toLocaleString()}` });
-    return;
-  }
 
+  // Fetch user first to get country config
   const users = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!)).limit(1);
   if (users.length === 0) {
     res.status(401).json({ error: "User not found" });
     return;
   }
+  const cfg = getCountryConfig(users[0].country);
 
-  // Require at least ₦2,700 in approved deposits before staking
+  if (isNaN(amount) || amount < cfg.minStake) {
+    res.status(400).json({ error: `Minimum stake amount is ${cfg.symbol}${cfg.minStake.toLocaleString()}` });
+    return;
+  }
+  if (amount > cfg.maxStake) {
+    res.status(400).json({ error: `Maximum stake amount is ${cfg.symbol}${cfg.maxStake.toLocaleString()}` });
+    return;
+  }
+
+  // Require at least minStake in approved deposits before staking
   const depositCheck = await db
     .select({ total: sum(transactionsTable.amount) })
     .from(transactionsTable)
@@ -69,8 +64,8 @@ router.post("/stakes", requireAuth, async (req, res) => {
       ),
     );
   const totalDeposited = parseFloat(depositCheck[0]?.total ?? "0");
-  if (totalDeposited < MIN_STAKE) {
-    res.status(403).json({ error: `You need at least ₦${MIN_STAKE.toLocaleString()} in approved deposits before you can stake.` });
+  if (totalDeposited < cfg.minStake) {
+    res.status(403).json({ error: `You need at least ${cfg.symbol}${cfg.minStake.toLocaleString()} in approved deposits before you can stake.` });
     return;
   }
 
@@ -82,7 +77,7 @@ router.post("/stakes", requireAuth, async (req, res) => {
 
   const endDate = new Date();
   endDate.setDate(endDate.getDate() + STAKE_DAYS);
-  const profit = calcProfit(amount);
+  const profit = Math.floor((amount / cfg.minStake) * cfg.baseProfit);
 
   const inserted = await db.insert(stakesTable).values({
     userId: req.session.userId!,
@@ -132,20 +127,25 @@ router.post("/stakes/:id/claim-daily", requireAuth, async (req, res) => {
     return;
   }
 
+  // Get user's country config for daily reward amount
+  const users = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!)).limit(1);
+  const cfg = getCountryConfig(users[0]?.country);
+  const dailyReward = cfg.dailyReward;
+
   await db.update(stakesTable).set({
     lastDailyClaim: now,
-    totalDailyClaimed: (parseFloat(stake.totalDailyClaimed) + DAILY_REWARD).toString(),
+    totalDailyClaimed: (parseFloat(stake.totalDailyClaimed) + dailyReward).toString(),
   }).where(eq(stakesTable.id, id));
 
   await db.update(usersTable).set({
-    balance: sql`${usersTable.balance} + ${DAILY_REWARD}`,
+    balance: sql`${usersTable.balance} + ${dailyReward}`,
   }).where(eq(usersTable.id, req.session.userId!));
 
-  const users = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!)).limit(1);
+  const updatedUsers = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!)).limit(1);
   res.json({
-    message: `Daily reward of ₦${DAILY_REWARD} claimed successfully!`,
-    amount: DAILY_REWARD,
-    newBalance: parseFloat(users[0].balance),
+    message: `Daily reward of ${cfg.symbol}${dailyReward} claimed successfully!`,
+    amount: dailyReward,
+    newBalance: parseFloat(updatedUsers[0].balance),
   });
 });
 

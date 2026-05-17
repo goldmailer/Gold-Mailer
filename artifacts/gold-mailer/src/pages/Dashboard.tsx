@@ -9,12 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { fmt as currencyFmt, getConfig } from "@/lib/currency";
 import { TrendingUp, Wallet, Clock, Gift, ChevronRight, AlertCircle, Copy, Check, Users } from "lucide-react";
 import { Link } from "wouter";
-
-function fmt(n: number) {
-  return `₦${n.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
 
 function daysLabel(d: number) {
   if (d <= 0) return "Matured";
@@ -26,6 +23,9 @@ export default function Dashboard() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+
+  const fmt = (n: number) => currencyFmt(n, user?.country);
+  const cfg = getConfig(user?.country);
 
   const referralLink = user?.referralCode
     ? `${window.location.origin}/register?ref=${user.referralCode}`
@@ -139,7 +139,9 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <h2 className="font-bold text-base">Refer a Friend</h2>
-                  <p className="text-xs text-muted-foreground">Earn ₦500 for every friend who joins and adds a card</p>
+                  <p className="text-xs text-muted-foreground">
+                    Earn {fmt(cfg.referralBonus)} for every friend who joins and adds a card
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2 bg-background border border-border rounded-xl px-4 py-3">
@@ -212,7 +214,7 @@ export default function Dashboard() {
                           data-testid={`button-claim-daily-${stake.id}`}
                           className="bg-primary text-primary-foreground hover:opacity-90 text-xs"
                         >
-                          <Gift size={12} className="mr-1" /> Claim ₦100
+                          <Gift size={12} className="mr-1" /> Claim {fmt(cfg.dailyReward)}
                         </Button>
                       )}
                       {stake.status === "active" && stake.dailyClaimedToday && (

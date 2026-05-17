@@ -117,6 +117,8 @@ pool.query(`
   ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "is_admin" boolean NOT NULL DEFAULT false;
   ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "referral_code" text;
   ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "referred_by" text;
+  ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "country" text DEFAULT 'NG';
+  ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "phone" text;
   ALTER TABLE "stakes" ADD COLUMN IF NOT EXISTS "last_daily_claim" timestamp;
   ALTER TABLE "stakes" ADD COLUMN IF NOT EXISTS "total_daily_claimed" numeric(15,2) NOT NULL DEFAULT 0;
   ALTER TABLE "transactions" ADD COLUMN IF NOT EXISTS "transaction_id" text;

@@ -21,6 +21,8 @@ const schema = z.object({
   age: z.coerce.number().min(18, "Must be at least 18").max(100, "Invalid age").optional(),
   gender: z.string().optional(),
   avatarUrl: z.string().optional(),
+  country: z.string().min(1, "Country is required"),
+  phone: z.string().optional(),
 });
 type FormData = z.infer<typeof schema>;
 
@@ -66,7 +68,7 @@ export default function SetupProfile() {
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { firstName: "", middleName: "", lastName: "", age: undefined, gender: "", avatarUrl: "" },
+    defaultValues: { firstName: "", middleName: "", lastName: "", age: undefined, gender: "", avatarUrl: "", country: "", phone: "" },
   });
 
   const mutation = useUpdateProfile({
@@ -85,10 +87,8 @@ export default function SetupProfile() {
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // Only use image as a local preview — do not store base64 in the DB
     const objectUrl = URL.createObjectURL(file);
     setPreview(objectUrl);
-    // Clear avatarUrl so we don't attempt to save a massive base64 string
     form.setValue("avatarUrl", "");
   };
 
@@ -151,6 +151,34 @@ export default function SetupProfile() {
                 <FormItem>
                   <FormLabel>Middle Name <span className="text-muted-foreground text-xs">(optional)</span></FormLabel>
                   <FormControl><Input {...field} placeholder="Optional" data-testid="input-middle-name" /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="country" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Country <span className="text-destructive">*</span></FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger data-testid="select-country">
+                        <SelectValue placeholder="Select your country" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="NG">Nigeria</SelectItem>
+                      <SelectItem value="US">United States</SelectItem>
+                      <SelectItem value="UK">United Kingdom</SelectItem>
+                      <SelectItem value="CA">Canada</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="phone" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone Number <span className="text-muted-foreground text-xs">(optional)</span></FormLabel>
+                  <FormControl><Input {...field} type="tel" placeholder="+1 234 567 8900" data-testid="input-phone" /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
