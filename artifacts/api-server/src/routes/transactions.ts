@@ -137,11 +137,17 @@ router.get("/transactions", requireAuth, async (req, res) => {
 router.get("/settings/deposit-account", async (req, res) => {
   const settings = await db.select().from(settingsTable).where(eq(settingsTable.key, "deposit_account")).limit(1);
   if (settings.length === 0) {
-    res.json({ bankName: "", accountNumber: "", accountName: "" });
+    res.json({ bankName: "", accountNumber: "", accountName: "", paypalEmail: null, paypalName: null });
     return;
   }
   const data = JSON.parse(settings[0].value);
-  res.json(data);
+  res.json({
+    bankName: data.bankName ?? "",
+    accountNumber: data.accountNumber ?? "",
+    accountName: data.accountName ?? "",
+    paypalEmail: data.paypalEmail ?? null,
+    paypalName: data.paypalName ?? null,
+  });
 });
 
 export default router;

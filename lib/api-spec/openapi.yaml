@@ -442,6 +442,29 @@ paths:
                   $ref: "#/components/schemas/AdminUser"
 
   /admin/users/{id}:
+    patch:
+      operationId: adminUpdateUser
+      tags: [admin]
+      summary: Update a user account details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUpdateUser"
+      responses:
+        "200":
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
     delete:
       operationId: adminDeleteUser
       tags: [admin]
@@ -893,6 +916,12 @@ components:
           type: string
         accountName:
           type: string
+        paypalEmail:
+          type: string
+          nullable: true
+        paypalName:
+          type: string
+          nullable: true
 
     AdminUser:
       type: object
@@ -916,6 +945,25 @@ components:
           type: boolean
         createdAt:
           type: string
+
+    AdminUpdateUser:
+      type: object
+      properties:
+        country:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        firstName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
 
     BalanceTopUp:
       type: object

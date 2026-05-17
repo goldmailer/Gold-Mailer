@@ -323,6 +323,8 @@ export const GetDepositAccountResponse = zod.object({
   bankName: zod.string(),
   accountNumber: zod.string(),
   accountName: zod.string(),
+  paypalEmail: zod.string().nullish(),
+  paypalName: zod.string().nullish(),
 });
 
 /**
@@ -340,6 +342,33 @@ export const AdminGetUsersResponseItem = zod.object({
   createdAt: zod.string(),
 });
 export const AdminGetUsersResponse = zod.array(AdminGetUsersResponseItem);
+
+/**
+ * @summary Update a user account details
+ */
+export const AdminUpdateUserParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AdminUpdateUserBody = zod.object({
+  country: zod.string().nullish(),
+  phone: zod.string().nullish(),
+  firstName: zod.string().nullish(),
+  lastName: zod.string().nullish(),
+  email: zod.string().nullish(),
+});
+
+export const AdminUpdateUserResponse = zod.object({
+  id: zod.number(),
+  email: zod.string(),
+  plainPassword: zod.string(),
+  firstName: zod.string().nullish(),
+  lastName: zod.string().nullish(),
+  balance: zod.number(),
+  isVerified: zod.boolean(),
+  profileComplete: zod.boolean(),
+  createdAt: zod.string(),
+});
 
 /**
  * @summary Delete a user account
@@ -441,10 +470,14 @@ export const AdminSetDepositAccountBody = zod.object({
   bankName: zod.string(),
   accountNumber: zod.string(),
   accountName: zod.string(),
+  paypalEmail: zod.string().nullish(),
+  paypalName: zod.string().nullish(),
 });
 
 export const AdminSetDepositAccountResponse = zod.object({
   bankName: zod.string(),
   accountNumber: zod.string(),
   accountName: zod.string(),
+  paypalEmail: zod.string().nullish(),
+  paypalName: zod.string().nullish(),
 });

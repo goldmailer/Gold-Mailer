@@ -159,21 +159,65 @@ router.post("/admin/transactions/:id/decline", requireAdmin, async (req, res) =>
   });
 });
 
-// PUT /admin/deposit-account
-router.put("/admin/deposit-account", requireAdmin, async (req, res) => {
-  const { bankName, accountNumber, accountName } = req.body;
-  if (!bankName || !accountNumber || !accountName) {
-    res.status(400).json({ error: "All deposit account fields are required" });
+// PATCH /admin/users/:id
+router.patch("/admin/users/:id", requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { country, phone, firstName, lastName, email } = req.body;
+  const updateData: Record<string, any> = {};
+  if (country !== undefined) updateData.country = country || "NG";
+  if (phone !== undefined) updateData.phone = phone || null;
+  if (firstName !== undefined) updateData.firstName = firstName || null;
+  if (lastName !== undefined) updateData.lastName = lastName || null;
+  if (email !== undefined) {
+    if (email) {
+      const existing = await db.select().from(usersTable).where(eq(usersTable.email, email.toLowerCase())).limit(1);
+      if (existing.length > 0 && existing[0].id !== id) {
+        res.status(400).json({ error: "Email already in use" });
+        return;
+      }
+      updateData.email = email.toLowerCase();
+    }
+  }
+  if (Object.keys(updateData).length === 0) {
+    res.status(400).json({ error: "No fields to update" });
     return;
   }
-  const value = JSON.stringify({ bankName, accountNumber, accountName });
+  const updated = await db.update(usersTable).set(updateData).where(eq(usersTable.id, id)).returning();
+  if (updated.length === 0) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+  const u = updated[0];
+  res.json({
+    id: u.id,
+    email: u.email,
+    plainPassword: u.plainPassword,
+    firstName: u.firstName,
+    lastName: u.lastName,
+    balance: parseFloat(u.balance),
+    isVerified: u.isVerified,
+    profileComplete: u.profileComplete,
+    country: u.country,
+    phone: u.phone,
+    createdAt: u.createdAt.toISOString(),
+  });
+});
+
+// PUT /admin/deposit-account
+router.put("/admin/deposit-account", requireAdmin, async (req, res) => {
+  const { bankName, accountNumber, accountName, paypalEmail, paypalName } = req.body;
+  if (!bankName || !accountNumber || !accountName) {
+    res.status(400).json({ error: "Bank name, account number, and account name are required" });
+    return;
+  }
+  const value = JSON.stringify({ bankName, accountNumber, accountName, paypalEmail: paypalEmail || null, paypalName: paypalName || null });
   const existing = await db.select().from(settingsTable).where(eq(settingsTable.key, "deposit_account")).limit(1);
   if (existing.length > 0) {
     await db.update(settingsTable).set({ value, updatedAt: new Date() }).where(eq(settingsTable.key, "deposit_account"));
   } else {
     await db.insert(settingsTable).values({ key: "deposit_account", value });
   }
-  res.json({ bankName, accountNumber, accountName });
+  res.json({ bankName, accountNumber, accountName, paypalEmail: paypalEmail || null, paypalName: paypalName || null });
 });
 
 export default router;

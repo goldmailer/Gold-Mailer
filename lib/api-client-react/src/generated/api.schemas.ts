@@ -195,6 +195,8 @@ export interface DepositAccount {
   bankName: string;
   accountNumber: string;
   accountName: string;
+  paypalEmail?: string | null;
+  paypalName?: string | null;
 }
 
 export interface AdminUser {
@@ -209,6 +211,14 @@ export interface AdminUser {
   isVerified: boolean;
   profileComplete: boolean;
   createdAt: string;
+}
+
+export interface AdminUpdateUser {
+  country?: string | null;
+  phone?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
 }
 
 export interface BalanceTopUp {

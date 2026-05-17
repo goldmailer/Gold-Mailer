@@ -10,4 +10,6 @@ export interface DepositAccount {
   bankName: string;
   accountNumber: string;
   accountName: string;
+  paypalEmail?: string | null;
+  paypalName?: string | null;
 }
