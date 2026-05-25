@@ -65,7 +65,7 @@ export default function Dashboard() {
       <main className="pl-0 pt-0">
         {/* Header */}
         <div className="border-b border-border bg-card/30">
-          <div className="max-w-5xl mx-auto px-4 pt-16 pb-6 pl-16">
+          <div className="max-w-5xl mx-auto px-4 sm:pl-16 pt-16 pb-6">
             <p className="text-muted-foreground text-sm mb-1">{greeting}</p>
             <div className="flex items-end gap-4 flex-wrap">
               <div>
@@ -90,7 +90,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="max-w-5xl mx-auto px-4 pl-16 py-8 space-y-8">
+        <div className="max-w-5xl mx-auto px-4 sm:pl-16 py-8 space-y-8">
           {/* Stats grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[

@@ -128,7 +128,17 @@ export default function Landing() {
             </p>
           </div>
 
-          {/* Right — hero image */}
+          {/* Mobile hero image — shown only on small screens, between bullets and CTA */}
+          <div className="lg:hidden w-full mt-6 mb-2">
+            <img
+              src={heroImg}
+              alt="Investor checking returns on phone"
+              className="w-full max-w-xs mx-auto rounded-2xl object-cover shadow-lg"
+              style={{ maxHeight: "240px", objectPosition: "top" }}
+            />
+          </div>
+
+          {/* Right — hero image (desktop) */}
           <div className="relative hidden lg:flex items-end justify-center h-full">
             {/* Decorative card behind image */}
             <div className="absolute bottom-0 right-0 w-[480px] h-[560px] rounded-3xl bg-gradient-to-br from-primary/20 via-primary/5 to-blue-500/10 border border-primary/20" />

@@ -43,7 +43,7 @@ export default function Referrals() {
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
-      <main className="pl-16 pt-16 max-w-2xl mx-auto px-4 py-8">
+      <main className="pt-16 max-w-2xl mx-auto px-4 sm:pl-16 py-8">
         <h1 className="text-2xl font-black mb-1">Referrals</h1>
         <p className="text-muted-foreground text-sm mb-8">
           Invite friends and earn when they join GoldMailer

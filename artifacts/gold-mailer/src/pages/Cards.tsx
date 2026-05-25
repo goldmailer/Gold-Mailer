@@ -107,7 +107,7 @@ export default function Cards() {
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
-      <main className="pl-16 pt-16 max-w-5xl mx-auto px-4 py-8">
+      <main className="pt-16 max-w-5xl mx-auto px-4 sm:pl-16 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-black">Virtual Cards</h1>

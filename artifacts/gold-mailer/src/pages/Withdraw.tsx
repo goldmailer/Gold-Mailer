@@ -108,7 +108,7 @@ export default function Withdraw() {
     return (
       <div className="min-h-screen bg-background">
         <Sidebar />
-        <main className="pl-16 pt-16 max-w-xl mx-auto px-4 py-8 flex items-center justify-center min-h-[70vh]">
+        <main className="pt-16 max-w-xl mx-auto px-4 sm:pl-16 py-8 flex items-center justify-center min-h-[70vh]">
           <div className="text-center bg-card border border-border rounded-2xl p-10">
             <div className="w-16 h-16 rounded-full bg-green-500/15 flex items-center justify-center mx-auto mb-5">
               <Check size={32} className="text-green-400" />
@@ -135,7 +135,7 @@ export default function Withdraw() {
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
-      <main className="pl-16 pt-16 max-w-xl mx-auto px-4 py-8">
+      <main className="pt-16 max-w-xl mx-auto px-4 sm:pl-16 py-8">
         <h1 className="text-2xl font-black mb-1">Withdraw Funds</h1>
         <p className="text-muted-foreground text-sm mb-8">
           {isNGN ? "Send funds to your Nigerian bank account" : "Receive funds via PayPal"}
