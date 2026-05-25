@@ -17,7 +17,7 @@ function getResend(): Resend {
   return new Resend(key);
 }
 
-const FROM = "Gold Mailer <noreply@mail.goldmailer.xyz>";
+const FROM = "Gold Mailer <noreply@goldmailer.xyz>";
 
 function baseHtml(title: string, preheader: string, bodyContent: string): string {
   return `<!DOCTYPE html>
