@@ -922,6 +922,27 @@ components:
         paypalName:
           type: string
           nullable: true
+        usBankName:
+          type: string
+          nullable: true
+        usAccountNumber:
+          type: string
+          nullable: true
+        usAccountName:
+          type: string
+          nullable: true
+        usPaypalEmail:
+          type: string
+          nullable: true
+        usPaypalName:
+          type: string
+          nullable: true
+        usShowBank:
+          type: boolean
+          nullable: true
+        usShowPaypal:
+          type: boolean
+          nullable: true
 
     AdminUser:
       type: object

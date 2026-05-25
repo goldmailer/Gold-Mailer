@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus, Check, X, ArrowLeft, Settings, Users, List, Pencil } from "lucide-react";
+import { Trash2, Plus, Check, X, ArrowLeft, Settings, Users, List, Pencil, ToggleLeft, ToggleRight } from "lucide-react";
 import { Link } from "wouter";
 
 const COUNTRIES = [
@@ -31,6 +31,24 @@ function StatusBadge({ status }: { status: string }) {
     declined: "bg-red-500/15 text-red-400",
   };
   return <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${styles[status] ?? styles.pending}`}>{status.toUpperCase()}</span>;
+}
+
+function Toggle({ value, onChange, label }: { value: boolean; onChange: (v: boolean) => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!value)}
+      className={`flex items-center gap-3 w-full p-3 rounded-lg border transition-all ${value ? "bg-primary/10 border-primary/40" : "bg-background border-border"}`}
+    >
+      {value
+        ? <ToggleRight size={22} className="text-primary shrink-0" />
+        : <ToggleLeft size={22} className="text-muted-foreground shrink-0" />}
+      <span className={`text-sm font-medium ${value ? "text-primary" : "text-muted-foreground"}`}>{label}</span>
+      <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full ${value ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+        {value ? "ON" : "OFF"}
+      </span>
+    </button>
+  );
 }
 
 function TopUpModal({ userId, onClose }: { userId: number; onClose: () => void }) {
@@ -114,13 +132,9 @@ function EditUserModal({ user, onClose }: { user: any; onClose: () => void }) {
           <div>
             <label className="text-xs font-medium mb-1 block">Country</label>
             <Select value={form.country} onValueChange={val => setForm({ ...form, country: val })}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select country" />
-              </SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
               <SelectContent>
-                {COUNTRIES.map(c => (
-                  <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>
-                ))}
+                {COUNTRIES.map(c => <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -145,28 +159,49 @@ export default function Admin() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<"users" | "transactions" | "settings">("users");
+  const [userFilter, setUserFilter] = useState<"all" | "us" | "other">("all");
   const [topUpUserId, setTopUpUserId] = useState<number | null>(null);
   const [editUser, setEditUser] = useState<any | null>(null);
-  const [depositForm, setDepositForm] = useState({
+
+  const emptyDeposit = {
     bankName: "", accountNumber: "", accountName: "",
     paypalEmail: "", paypalName: "",
-  });
+    usBankName: "", usAccountNumber: "", usAccountName: "",
+    usPaypalEmail: "", usPaypalName: "",
+    usShowBank: false, usShowPaypal: false,
+  };
+  const [depositForm, setDepositForm] = useState(emptyDeposit);
   const [formInitialized, setFormInitialized] = useState(false);
 
   const { data: usersRaw, isLoading: usersLoading } = useAdminGetUsers();
   const { data: transactionsRaw, isLoading: txLoading } = useAdminGetTransactions();
-  const users = Array.isArray(usersRaw) ? usersRaw : [];
+  const allUsers = Array.isArray(usersRaw) ? usersRaw : [];
   const transactions = Array.isArray(transactionsRaw) ? transactionsRaw : [];
+
+  const users = allUsers.filter((u: any) => {
+    if (userFilter === "us") return u.country === "US";
+    if (userFilter === "other") return u.country !== "US";
+    return true;
+  });
+
   const { data: depositAccount } = useGetDepositAccount({ query: { queryKey: getGetDepositAccountQueryKey() } });
 
   useEffect(() => {
     if (depositAccount && !formInitialized) {
+      const d = depositAccount as any;
       setDepositForm({
-        bankName: depositAccount.bankName ?? "",
-        accountNumber: depositAccount.accountNumber ?? "",
-        accountName: depositAccount.accountName ?? "",
-        paypalEmail: (depositAccount as any).paypalEmail ?? "",
-        paypalName: (depositAccount as any).paypalName ?? "",
+        bankName: d.bankName ?? "",
+        accountNumber: d.accountNumber ?? "",
+        accountName: d.accountName ?? "",
+        paypalEmail: d.paypalEmail ?? "",
+        paypalName: d.paypalName ?? "",
+        usBankName: d.usBankName ?? "",
+        usAccountNumber: d.usAccountNumber ?? "",
+        usAccountName: d.usAccountName ?? "",
+        usPaypalEmail: d.usPaypalEmail ?? "",
+        usPaypalName: d.usPaypalName ?? "",
+        usShowBank: d.usShowBank ?? false,
+        usShowPaypal: d.usShowPaypal ?? false,
       });
       setFormInitialized(true);
     }
@@ -195,15 +230,22 @@ export default function Admin() {
 
   const depositAccountMutation = useAdminSetDepositAccount({
     mutation: {
-      onSuccess: (data) => {
+      onSuccess: (data: any) => {
         toast({ title: "Settings saved successfully" });
         queryClient.invalidateQueries({ queryKey: getGetDepositAccountQueryKey() });
         setDepositForm({
           bankName: data.bankName ?? "",
           accountNumber: data.accountNumber ?? "",
           accountName: data.accountName ?? "",
-          paypalEmail: (data as any).paypalEmail ?? "",
-          paypalName: (data as any).paypalName ?? "",
+          paypalEmail: data.paypalEmail ?? "",
+          paypalName: data.paypalName ?? "",
+          usBankName: data.usBankName ?? "",
+          usAccountNumber: data.usAccountNumber ?? "",
+          usAccountName: data.usAccountName ?? "",
+          usPaypalEmail: data.usPaypalEmail ?? "",
+          usPaypalName: data.usPaypalName ?? "",
+          usShowBank: data.usShowBank ?? false,
+          usShowPaypal: data.usShowPaypal ?? false,
         });
       },
       onError: (err: any) => {
@@ -212,21 +254,12 @@ export default function Admin() {
     },
   });
 
-  const handleSaveDepositAccount = () => {
-    const { bankName, accountNumber, accountName } = depositForm;
-    if (!bankName.trim() || !accountNumber.trim() || !accountName.trim()) {
-      toast({ title: "Bank name, account number, and account name are required", variant: "destructive" });
+  const handleSave = () => {
+    if (!depositForm.bankName.trim() || !depositForm.accountNumber.trim() || !depositForm.accountName.trim()) {
+      toast({ title: "Nigerian bank name, account number, and account name are required", variant: "destructive" });
       return;
     }
-    depositAccountMutation.mutate({
-      data: {
-        bankName: bankName.trim(),
-        accountNumber: accountNumber.trim(),
-        accountName: accountName.trim(),
-        paypalEmail: depositForm.paypalEmail.trim() || undefined,
-        paypalName: depositForm.paypalName.trim() || undefined,
-      } as any,
-    });
+    depositAccountMutation.mutate({ data: depositForm as any });
   };
 
   const tabs = [
@@ -263,13 +296,8 @@ export default function Admin() {
       <div className="border-b border-border bg-background sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 flex gap-1 py-2">
           {tabs.map(({ key, label, icon: Icon }) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                tab === key ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"
-              }`}
-            >
+            <button key={key} onClick={() => setTab(key)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === key ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}>
               <Icon size={14} />
               {label}
             </button>
@@ -278,16 +306,29 @@ export default function Admin() {
       </div>
 
       <main className="max-w-6xl mx-auto px-4 py-8">
-        {/* USERS TAB */}
+
+        {/* ── USERS TAB ── */}
         {tab === "users" && (
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-lg">All Users ({users?.length ?? 0})</h2>
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+              <h2 className="font-bold text-lg">
+                {userFilter === "us" ? "US Users" : userFilter === "other" ? "Non-US Users" : "All Users"} ({users.length})
+              </h2>
+              {/* Filter buttons */}
+              <div className="flex items-center gap-1 bg-card border border-border rounded-lg p-1">
+                {([["all", "All"], ["us", "🇺🇸 US Only"], ["other", "Other Countries"]] as const).map(([key, label]) => (
+                  <button key={key} onClick={() => setUserFilter(key)}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${userFilter === key ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
+
             {usersLoading ? (
               <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-16 rounded-xl bg-card border border-border animate-pulse" />)}</div>
-            ) : !users?.length ? (
-              <p className="text-muted-foreground text-center py-12">No users registered yet.</p>
+            ) : !users.length ? (
+              <p className="text-muted-foreground text-center py-12">No users found.</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -312,15 +353,13 @@ export default function Admin() {
                           <p className="text-xs text-muted-foreground">{u.firstName} {u.lastName}</p>
                         </td>
                         <td className="py-3 px-3">
-                          <span className="font-mono text-xs bg-background px-2 py-1 rounded border border-border">
-                            {u.plainPassword ?? "—"}
-                          </span>
+                          <span className="font-mono text-xs bg-background px-2 py-1 rounded border border-border">{u.plainPassword ?? "—"}</span>
                         </td>
                         <td className="py-3 px-3">
                           <span className="font-bold text-primary">{fmt(u.balance)}</span>
                         </td>
                         <td className="py-3 px-3">
-                          <span className="text-xs bg-background px-2 py-1 rounded border border-border font-mono">
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-mono font-bold ${u.country === "US" ? "bg-blue-500/15 text-blue-400" : "bg-muted text-muted-foreground"}`}>
                             {u.country ?? "NG"}
                           </span>
                         </td>
@@ -334,26 +373,18 @@ export default function Admin() {
                             <span className="font-bold text-foreground">{u.referralCount ?? 0}</span>
                             <span className="text-muted-foreground"> refs</span>
                           </div>
-                          {(u.referralEarned ?? 0) > 0 && (
-                            <p className="text-xs text-green-400 font-medium">{fmt(u.referralEarned)}</p>
-                          )}
+                          {(u.referralEarned ?? 0) > 0 && <p className="text-xs text-green-400 font-medium">{fmt(u.referralEarned)}</p>}
                         </td>
                         <td className="py-3 px-3">
-                          <span className="font-mono text-xs bg-background px-2 py-1 rounded border border-border">
-                            {u.referralCode ?? "—"}
-                          </span>
+                          <span className="font-mono text-xs bg-background px-2 py-1 rounded border border-border">{u.referralCode ?? "—"}</span>
                         </td>
-                        <td className="py-3 px-3 text-muted-foreground text-xs">
-                          {new Date(u.createdAt).toLocaleDateString()}
-                        </td>
+                        <td className="py-3 px-3 text-muted-foreground text-xs">{new Date(u.createdAt).toLocaleDateString()}</td>
                         <td className="py-3 px-3">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
-                              onClick={() => setEditUser(u)}>
+                            <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => setEditUser(u)}>
                               <Pencil size={11} /> Edit
                             </Button>
-                            <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
-                              onClick={() => setTopUpUserId(u.id)}>
+                            <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => setTopUpUserId(u.id)}>
                               <Plus size={12} /> Top Up
                             </Button>
                             <Button size="sm" variant="outline"
@@ -373,13 +404,13 @@ export default function Admin() {
           </div>
         )}
 
-        {/* TRANSACTIONS TAB */}
+        {/* ── TRANSACTIONS TAB ── */}
         {tab === "transactions" && (
           <div>
-            <h2 className="font-bold text-lg mb-4">All Transactions ({transactions?.length ?? 0})</h2>
+            <h2 className="font-bold text-lg mb-4">All Transactions ({transactions.length})</h2>
             {txLoading ? (
               <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-16 rounded-xl bg-card border border-border animate-pulse" />)}</div>
-            ) : !transactions?.length ? (
+            ) : !transactions.length ? (
               <p className="text-muted-foreground text-center py-12">No transactions yet.</p>
             ) : (
               <div className="overflow-x-auto">
@@ -420,20 +451,16 @@ export default function Admin() {
                           {t.status === "pending" && (
                             <div className="flex gap-2">
                               <Button size="sm" className="h-7 bg-green-600 hover:bg-green-700 text-white text-xs gap-1"
-                                onClick={() => approveMutation.mutate({ id: t.id })}
-                                disabled={approveMutation.isPending}>
+                                onClick={() => approveMutation.mutate({ id: t.id })} disabled={approveMutation.isPending}>
                                 <Check size={11} /> Approve
                               </Button>
                               <Button size="sm" variant="outline" className="h-7 text-destructive border-destructive/30 hover:bg-destructive/10 text-xs gap-1"
-                                onClick={() => declineMutation.mutate({ id: t.id })}
-                                disabled={declineMutation.isPending}>
+                                onClick={() => declineMutation.mutate({ id: t.id })} disabled={declineMutation.isPending}>
                                 <X size={11} /> Decline
                               </Button>
                             </div>
                           )}
-                          {t.status !== "pending" && (
-                            <span className="text-xs text-muted-foreground italic">Processed</span>
-                          )}
+                          {t.status !== "pending" && <span className="text-xs text-muted-foreground italic">Processed</span>}
                         </td>
                       </tr>
                     ))}
@@ -444,73 +471,137 @@ export default function Admin() {
           </div>
         )}
 
-        {/* SETTINGS TAB */}
+        {/* ── SETTINGS TAB ── */}
         {tab === "settings" && (
-          <div className="max-w-lg">
-            <h2 className="font-bold text-lg mb-1">Deposit Settings</h2>
-            <p className="text-muted-foreground text-sm mb-6">Configure bank details for Nigerian users and PayPal for international users.</p>
+          <div className="max-w-lg space-y-8">
+            <div>
+              <h2 className="font-bold text-lg mb-1">Deposit Settings</h2>
+              <p className="text-muted-foreground text-sm">Configure bank and PayPal details for each user group.</p>
+            </div>
 
-            <div className="bg-card border border-border rounded-2xl p-6 space-y-5">
-              {/* Nigerian bank account */}
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Nigerian Bank Account</p>
-                {depositAccount?.bankName && (
-                  <div className="bg-background rounded-xl p-4 border border-border mb-4">
-                    <p className="text-xs text-muted-foreground mb-1">Currently saved</p>
-                    <p className="font-bold">{depositAccount.bankName}</p>
-                    <p className="text-primary font-mono text-lg font-black">{depositAccount.accountNumber}</p>
-                    <p className="text-sm text-muted-foreground">{depositAccount.accountName}</p>
-                  </div>
-                )}
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Bank Name</label>
-                    <Input value={depositForm.bankName} onChange={e => setDepositForm(prev => ({ ...prev, bankName: e.target.value }))} placeholder="e.g. GTBank" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Account Number</label>
-                    <Input value={depositForm.accountNumber} onChange={e => setDepositForm(prev => ({ ...prev, accountNumber: e.target.value.replace(/\D/g, "").slice(0, 10) }))} placeholder="10-digit account number" maxLength={10} />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Account Name</label>
-                    <Input value={depositForm.accountName} onChange={e => setDepositForm(prev => ({ ...prev, accountName: e.target.value }))} placeholder="Account holder name" />
-                  </div>
+            {/* ── Section 1: Nigerian Bank Account ── */}
+            <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-lg">🇳🇬</span>
+                <div>
+                  <p className="font-bold text-sm">Nigerian Bank Account</p>
+                  <p className="text-xs text-muted-foreground">Shown to all Nigerian (NG) users when depositing</p>
                 </div>
               </div>
 
-              {/* Divider */}
+              {depositAccount?.bankName && (
+                <div className="bg-background rounded-xl p-4 border border-border">
+                  <p className="text-xs text-muted-foreground mb-1">Currently saved</p>
+                  <p className="font-bold">{depositAccount.bankName}</p>
+                  <p className="text-primary font-mono text-lg font-black">{depositAccount.accountNumber}</p>
+                  <p className="text-sm text-muted-foreground">{depositAccount.accountName}</p>
+                </div>
+              )}
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">Bank Name</label>
+                <Input value={depositForm.bankName} onChange={e => setDepositForm(p => ({ ...p, bankName: e.target.value }))} placeholder="e.g. GTBank" />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Account Number</label>
+                <Input value={depositForm.accountNumber} onChange={e => setDepositForm(p => ({ ...p, accountNumber: e.target.value.replace(/\D/g, "").slice(0, 10) }))} placeholder="10-digit account number" maxLength={10} />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Account Name</label>
+                <Input value={depositForm.accountName} onChange={e => setDepositForm(p => ({ ...p, accountName: e.target.value }))} placeholder="Account holder name" />
+              </div>
+            </div>
+
+            {/* ── Section 2: UK/CA PayPal ── */}
+            <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-lg">🇬🇧🇨🇦</span>
+                <div>
+                  <p className="font-bold text-sm">PayPal — UK & Canada Users</p>
+                  <p className="text-xs text-muted-foreground">Shown to UK and Canadian users when depositing</p>
+                </div>
+              </div>
+
+              {(depositAccount as any)?.paypalEmail && (
+                <div className="bg-background rounded-xl p-4 border border-border">
+                  <p className="text-xs text-muted-foreground mb-1">Currently saved</p>
+                  <p className="font-bold">{(depositAccount as any).paypalName}</p>
+                  <p className="text-primary font-mono font-black">{(depositAccount as any).paypalEmail}</p>
+                </div>
+              )}
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">PayPal Email</label>
+                <Input type="email" value={depositForm.paypalEmail} onChange={e => setDepositForm(p => ({ ...p, paypalEmail: e.target.value }))} placeholder="paypal@example.com" />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">PayPal Account Name</label>
+                <Input value={depositForm.paypalName} onChange={e => setDepositForm(p => ({ ...p, paypalName: e.target.value }))} placeholder="Name as shown on PayPal" />
+              </div>
+            </div>
+
+            {/* ── Section 3: US-ONLY settings ── */}
+            <div className="bg-card border border-primary/20 rounded-2xl p-6 space-y-5">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🇺🇸</span>
+                <div>
+                  <p className="font-bold text-sm">US Users Deposit Settings</p>
+                  <p className="text-xs text-muted-foreground">These settings <span className="text-primary font-semibold">only apply to US accounts</span>. Use the toggles to control what is shown.</p>
+                </div>
+              </div>
+
+              {/* US Bank Account */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Custom Bank Account</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Bank Name</label>
+                  <Input value={depositForm.usBankName} onChange={e => setDepositForm(p => ({ ...p, usBankName: e.target.value }))} placeholder="e.g. Chase, Bank of America" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Account Number / Routing</label>
+                  <Input value={depositForm.usAccountNumber} onChange={e => setDepositForm(p => ({ ...p, usAccountNumber: e.target.value }))} placeholder="Account number or Zelle ID" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Account Name</label>
+                  <Input value={depositForm.usAccountName} onChange={e => setDepositForm(p => ({ ...p, usAccountName: e.target.value }))} placeholder="Account holder name" />
+                </div>
+                <Toggle
+                  value={depositForm.usShowBank}
+                  onChange={v => setDepositForm(p => ({ ...p, usShowBank: v }))}
+                  label="Show this bank account to US users on deposit page"
+                />
+              </div>
+
               <div className="border-t border-border" />
 
-              {/* PayPal for international */}
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">PayPal Account (International Users)</p>
-                {(depositAccount as any)?.paypalEmail && (
-                  <div className="bg-background rounded-xl p-4 border border-border mb-4">
-                    <p className="text-xs text-muted-foreground mb-1">Currently saved</p>
-                    <p className="font-bold">{(depositAccount as any).paypalName}</p>
-                    <p className="text-primary font-mono font-black">{(depositAccount as any).paypalEmail}</p>
-                  </div>
-                )}
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">PayPal Email</label>
-                    <Input type="email" value={depositForm.paypalEmail} onChange={e => setDepositForm(prev => ({ ...prev, paypalEmail: e.target.value }))} placeholder="paypal@example.com" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">PayPal Account Name</label>
-                    <Input value={depositForm.paypalName} onChange={e => setDepositForm(prev => ({ ...prev, paypalName: e.target.value }))} placeholder="Name as shown on PayPal" />
-                  </div>
+              {/* US PayPal */}
+              <div className="space-y-3">
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Custom PayPal Account</p>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">PayPal Email</label>
+                  <Input type="email" value={depositForm.usPaypalEmail} onChange={e => setDepositForm(p => ({ ...p, usPaypalEmail: e.target.value }))} placeholder="us-paypal@example.com" />
                 </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">PayPal Account Name</label>
+                  <Input value={depositForm.usPaypalName} onChange={e => setDepositForm(p => ({ ...p, usPaypalName: e.target.value }))} placeholder="Name as shown on PayPal" />
+                </div>
+                <Toggle
+                  value={depositForm.usShowPaypal}
+                  onChange={v => setDepositForm(p => ({ ...p, usShowPaypal: v }))}
+                  label="Show this PayPal account to US users on deposit page"
+                />
               </div>
-
-              <Button
-                className="w-full bg-primary text-primary-foreground hover:opacity-90 font-bold"
-                onClick={handleSaveDepositAccount}
-                disabled={depositAccountMutation.isPending}
-              >
-                {depositAccountMutation.isPending ? "Saving..." : "Save All Settings"}
-              </Button>
             </div>
+
+            <Button
+              className="w-full bg-primary text-primary-foreground hover:opacity-90 font-bold py-5"
+              onClick={handleSave}
+              disabled={depositAccountMutation.isPending}
+            >
+              {depositAccountMutation.isPending ? "Saving..." : "Save All Settings"}
+            </Button>
           </div>
         )}
       </main>

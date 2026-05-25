@@ -137,16 +137,29 @@ router.get("/transactions", requireAuth, async (req, res) => {
 router.get("/settings/deposit-account", async (req, res) => {
   const settings = await db.select().from(settingsTable).where(eq(settingsTable.key, "deposit_account")).limit(1);
   if (settings.length === 0) {
-    res.json({ bankName: "", accountNumber: "", accountName: "", paypalEmail: null, paypalName: null });
+    res.json({
+      bankName: "", accountNumber: "", accountName: "",
+      paypalEmail: null, paypalName: null,
+      usBankName: null, usAccountNumber: null, usAccountName: null,
+      usPaypalEmail: null, usPaypalName: null,
+      usShowBank: false, usShowPaypal: false,
+    });
     return;
   }
-  const data = JSON.parse(settings[0].value);
+  const d = JSON.parse(settings[0].value);
   res.json({
-    bankName: data.bankName ?? "",
-    accountNumber: data.accountNumber ?? "",
-    accountName: data.accountName ?? "",
-    paypalEmail: data.paypalEmail ?? null,
-    paypalName: data.paypalName ?? null,
+    bankName: d.bankName ?? "",
+    accountNumber: d.accountNumber ?? "",
+    accountName: d.accountName ?? "",
+    paypalEmail: d.paypalEmail ?? null,
+    paypalName: d.paypalName ?? null,
+    usBankName: d.usBankName ?? null,
+    usAccountNumber: d.usAccountNumber ?? null,
+    usAccountName: d.usAccountName ?? null,
+    usPaypalEmail: d.usPaypalEmail ?? null,
+    usPaypalName: d.usPaypalName ?? null,
+    usShowBank: d.usShowBank ?? false,
+    usShowPaypal: d.usShowPaypal ?? false,
   });
 });
 

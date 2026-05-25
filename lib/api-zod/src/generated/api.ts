@@ -325,6 +325,13 @@ export const GetDepositAccountResponse = zod.object({
   accountName: zod.string(),
   paypalEmail: zod.string().nullish(),
   paypalName: zod.string().nullish(),
+  usBankName: zod.string().nullish(),
+  usAccountNumber: zod.string().nullish(),
+  usAccountName: zod.string().nullish(),
+  usPaypalEmail: zod.string().nullish(),
+  usPaypalName: zod.string().nullish(),
+  usShowBank: zod.boolean().nullish(),
+  usShowPaypal: zod.boolean().nullish(),
 });
 
 /**
@@ -472,6 +479,13 @@ export const AdminSetDepositAccountBody = zod.object({
   accountName: zod.string(),
   paypalEmail: zod.string().nullish(),
   paypalName: zod.string().nullish(),
+  usBankName: zod.string().nullish(),
+  usAccountNumber: zod.string().nullish(),
+  usAccountName: zod.string().nullish(),
+  usPaypalEmail: zod.string().nullish(),
+  usPaypalName: zod.string().nullish(),
+  usShowBank: zod.boolean().nullish(),
+  usShowPaypal: zod.boolean().nullish(),
 });
 
 export const AdminSetDepositAccountResponse = zod.object({
@@ -480,4 +494,11 @@ export const AdminSetDepositAccountResponse = zod.object({
   accountName: zod.string(),
   paypalEmail: zod.string().nullish(),
   paypalName: zod.string().nullish(),
+  usBankName: zod.string().nullish(),
+  usAccountNumber: zod.string().nullish(),
+  usAccountName: zod.string().nullish(),
+  usPaypalEmail: zod.string().nullish(),
+  usPaypalName: zod.string().nullish(),
+  usShowBank: zod.boolean().nullish(),
+  usShowPaypal: zod.boolean().nullish(),
 });

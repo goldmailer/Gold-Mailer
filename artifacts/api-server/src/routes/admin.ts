@@ -205,19 +205,37 @@ router.patch("/admin/users/:id", requireAdmin, async (req, res) => {
 
 // PUT /admin/deposit-account
 router.put("/admin/deposit-account", requireAdmin, async (req, res) => {
-  const { bankName, accountNumber, accountName, paypalEmail, paypalName } = req.body;
+  const {
+    bankName, accountNumber, accountName,
+    paypalEmail, paypalName,
+    usBankName, usAccountNumber, usAccountName,
+    usPaypalEmail, usPaypalName,
+    usShowBank, usShowPaypal,
+  } = req.body;
   if (!bankName || !accountNumber || !accountName) {
     res.status(400).json({ error: "Bank name, account number, and account name are required" });
     return;
   }
-  const value = JSON.stringify({ bankName, accountNumber, accountName, paypalEmail: paypalEmail || null, paypalName: paypalName || null });
+  const payload = {
+    bankName, accountNumber, accountName,
+    paypalEmail: paypalEmail || null,
+    paypalName: paypalName || null,
+    usBankName: usBankName || null,
+    usAccountNumber: usAccountNumber || null,
+    usAccountName: usAccountName || null,
+    usPaypalEmail: usPaypalEmail || null,
+    usPaypalName: usPaypalName || null,
+    usShowBank: usShowBank === true || usShowBank === "true",
+    usShowPaypal: usShowPaypal === true || usShowPaypal === "true",
+  };
+  const value = JSON.stringify(payload);
   const existing = await db.select().from(settingsTable).where(eq(settingsTable.key, "deposit_account")).limit(1);
   if (existing.length > 0) {
     await db.update(settingsTable).set({ value, updatedAt: new Date() }).where(eq(settingsTable.key, "deposit_account"));
   } else {
     await db.insert(settingsTable).values({ key: "deposit_account", value });
   }
-  res.json({ bankName, accountNumber, accountName, paypalEmail: paypalEmail || null, paypalName: paypalName || null });
+  res.json(payload);
 });
 
 export default router;

@@ -197,6 +197,13 @@ export interface DepositAccount {
   accountName: string;
   paypalEmail?: string | null;
   paypalName?: string | null;
+  usBankName?: string | null;
+  usAccountNumber?: string | null;
+  usAccountName?: string | null;
+  usPaypalEmail?: string | null;
+  usPaypalName?: string | null;
+  usShowBank?: boolean | null;
+  usShowPaypal?: boolean | null;
 }
 
 export interface AdminUser {
