@@ -35,6 +35,8 @@ router.get("/admin/users", requireAdmin, async (req, res) => {
     plainPassword: u.plainPassword,
     firstName: u.firstName,
     lastName: u.lastName,
+    country: u.country ?? "NG",
+    phone: u.phone,
     balance: parseFloat(u.balance),
     isVerified: u.isVerified,
     profileComplete: u.profileComplete,

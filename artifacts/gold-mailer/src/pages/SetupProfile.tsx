@@ -68,7 +68,7 @@ export default function SetupProfile() {
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { firstName: "", middleName: "", lastName: "", age: undefined, gender: "", avatarUrl: "", country: "", phone: "" },
+    defaultValues: { firstName: "", middleName: "", lastName: "", age: undefined, gender: "", avatarUrl: "", country: "US", phone: "" },
   });
 
   const mutation = useUpdateProfile({
@@ -165,8 +165,8 @@ export default function SetupProfile() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="NG">Nigeria</SelectItem>
                       <SelectItem value="US">United States</SelectItem>
+                      <SelectItem value="NG">Nigeria</SelectItem>
                       <SelectItem value="UK">United Kingdom</SelectItem>
                       <SelectItem value="CA">Canada</SelectItem>
                     </SelectContent>
