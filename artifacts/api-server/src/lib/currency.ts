@@ -14,7 +14,7 @@ export const COUNTRY_CONFIG: Record<
   }
 > = {
   NG: { symbol: "₦", minStake: 2700, maxStake: 100000, signupBonus: 3000, referralBonus: 500, baseProfit: 8000, dailyReward: 100, firstWithdrawMin: 10700 },
-  US: { symbol: "$", minStake: 3, maxStake: 100, signupBonus: 3, referralBonus: 0.5, baseProfit: 8, dailyReward: 0.1, firstWithdrawMin: 10 },
+  US: { symbol: "$", minStake: 3, maxStake: 100, signupBonus: 10, referralBonus: 0.5, baseProfit: 8, dailyReward: 0.1, firstWithdrawMin: 10 },
   UK: { symbol: "£", minStake: 3, maxStake: 100, signupBonus: 3, referralBonus: 0.5, baseProfit: 8, dailyReward: 0.1, firstWithdrawMin: 10 },
   CA: { symbol: "C$", minStake: 3, maxStake: 100, signupBonus: 3, referralBonus: 0.5, baseProfit: 8, dailyReward: 0.1, firstWithdrawMin: 10 },
 };

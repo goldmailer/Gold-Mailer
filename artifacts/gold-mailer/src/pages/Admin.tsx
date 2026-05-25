@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect, useRef } from "react";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import {
   useAdminGetUsers, useAdminDeleteUser, useAdminTopUpBalance, useAdminUpdateUser,
   useAdminGetTransactions, useAdminApproveTransaction, useAdminDeclineTransaction,
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus, Check, X, ArrowLeft, Settings, Users, List, Pencil, ToggleLeft, ToggleRight } from "lucide-react";
+import { Trash2, Plus, Check, X, ArrowLeft, Settings, Users, List, Pencil, ToggleLeft, ToggleRight, MessageSquare, Send } from "lucide-react";
 import { Link } from "wouter";
 
 const COUNTRIES = [
@@ -158,10 +158,61 @@ function EditUserModal({ user, onClose }: { user: any; onClose: () => void }) {
 export default function Admin() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState<"users" | "transactions" | "settings">("users");
+  const [tab, setTab] = useState<"users" | "transactions" | "settings" | "support">("users");
   const [userFilter, setUserFilter] = useState<"all" | "us" | "other">("all");
   const [topUpUserId, setTopUpUserId] = useState<number | null>(null);
   const [editUser, setEditUser] = useState<any | null>(null);
+
+  // Support chat state
+  const [supportUserId, setSupportUserId] = useState<number | null>(null);
+  const [supportInput, setSupportInput] = useState("");
+  const [supportSending, setSupportSending] = useState(false);
+  const supportMsgsEndRef = useRef<HTMLDivElement>(null);
+
+  const { data: supportChats, refetch: refetchChats } = useQuery({
+    queryKey: ["admin-support-chats"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/support/chats", { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    refetchInterval: 5000,
+    enabled: tab === "support",
+  });
+
+  const { data: supportMessages, refetch: refetchMessages } = useQuery({
+    queryKey: ["admin-support-messages", supportUserId],
+    queryFn: async () => {
+      if (!supportUserId) return [];
+      const res = await fetch(`/api/admin/support/chats/${supportUserId}`, { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!supportUserId,
+    refetchInterval: 3000,
+  });
+
+  useEffect(() => {
+    setTimeout(() => supportMsgsEndRef.current?.scrollIntoView({ behavior: "smooth" }), 80);
+  }, [supportMessages]);
+
+  const sendSupportReply = async () => {
+    if (!supportInput.trim() || !supportUserId || supportSending) return;
+    setSupportSending(true);
+    try {
+      await fetch(`/api/admin/support/chats/${supportUserId}/reply`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: supportInput.trim() }),
+      });
+      setSupportInput("");
+      refetchMessages();
+      refetchChats();
+    } finally {
+      setSupportSending(false);
+    }
+  };
 
   const emptyDeposit = {
     bankName: "", accountNumber: "", accountName: "",
@@ -262,10 +313,15 @@ export default function Admin() {
     depositAccountMutation.mutate({ data: depositForm as any });
   };
 
+  const totalUnread = Array.isArray(supportChats)
+    ? supportChats.reduce((s: number, c: any) => s + (c.unreadCount ?? 0), 0)
+    : 0;
+
   const tabs = [
     { key: "users", label: "Users", icon: Users },
     { key: "transactions", label: "Transactions", icon: List },
     { key: "settings", label: "Settings", icon: Settings },
+    { key: "support", label: "Support", icon: MessageSquare, badge: totalUnread },
   ] as const;
 
   return (
@@ -294,12 +350,17 @@ export default function Admin() {
 
       {/* Tabs */}
       <div className="border-b border-border bg-background sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 flex gap-1 py-2">
-          {tabs.map(({ key, label, icon: Icon }) => (
+        <div className="max-w-6xl mx-auto px-4 flex gap-1 py-2 overflow-x-auto">
+          {tabs.map(({ key, label, icon: Icon, ...rest }) => (
             <button key={key} onClick={() => setTab(key)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === key ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}>
+              className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors shrink-0 ${tab === key ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}>
               <Icon size={14} />
               {label}
+              {(rest as any).badge > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-bold">
+                  {(rest as any).badge}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -604,6 +665,111 @@ export default function Admin() {
             </Button>
           </div>
         )}
+        {/* ── SUPPORT TAB ── */}
+        {tab === "support" && (
+          <div className="flex flex-col lg:flex-row gap-4" style={{ minHeight: 520 }}>
+            {/* Conversation list */}
+            <div className="lg:w-72 shrink-0 bg-card border border-border rounded-2xl overflow-hidden flex flex-col">
+              <div className="px-4 py-3 border-b border-border">
+                <p className="font-bold text-sm">Conversations</p>
+                <p className="text-xs text-muted-foreground">Auto-refreshes every 5s</p>
+              </div>
+              <div className="overflow-y-auto flex-1">
+                {!Array.isArray(supportChats) || supportChats.length === 0 ? (
+                  <div className="p-6 text-center">
+                    <MessageSquare size={28} className="text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">No messages yet.</p>
+                  </div>
+                ) : (
+                  supportChats.map((chat: any) => (
+                    <button
+                      key={chat.userId}
+                      onClick={() => setSupportUserId(chat.userId)}
+                      className={`w-full text-left px-4 py-3 border-b border-border/50 hover:bg-accent transition-colors ${supportUserId === chat.userId ? "bg-primary/10 border-l-2 border-l-primary" : ""}`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-sm truncate">{chat.firstName ?? ""} {chat.lastName ?? ""}</p>
+                          <p className="text-xs text-muted-foreground truncate">{chat.email}</p>
+                          <p className="text-xs text-muted-foreground truncate mt-0.5 italic">
+                            {chat.lastSender === "admin" ? "You: " : ""}{chat.lastMessage}
+                          </p>
+                        </div>
+                        {chat.unreadCount > 0 && (
+                          <span className="shrink-0 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-bold mt-0.5">
+                            {chat.unreadCount}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Message panel */}
+            {supportUserId ? (
+              <div className="flex-1 bg-card border border-border rounded-2xl flex flex-col overflow-hidden" style={{ minHeight: 400 }}>
+                <div className="px-4 py-3 border-b border-border shrink-0">
+                  {(() => {
+                    const c = Array.isArray(supportChats) ? supportChats.find((ch: any) => ch.userId === supportUserId) : null;
+                    return c ? (
+                      <div>
+                        <p className="font-bold text-sm">{c.firstName ?? ""} {c.lastName ?? ""}</p>
+                        <p className="text-xs text-muted-foreground">{c.email}</p>
+                      </div>
+                    ) : null;
+                  })()}
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                  {(Array.isArray(supportMessages) ? supportMessages : []).map((m: any) => (
+                    <div key={m.id} className={`flex ${m.sender === "admin" ? "justify-end" : "justify-start"}`}>
+                      <div className={`max-w-[78%] px-3 py-2 rounded-2xl text-sm ${
+                        m.sender === "admin"
+                          ? "bg-primary text-primary-foreground rounded-br-sm"
+                          : "bg-muted text-foreground rounded-bl-sm border border-border"
+                      }`}>
+                        <p className="text-xs font-bold mb-0.5 opacity-60">{m.sender === "admin" ? "You (Admin)" : "User"}</p>
+                        <p className="break-words">{m.message}</p>
+                        <p className="text-xs opacity-40 mt-1 text-right">
+                          {new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={supportMsgsEndRef} />
+                </div>
+
+                <div className="border-t border-border p-3 flex gap-2 shrink-0">
+                  <Input
+                    value={supportInput}
+                    onChange={e => setSupportInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendSupportReply(); } }}
+                    placeholder="Type a reply to this user..."
+                    className="flex-1 text-sm"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={sendSupportReply}
+                    disabled={!supportInput.trim() || supportSending}
+                    className="bg-primary text-primary-foreground"
+                  >
+                    <Send size={14} />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 bg-card border border-border rounded-2xl flex items-center justify-center">
+                <div className="text-center">
+                  <MessageSquare size={36} className="text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground text-sm">Select a conversation to view and reply</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
       </main>
     </div>
   );

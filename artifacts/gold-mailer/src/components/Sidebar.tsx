@@ -8,6 +8,7 @@ import {
   ArrowUpCircle, List, Settings, LogOut, Menu, X, User, Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SupportChat } from "@/components/SupportChat";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -119,6 +120,8 @@ export function Sidebar() {
           </Button>
         </div>
       </aside>
+
+      <SupportChat />
     </>
   );
 }

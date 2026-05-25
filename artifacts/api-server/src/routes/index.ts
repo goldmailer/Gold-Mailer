@@ -6,6 +6,7 @@ import cardsRouter from "./cards";
 import stakesRouter from "./stakes";
 import transactionsRouter from "./transactions";
 import adminRouter from "./admin";
+import supportRouter from "./support";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(cardsRouter);
 router.use(stakesRouter);
 router.use(transactionsRouter);
 router.use(adminRouter);
+router.use(supportRouter);
 
 export default router;

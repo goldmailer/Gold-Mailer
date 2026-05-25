@@ -103,6 +103,15 @@ pool.query(`
     "updated_at" timestamp NOT NULL DEFAULT now()
   );
 
+  CREATE TABLE IF NOT EXISTS "support_messages" (
+    "id" serial PRIMARY KEY,
+    "user_id" integer NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+    "message" text NOT NULL,
+    "sender" text NOT NULL DEFAULT 'user',
+    "is_read" boolean NOT NULL DEFAULT false,
+    "created_at" timestamp NOT NULL DEFAULT now()
+  );
+
   -- Add any columns that may be missing from an older schema
   ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "first_name" text;
   ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "middle_name" text;
