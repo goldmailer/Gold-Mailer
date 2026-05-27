@@ -3,7 +3,9 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Shield, TrendingUp, Zap, ChevronRight, Lock, Globe, Award, CheckCircle2, Star } from "lucide-react";
 
-const heroImg = "/hero-person.jpg";
+const p1 = "/people/person1.jpg";
+const p2 = "/people/person2.jpg";
+const p3 = "/people/person3.jpg";
 
 const ADMIN_TAP_COUNT = 10;
 
@@ -128,38 +130,92 @@ export default function Landing() {
             </p>
           </div>
 
-          {/* Mobile hero image — shown only on small screens, between bullets and CTA */}
-          <div className="lg:hidden w-full mt-6 mb-2">
+          {/* Mobile hero image — shown only on small screens */}
+          <div className="lg:hidden w-full mt-6 mb-4 flex items-start justify-center gap-4">
             <img
-              src={heroImg}
-              alt="Investor checking returns on phone"
-              className="w-full max-w-xs mx-auto rounded-2xl object-cover shadow-lg"
-              style={{ maxHeight: "240px", objectPosition: "top" }}
+              src={p1}
+              alt="Happy investor"
+              className="w-[130px] h-[170px] object-cover object-top shadow-2xl"
+              style={{ borderRadius: "55% 45% 55% 45% / 50% 60% 40% 50%" }}
             />
+            <div className="flex flex-col gap-3 pt-8">
+              <img
+                src={p2}
+                alt="Excited investor"
+                className="w-[100px] h-[125px] object-cover object-top shadow-xl"
+                style={{ transform: "rotate(3deg)", borderRadius: "50% 50% 45% 55% / 45% 55% 45% 55%" }}
+              />
+              <img
+                src={p3}
+                alt="Celebrating investor"
+                className="w-[100px] h-[115px] object-cover object-top shadow-xl"
+                style={{ transform: "rotate(-3deg)", borderRadius: "45% 55% 50% 50% / 55% 45% 55% 45%" }}
+              />
+            </div>
           </div>
 
-          {/* Right — hero image (desktop) */}
-          <div className="relative hidden lg:flex items-end justify-center h-full">
-            {/* Decorative card behind image */}
-            <div className="absolute bottom-0 right-0 w-[480px] h-[560px] rounded-3xl bg-gradient-to-br from-primary/20 via-primary/5 to-blue-500/10 border border-primary/20" />
+          {/* Right — floating photo collage (desktop) */}
+          <div className="relative hidden lg:block" style={{ minHeight: "580px" }}>
 
-            {/* Stat chips floating */}
-            <div className="absolute top-24 right-8 bg-card border border-border rounded-2xl px-4 py-3 shadow-lg z-20">
+            {/* Soft background glow — behind everything */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[460px] h-[520px] rounded-full bg-primary/10 blur-[90px] pointer-events-none" />
+            <div className="absolute top-1/4 right-0 w-[220px] h-[220px] rounded-full bg-blue-500/8 blur-[70px] pointer-events-none" />
+
+            {/* Stat chips */}
+            <div className="absolute top-16 right-2 bg-card/95 backdrop-blur-sm border border-border rounded-2xl px-4 py-3 shadow-xl z-30">
               <p className="text-xs text-muted-foreground">7-Day Returns</p>
               <p className="text-xl font-black text-primary">Up to 3x+</p>
             </div>
-            <div className="absolute top-52 left-2 bg-card border border-border rounded-2xl px-4 py-3 shadow-lg z-20">
+            <div className="absolute bottom-24 left-2 bg-card/95 backdrop-blur-sm border border-border rounded-2xl px-4 py-3 shadow-xl z-30">
               <p className="text-xs text-muted-foreground">Daily Reward</p>
               <p className="text-lg font-black text-green-400">+$0.10/day</p>
             </div>
 
-            {/* The actual photo */}
-            <img
-              src={heroImg}
-              alt="Excited investor checking returns on phone"
-              className="relative z-10 w-[420px] object-cover object-top rounded-t-3xl"
-              style={{ maxHeight: "540px" }}
-            />
+            {/* Person 2 — top-left, smaller, slight tilt left */}
+            <div
+              className="absolute top-10 left-6 z-20 shadow-2xl"
+              style={{ width: 195, height: 250, transform: "rotate(-4deg)" }}
+            >
+              <img
+                src={p2}
+                alt="Winning investor"
+                className="w-full h-full object-cover object-top"
+                style={{ borderRadius: "55% 45% 50% 50% / 40% 60% 40% 60%" }}
+              />
+            </div>
+
+            {/* Person 1 — main centre, large organic blob */}
+            <div
+              className="absolute z-10 shadow-[0_30px_80px_rgba(0,0,0,0.55)]"
+              style={{
+                width: 295,
+                height: 415,
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+              }}
+            >
+              <img
+                src={p1}
+                alt="Excited investor"
+                className="w-full h-full object-cover object-top"
+                style={{ borderRadius: "42% 58% 60% 40% / 40% 42% 58% 60%" }}
+              />
+            </div>
+
+            {/* Person 3 — bottom-right, smaller, slight tilt right */}
+            <div
+              className="absolute bottom-6 right-6 z-20 shadow-2xl"
+              style={{ width: 190, height: 240, transform: "rotate(4deg)" }}
+            >
+              <img
+                src={p3}
+                alt="Happy investor"
+                className="w-full h-full object-cover object-top"
+                style={{ borderRadius: "50% 50% 45% 55% / 60% 60% 40% 40%" }}
+              />
+            </div>
+
           </div>
         </div>
       </section>
