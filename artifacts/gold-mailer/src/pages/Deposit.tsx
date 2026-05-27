@@ -21,13 +21,14 @@ export default function Deposit() {
 
   const cfg = getConfig((user as any)?.country);
   const country = (user as any)?.country ?? "NG";
-  const isNGN = country === "NG";
-  const isUS = country === "US";
 
   const { data: accountRaw, isLoading: accountLoading } = useGetDepositAccount({
     query: { queryKey: getGetDepositAccountQueryKey() },
   });
-  const account = accountRaw as any;
+
+  // New format: { accounts: { NG: { type, ... }, DEFAULT: { type, ... }, ... } }
+  const allAccounts = (accountRaw as any)?.accounts ?? {};
+  const myAccount = allAccounts[country] ?? allAccounts["DEFAULT"] ?? null;
 
   const mutation = useSubmitDeposit({
     mutation: {
@@ -68,7 +69,6 @@ export default function Deposit() {
     );
   }
 
-  /* ── helpers ── */
   const CopyBtn = ({ val, k }: { val: string; k: string }) => (
     <button onClick={() => copyValue(val, k)} className="p-2 rounded-lg bg-primary/20 hover:bg-primary/30 transition-colors ml-3 shrink-0">
       {copied === k ? <Check size={16} className="text-green-400" /> : <Copy size={16} className="text-primary" />}
@@ -85,20 +85,22 @@ export default function Deposit() {
     </div>
   );
 
-  /* Determine what to render for this user */
   const renderDepositInfo = () => {
     if (accountLoading) {
       return <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-8 bg-muted rounded animate-pulse" />)}</div>;
     }
+    if (!myAccount) {
+      return <p className="text-muted-foreground text-sm">Deposit details are not configured yet. Please check back later.</p>;
+    }
 
-    if (!account) return <p className="text-muted-foreground text-sm">Deposit details not configured yet. Please check back later.</p>;
-
-    /* ── NIGERIAN users ── */
-    if (isNGN) {
-      if (!account.accountNumber) return <p className="text-muted-foreground text-sm">Deposit account not configured yet.</p>;
+    /* ── Bank Transfer ── */
+    if (myAccount.type === "bank") {
+      if (!myAccount.accountNumber) {
+        return <p className="text-muted-foreground text-sm">Bank account not fully configured yet.</p>;
+      }
       return (
         <div className="space-y-3">
-          {[{ label: "Bank Name", value: account.bankName }, { label: "Account Name", value: account.accountName }].map(item => (
+          {[{ label: "Bank Name", value: myAccount.bankName }, { label: "Account Name", value: myAccount.accountName }].map(item => (
             <div key={item.label} className="flex justify-between p-3 bg-background rounded-lg">
               <span className="text-sm text-muted-foreground">{item.label}</span>
               <span className="font-semibold text-sm">{item.value}</span>
@@ -107,9 +109,9 @@ export default function Deposit() {
           <div className="flex justify-between items-center p-3 bg-primary/10 border border-primary/30 rounded-lg">
             <div>
               <p className="text-xs text-muted-foreground">Account Number</p>
-              <p className="font-black text-lg text-primary">{account.accountNumber}</p>
+              <p className="font-black text-lg text-primary">{myAccount.accountNumber}</p>
             </div>
-            <CopyBtn val={account.accountNumber} k="ng-acc" />
+            <CopyBtn val={myAccount.accountNumber} k="bank-acc" />
           </div>
           <AmountField />
           <Button className="w-full bg-primary text-primary-foreground hover:opacity-90 font-bold" onClick={() => setStep(2)} disabled={!amount || parseFloat(amount) <= 0}>
@@ -119,57 +121,29 @@ export default function Deposit() {
       );
     }
 
-    /* ── US users ── */
-    if (isUS) {
-      const showBank = account.usShowBank && account.usBankName;
-      const showPaypal = account.usShowPaypal && account.usPaypalEmail;
-
-      if (!showBank && !showPaypal) {
-        return <p className="text-muted-foreground text-sm">US deposit options are not configured yet. Please check back later.</p>;
+    /* ── PayPal ── */
+    if (myAccount.type === "paypal") {
+      if (!myAccount.paypalEmail) {
+        return <p className="text-muted-foreground text-sm">PayPal account not configured yet.</p>;
       }
-
       return (
-        <div className="space-y-4">
-          {showBank && (
-            <div className="space-y-2">
-              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Bank Transfer</p>
-              {[{ label: "Bank Name", value: account.usBankName }, { label: "Account Name", value: account.usAccountName }].map(item => (
-                <div key={item.label} className="flex justify-between p-3 bg-background rounded-lg">
-                  <span className="text-sm text-muted-foreground">{item.label}</span>
-                  <span className="font-semibold text-sm">{item.value}</span>
-                </div>
-              ))}
-              <div className="flex justify-between items-center p-3 bg-primary/10 border border-primary/30 rounded-lg">
-                <div>
-                  <p className="text-xs text-muted-foreground">Account Number</p>
-                  <p className="font-black text-lg text-primary">{account.usAccountNumber}</p>
-                </div>
-                <CopyBtn val={account.usAccountNumber} k="us-acc" />
+        <div className="space-y-3">
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
+            <p className="text-xs text-muted-foreground mb-3">Send your payment to this PayPal account</p>
+            {myAccount.paypalName && (
+              <div className="flex justify-between p-3 bg-background rounded-lg mb-2">
+                <span className="text-sm text-muted-foreground">Name</span>
+                <span className="font-semibold text-sm">{myAccount.paypalName}</span>
               </div>
-            </div>
-          )}
-
-          {showBank && showPaypal && <div className="flex items-center gap-3"><div className="flex-1 h-px bg-border" /><span className="text-xs text-muted-foreground uppercase tracking-wider">or</span><div className="flex-1 h-px bg-border" /></div>}
-
-          {showPaypal && (
-            <div className="space-y-2">
-              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">PayPal</p>
-              <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
-                <div className="flex justify-between p-2 bg-background rounded-lg mb-2">
-                  <span className="text-sm text-muted-foreground">Name</span>
-                  <span className="font-semibold text-sm">{account.usPaypalName ?? "—"}</span>
-                </div>
-                <div className="flex justify-between items-center p-2 bg-primary/10 border border-primary/30 rounded-lg">
-                  <div>
-                    <p className="text-xs text-muted-foreground">PayPal Email</p>
-                    <p className="font-black text-primary">{account.usPaypalEmail}</p>
-                  </div>
-                  <CopyBtn val={account.usPaypalEmail} k="us-pp" />
-                </div>
+            )}
+            <div className="flex justify-between items-center p-3 bg-primary/10 border border-primary/30 rounded-lg">
+              <div>
+                <p className="text-xs text-muted-foreground">PayPal Email</p>
+                <p className="font-black text-primary">{myAccount.paypalEmail}</p>
               </div>
+              <CopyBtn val={myAccount.paypalEmail} k="paypal-email" />
             </div>
-          )}
-
+          </div>
           <AmountField />
           <Button className="w-full bg-primary text-primary-foreground hover:opacity-90 font-bold" onClick={() => setStep(2)} disabled={!amount || parseFloat(amount) <= 0}>
             I Have Sent This Payment
@@ -178,36 +152,13 @@ export default function Deposit() {
       );
     }
 
-    /* ── UK / CA users ── */
-    if (!account.paypalEmail) return <p className="text-muted-foreground text-sm">PayPal deposit not configured yet. Please check back later.</p>;
-    return (
-      <div className="space-y-3">
-        <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
-          <p className="text-xs text-muted-foreground mb-3">Send your payment to this PayPal account</p>
-          <div className="flex justify-between p-3 bg-background rounded-lg mb-2">
-            <span className="text-sm text-muted-foreground">Name</span>
-            <span className="font-semibold text-sm">{account.paypalName ?? "—"}</span>
-          </div>
-          <div className="flex justify-between items-center p-3 bg-primary/10 border border-primary/30 rounded-lg">
-            <div>
-              <p className="text-xs text-muted-foreground">PayPal Email</p>
-              <p className="font-black text-primary">{account.paypalEmail}</p>
-            </div>
-            <CopyBtn val={account.paypalEmail} k="intl-pp" />
-          </div>
-        </div>
-        <AmountField />
-        <Button className="w-full bg-primary text-primary-foreground hover:opacity-90 font-bold" onClick={() => setStep(2)} disabled={!amount || parseFloat(amount) <= 0}>
-          I Have Sent This Payment
-        </Button>
-      </div>
-    );
+    return <p className="text-muted-foreground text-sm">Deposit details not available. Please check back later.</p>;
   };
 
-  const stepOneLabel = isNGN ? "Transfer to this account" : isUS ? "Send your deposit" : "Send payment via PayPal";
-  const stepTwoLabel = isNGN ? "Paste your Transaction ID" : "Paste your Transaction / Reference ID";
-  const stepTwoPlaceholder = isNGN ? "Paste your bank transaction reference" : "Paste your PayPal or bank transaction ID";
-  const stepTwoHint = isNGN ? "Find this in your bank app under transaction history" : "Find this in your PayPal activity or bank app";
+  const stepOneLabel = myAccount?.type === "bank" ? "Transfer to this bank account" : "Send payment via PayPal";
+  const stepTwoHint = myAccount?.type === "bank"
+    ? "Find this in your bank app under transaction history"
+    : "Find this in your PayPal activity or bank app";
 
   return (
     <div className="min-h-screen bg-background">
@@ -215,8 +166,8 @@ export default function Deposit() {
       <main className="pt-16 max-w-xl mx-auto px-4 sm:pl-16 py-8">
         <h1 className="text-2xl font-black mb-1">Deposit Funds</h1>
         <p className="text-muted-foreground text-sm mb-8">
-          {isNGN ? "Transfer to our account and confirm with your transaction ID"
-            : isUS ? "Send via bank transfer or PayPal and confirm below"
+          {myAccount?.type === "bank"
+            ? "Transfer to our account and confirm with your transaction ID"
             : "Send via PayPal and confirm with your transaction reference"}
         </p>
 
@@ -234,11 +185,11 @@ export default function Deposit() {
           <div className="bg-card border border-border rounded-2xl p-6">
             <div className="flex items-center gap-3 mb-5">
               <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">2</div>
-              <h2 className="font-bold">{stepTwoLabel}</h2>
+              <h2 className="font-bold">Paste your Transaction / Reference ID</h2>
             </div>
             <div className="mb-4">
               <label className="text-sm font-medium mb-2 block">Transaction ID / Reference</label>
-              <Input value={txId} onChange={e => setTxId(e.target.value)} placeholder={stepTwoPlaceholder} />
+              <Input value={txId} onChange={e => setTxId(e.target.value)} placeholder="Paste your transaction reference here" />
               <p className="text-xs text-muted-foreground mt-2">{stepTwoHint}</p>
             </div>
             <Button

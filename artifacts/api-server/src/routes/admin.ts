@@ -206,38 +206,67 @@ router.patch("/admin/users/:id", requireAdmin, async (req, res) => {
 });
 
 // PUT /admin/deposit-account
+// Body: { countryCode: string, type: "bank"|"paypal", bankName?, accountNumber?, accountName?, paypalEmail?, paypalName? }
 router.put("/admin/deposit-account", requireAdmin, async (req, res) => {
-  const {
-    bankName, accountNumber, accountName,
-    paypalEmail, paypalName,
-    usBankName, usAccountNumber, usAccountName,
-    usPaypalEmail, usPaypalName,
-    usShowBank, usShowPaypal,
-  } = req.body;
-  if (!bankName || !accountNumber || !accountName) {
+  const { countryCode, type, bankName, accountNumber, accountName, paypalEmail, paypalName } = req.body;
+  if (!countryCode || !type) {
+    res.status(400).json({ error: "countryCode and type are required" });
+    return;
+  }
+  if (type === "bank" && (!bankName || !accountNumber || !accountName)) {
     res.status(400).json({ error: "Bank name, account number, and account name are required" });
     return;
   }
-  const payload = {
-    bankName, accountNumber, accountName,
-    paypalEmail: paypalEmail || null,
-    paypalName: paypalName || null,
-    usBankName: usBankName || null,
-    usAccountNumber: usAccountNumber || null,
-    usAccountName: usAccountName || null,
-    usPaypalEmail: usPaypalEmail || null,
-    usPaypalName: usPaypalName || null,
-    usShowBank: usShowBank === true || usShowBank === "true",
-    usShowPaypal: usShowPaypal === true || usShowPaypal === "true",
-  };
-  const value = JSON.stringify(payload);
+  if (type === "paypal" && !paypalEmail) {
+    res.status(400).json({ error: "PayPal email is required" });
+    return;
+  }
+
+  // Load existing accounts
   const existing = await db.select().from(settingsTable).where(eq(settingsTable.key, "deposit_account")).limit(1);
+  let accounts: Record<string, any> = {};
+  if (existing.length > 0) {
+    const d = JSON.parse(existing[0].value);
+    // New format
+    if (d.DEFAULT !== undefined || Object.keys(d).some(k => k.length === 2 || k === "DEFAULT")) {
+      accounts = d;
+    } else {
+      // Migrate legacy format
+      if (d.bankName && d.accountNumber) accounts["NG"] = { type: "bank", bankName: d.bankName, accountNumber: d.accountNumber, accountName: d.accountName };
+      if (d.paypalEmail) accounts["DEFAULT"] = { type: "paypal", paypalEmail: d.paypalEmail, paypalName: d.paypalName };
+    }
+  }
+
+  // Update specific country
+  if (type === "bank") {
+    accounts[countryCode] = { type: "bank", bankName, accountNumber, accountName };
+  } else {
+    accounts[countryCode] = { type: "paypal", paypalEmail, paypalName: paypalName || null };
+  }
+
+  const value = JSON.stringify(accounts);
   if (existing.length > 0) {
     await db.update(settingsTable).set({ value, updatedAt: new Date() }).where(eq(settingsTable.key, "deposit_account"));
   } else {
     await db.insert(settingsTable).values({ key: "deposit_account", value });
   }
-  res.json(payload);
+  res.json({ accounts });
+});
+
+// DELETE /admin/deposit-account/:countryCode
+router.delete("/admin/deposit-account/:countryCode", requireAdmin, async (req, res) => {
+  const { countryCode } = req.params;
+  const existing = await db.select().from(settingsTable).where(eq(settingsTable.key, "deposit_account")).limit(1);
+  if (existing.length === 0) {
+    res.status(404).json({ error: "No deposit accounts configured" });
+    return;
+  }
+  const d = JSON.parse(existing[0].value);
+  const accounts: Record<string, any> = (d.DEFAULT !== undefined || Object.keys(d).some(k => k.length === 2 || k === "DEFAULT")) ? d : {};
+  delete accounts[countryCode];
+  const value = JSON.stringify(accounts);
+  await db.update(settingsTable).set({ value, updatedAt: new Date() }).where(eq(settingsTable.key, "deposit_account"));
+  res.json({ accounts });
 });
 
 export default router;

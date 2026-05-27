@@ -208,15 +208,10 @@ export default function Admin() {
     }
   };
 
-  const emptyDeposit = {
-    bankName: "", accountNumber: "", accountName: "",
-    paypalEmail: "", paypalName: "",
-    usBankName: "", usAccountNumber: "", usAccountName: "",
-    usPaypalEmail: "", usPaypalName: "",
-    usShowBank: false, usShowPaypal: false,
-  };
-  const [depositForm, setDepositForm] = useState(emptyDeposit);
-  const [formInitialized, setFormInitialized] = useState(false);
+  const [depositCountry, setDepositCountry] = useState("DEFAULT");
+  const [depositType, setDepositType] = useState<"bank" | "paypal">("paypal");
+  const [depositBankForm, setDepositBankForm] = useState({ bankName: "", accountNumber: "", accountName: "" });
+  const [depositPaypalForm, setDepositPaypalForm] = useState({ paypalEmail: "", paypalName: "" });
 
   const { data: usersRaw, isLoading: usersLoading } = useAdminGetUsers();
   const { data: transactionsRaw, isLoading: txLoading } = useAdminGetTransactions();
@@ -247,26 +242,13 @@ export default function Admin() {
 
   const { data: depositAccount } = useGetDepositAccount({ query: { queryKey: getGetDepositAccountQueryKey() } });
 
-  useEffect(() => {
-    if (depositAccount && !formInitialized) {
-      const d = depositAccount as any;
-      setDepositForm({
-        bankName: d.bankName ?? "",
-        accountNumber: d.accountNumber ?? "",
-        accountName: d.accountName ?? "",
-        paypalEmail: d.paypalEmail ?? "",
-        paypalName: d.paypalName ?? "",
-        usBankName: d.usBankName ?? "",
-        usAccountNumber: d.usAccountNumber ?? "",
-        usAccountName: d.usAccountName ?? "",
-        usPaypalEmail: d.usPaypalEmail ?? "",
-        usPaypalName: d.usPaypalName ?? "",
-        usShowBank: d.usShowBank ?? false,
-        usShowPaypal: d.usShowPaypal ?? false,
-      });
-      setFormInitialized(true);
-    }
-  }, [depositAccount, formInitialized]);
+  const savedAccounts = (depositAccount as any)?.accounts ?? {} as Record<string, any>;
+  const savedAccountEntries = Object.entries(savedAccounts) as [string, any][];
+
+  const getCountryLabel = (code: string) => {
+    if (code === "DEFAULT") return "Default (All other countries)";
+    return ALL_COUNTRIES.find(c => c.code === code)?.name ?? code;
+  };
 
   const deleteMutation = useAdminDeleteUser({
     mutation: {
@@ -291,23 +273,9 @@ export default function Admin() {
 
   const depositAccountMutation = useAdminSetDepositAccount({
     mutation: {
-      onSuccess: (data: any) => {
-        toast({ title: "Settings saved successfully" });
+      onSuccess: () => {
+        toast({ title: "Deposit account saved" });
         queryClient.invalidateQueries({ queryKey: getGetDepositAccountQueryKey() });
-        setDepositForm({
-          bankName: data.bankName ?? "",
-          accountNumber: data.accountNumber ?? "",
-          accountName: data.accountName ?? "",
-          paypalEmail: data.paypalEmail ?? "",
-          paypalName: data.paypalName ?? "",
-          usBankName: data.usBankName ?? "",
-          usAccountNumber: data.usAccountNumber ?? "",
-          usAccountName: data.usAccountName ?? "",
-          usPaypalEmail: data.usPaypalEmail ?? "",
-          usPaypalName: data.usPaypalName ?? "",
-          usShowBank: data.usShowBank ?? false,
-          usShowPaypal: data.usShowPaypal ?? false,
-        });
       },
       onError: (err: any) => {
         toast({ title: "Error", description: err?.data?.error || "Failed to save settings", variant: "destructive" });
@@ -315,12 +283,20 @@ export default function Admin() {
     },
   });
 
-  const handleSave = () => {
-    if (!depositForm.bankName.trim() || !depositForm.accountNumber.trim() || !depositForm.accountName.trim()) {
-      toast({ title: "Nigerian bank name, account number, and account name are required", variant: "destructive" });
-      return;
+  const handleDepositSave = () => {
+    if (depositType === "bank") {
+      if (!depositBankForm.bankName.trim() || !depositBankForm.accountNumber.trim() || !depositBankForm.accountName.trim()) {
+        toast({ title: "Bank name, account number, and account name are required", variant: "destructive" });
+        return;
+      }
+      depositAccountMutation.mutate({ data: { countryCode: depositCountry, type: "bank", ...depositBankForm } as any });
+    } else {
+      if (!depositPaypalForm.paypalEmail.trim()) {
+        toast({ title: "PayPal email is required", variant: "destructive" });
+        return;
+      }
+      depositAccountMutation.mutate({ data: { countryCode: depositCountry, type: "paypal", ...depositPaypalForm } as any });
     }
-    depositAccountMutation.mutate({ data: depositForm as any });
   };
 
   const totalUnread = Array.isArray(supportChats)
@@ -565,135 +541,137 @@ export default function Admin() {
 
         {/* ── SETTINGS TAB ── */}
         {tab === "settings" && (
-          <div className="max-w-lg space-y-8">
+          <div className="max-w-lg space-y-6">
             <div>
               <h2 className="font-bold text-lg mb-1">Deposit Settings</h2>
-              <p className="text-muted-foreground text-sm">Configure bank and PayPal details for each user group.</p>
+              <p className="text-muted-foreground text-sm">Set payment details per country. Users see their country's account, or the default if none is set.</p>
             </div>
 
-            {/* ── Section 1: Nigerian Bank Account ── */}
-            <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-lg">🇳🇬</span>
-                <div>
-                  <p className="font-bold text-sm">Nigerian Bank Account</p>
-                  <p className="text-xs text-muted-foreground">Shown to all Nigerian (NG) users when depositing</p>
+            {/* Configured accounts list */}
+            {savedAccountEntries.length > 0 && (
+              <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Configured Accounts</p>
+                {savedAccountEntries
+                  .sort(([a]) => a === "DEFAULT" ? -1 : 1)
+                  .map(([code, acct]) => (
+                  <div key={code} className="flex items-center justify-between p-3 bg-background rounded-xl border border-border gap-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm truncate">{getCountryLabel(code)}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {acct.type === "bank"
+                          ? `Bank: ${acct.bankName} · ${acct.accountNumber}`
+                          : `PayPal: ${acct.paypalEmail}`}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        className="text-xs px-2.5 py-1 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 font-medium"
+                        onClick={() => {
+                          setDepositCountry(code);
+                          setDepositType(acct.type);
+                          if (acct.type === "bank") {
+                            setDepositBankForm({ bankName: acct.bankName ?? "", accountNumber: acct.accountNumber ?? "", accountName: acct.accountName ?? "" });
+                          } else {
+                            setDepositPaypalForm({ paypalEmail: acct.paypalEmail ?? "", paypalName: acct.paypalName ?? "" });
+                          }
+                        }}
+                      >Edit</button>
+                      <button
+                        className="text-xs px-2.5 py-1 rounded-lg bg-destructive/20 text-destructive hover:bg-destructive/30 font-medium"
+                        onClick={async () => {
+                          await fetch(`/api/admin/deposit-account/${code}`, { method: "DELETE", credentials: "include" });
+                          queryClient.invalidateQueries({ queryKey: getGetDepositAccountQueryKey() });
+                          toast({ title: `Removed ${getCountryLabel(code)}` });
+                        }}
+                      >Delete</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Configure form */}
+            <div className="bg-card border border-border rounded-2xl p-6 space-y-5">
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Configure Deposit Account</p>
+
+              {/* Country selector */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Country</label>
+                <Select value={depositCountry} onValueChange={setDepositCountry}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    <SelectItem value="DEFAULT">Default — All other countries</SelectItem>
+                    {countriesWithUsers.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel className="text-xs text-primary">Countries with users</SelectLabel>
+                        {countriesWithUsers.map(c => (
+                          <SelectItem key={c.code} value={c.code}>{c.name}</SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
+                    <SelectGroup>
+                      <SelectLabel className="text-xs text-muted-foreground">All countries</SelectLabel>
+                      {countriesWithoutUsers.map(c => (
+                        <SelectItem key={c.code} value={c.code}>{c.name}</SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Type toggle */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Payment Method</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setDepositType("bank")}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition-colors ${depositType === "bank" ? "bg-primary/20 border-primary text-primary" : "border-border text-muted-foreground hover:text-foreground"}`}
+                  >Bank Transfer</button>
+                  <button
+                    onClick={() => setDepositType("paypal")}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition-colors ${depositType === "paypal" ? "bg-primary/20 border-primary text-primary" : "border-border text-muted-foreground hover:text-foreground"}`}
+                  >PayPal</button>
                 </div>
               </div>
 
-              {depositAccount?.bankName && (
-                <div className="bg-background rounded-xl p-4 border border-border">
-                  <p className="text-xs text-muted-foreground mb-1">Currently saved</p>
-                  <p className="font-bold">{depositAccount.bankName}</p>
-                  <p className="text-primary font-mono text-lg font-black">{depositAccount.accountNumber}</p>
-                  <p className="text-sm text-muted-foreground">{depositAccount.accountName}</p>
-                </div>
+              {depositType === "bank" ? (
+                <>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Bank Name</label>
+                    <Input value={depositBankForm.bankName} onChange={e => setDepositBankForm(p => ({ ...p, bankName: e.target.value }))} placeholder="e.g. GTBank, Chase, Barclays" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Account Number</label>
+                    <Input value={depositBankForm.accountNumber} onChange={e => setDepositBankForm(p => ({ ...p, accountNumber: e.target.value }))} placeholder="Account number or routing info" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Account Name</label>
+                    <Input value={depositBankForm.accountName} onChange={e => setDepositBankForm(p => ({ ...p, accountName: e.target.value }))} placeholder="Account holder name" />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">PayPal Email</label>
+                    <Input type="email" value={depositPaypalForm.paypalEmail} onChange={e => setDepositPaypalForm(p => ({ ...p, paypalEmail: e.target.value }))} placeholder="paypal@example.com" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">PayPal Account Name</label>
+                    <Input value={depositPaypalForm.paypalName} onChange={e => setDepositPaypalForm(p => ({ ...p, paypalName: e.target.value }))} placeholder="Name as shown on PayPal" />
+                  </div>
+                </>
               )}
 
-              <div>
-                <label className="text-sm font-medium mb-2 block">Bank Name</label>
-                <Input value={depositForm.bankName} onChange={e => setDepositForm(p => ({ ...p, bankName: e.target.value }))} placeholder="e.g. GTBank" />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Account Number</label>
-                <Input value={depositForm.accountNumber} onChange={e => setDepositForm(p => ({ ...p, accountNumber: e.target.value.replace(/\D/g, "").slice(0, 10) }))} placeholder="10-digit account number" maxLength={10} />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Account Name</label>
-                <Input value={depositForm.accountName} onChange={e => setDepositForm(p => ({ ...p, accountName: e.target.value }))} placeholder="Account holder name" />
-              </div>
+              <Button
+                className="w-full bg-primary text-primary-foreground hover:opacity-90 font-bold py-5"
+                onClick={handleDepositSave}
+                disabled={depositAccountMutation.isPending}
+              >
+                {depositAccountMutation.isPending ? "Saving..." : `Save for ${getCountryLabel(depositCountry)}`}
+              </Button>
             </div>
-
-            {/* ── Section 2: UK/CA PayPal ── */}
-            <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-lg">🇬🇧🇨🇦</span>
-                <div>
-                  <p className="font-bold text-sm">PayPal — UK & Canada Users</p>
-                  <p className="text-xs text-muted-foreground">Shown to UK and Canadian users when depositing</p>
-                </div>
-              </div>
-
-              {(depositAccount as any)?.paypalEmail && (
-                <div className="bg-background rounded-xl p-4 border border-border">
-                  <p className="text-xs text-muted-foreground mb-1">Currently saved</p>
-                  <p className="font-bold">{(depositAccount as any).paypalName}</p>
-                  <p className="text-primary font-mono font-black">{(depositAccount as any).paypalEmail}</p>
-                </div>
-              )}
-
-              <div>
-                <label className="text-sm font-medium mb-2 block">PayPal Email</label>
-                <Input type="email" value={depositForm.paypalEmail} onChange={e => setDepositForm(p => ({ ...p, paypalEmail: e.target.value }))} placeholder="paypal@example.com" />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">PayPal Account Name</label>
-                <Input value={depositForm.paypalName} onChange={e => setDepositForm(p => ({ ...p, paypalName: e.target.value }))} placeholder="Name as shown on PayPal" />
-              </div>
-            </div>
-
-            {/* ── Section 3: US-ONLY settings ── */}
-            <div className="bg-card border border-primary/20 rounded-2xl p-6 space-y-5">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">🇺🇸</span>
-                <div>
-                  <p className="font-bold text-sm">US Users Deposit Settings</p>
-                  <p className="text-xs text-muted-foreground">These settings <span className="text-primary font-semibold">only apply to US accounts</span>. Use the toggles to control what is shown.</p>
-                </div>
-              </div>
-
-              {/* US Bank Account */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Custom Bank Account</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Bank Name</label>
-                  <Input value={depositForm.usBankName} onChange={e => setDepositForm(p => ({ ...p, usBankName: e.target.value }))} placeholder="e.g. Chase, Bank of America" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Account Number / Routing</label>
-                  <Input value={depositForm.usAccountNumber} onChange={e => setDepositForm(p => ({ ...p, usAccountNumber: e.target.value }))} placeholder="Account number or Zelle ID" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Account Name</label>
-                  <Input value={depositForm.usAccountName} onChange={e => setDepositForm(p => ({ ...p, usAccountName: e.target.value }))} placeholder="Account holder name" />
-                </div>
-                <Toggle
-                  value={depositForm.usShowBank}
-                  onChange={v => setDepositForm(p => ({ ...p, usShowBank: v }))}
-                  label="Show this bank account to US users on deposit page"
-                />
-              </div>
-
-              <div className="border-t border-border" />
-
-              {/* US PayPal */}
-              <div className="space-y-3">
-                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Custom PayPal Account</p>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">PayPal Email</label>
-                  <Input type="email" value={depositForm.usPaypalEmail} onChange={e => setDepositForm(p => ({ ...p, usPaypalEmail: e.target.value }))} placeholder="us-paypal@example.com" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">PayPal Account Name</label>
-                  <Input value={depositForm.usPaypalName} onChange={e => setDepositForm(p => ({ ...p, usPaypalName: e.target.value }))} placeholder="Name as shown on PayPal" />
-                </div>
-                <Toggle
-                  value={depositForm.usShowPaypal}
-                  onChange={v => setDepositForm(p => ({ ...p, usShowPaypal: v }))}
-                  label="Show this PayPal account to US users on deposit page"
-                />
-              </div>
-            </div>
-
-            <Button
-              className="w-full bg-primary text-primary-foreground hover:opacity-90 font-bold py-5"
-              onClick={handleSave}
-              disabled={depositAccountMutation.isPending}
-            >
-              {depositAccountMutation.isPending ? "Saving..." : "Save All Settings"}
-            </Button>
           </div>
         )}
         {/* ── SUPPORT TAB ── */}

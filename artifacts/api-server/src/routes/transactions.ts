@@ -134,33 +134,33 @@ router.get("/transactions", requireAuth, async (req, res) => {
 });
 
 // GET /settings/deposit-account
+// Returns { accounts: Record<countryCode, { type, bankName?, accountNumber?, accountName?, paypalEmail?, paypalName? }> }
 router.get("/settings/deposit-account", async (req, res) => {
   const settings = await db.select().from(settingsTable).where(eq(settingsTable.key, "deposit_account")).limit(1);
   if (settings.length === 0) {
-    res.json({
-      bankName: "", accountNumber: "", accountName: "",
-      paypalEmail: null, paypalName: null,
-      usBankName: null, usAccountNumber: null, usAccountName: null,
-      usPaypalEmail: null, usPaypalName: null,
-      usShowBank: false, usShowPaypal: false,
-    });
+    res.json({ accounts: {} });
     return;
   }
   const d = JSON.parse(settings[0].value);
-  res.json({
-    bankName: d.bankName ?? "",
-    accountNumber: d.accountNumber ?? "",
-    accountName: d.accountName ?? "",
-    paypalEmail: d.paypalEmail ?? null,
-    paypalName: d.paypalName ?? null,
-    usBankName: d.usBankName ?? null,
-    usAccountNumber: d.usAccountNumber ?? null,
-    usAccountName: d.usAccountName ?? null,
-    usPaypalEmail: d.usPaypalEmail ?? null,
-    usPaypalName: d.usPaypalName ?? null,
-    usShowBank: d.usShowBank ?? false,
-    usShowPaypal: d.usShowPaypal ?? false,
-  });
+  // New format: already a country-keyed object (has DEFAULT or country codes as keys)
+  if (d.DEFAULT !== undefined || Object.keys(d).some(k => k.length === 2 || k === "DEFAULT")) {
+    res.json({ accounts: d });
+    return;
+  }
+  // Legacy format: migrate on the fly
+  const accounts: Record<string, any> = {};
+  if (d.bankName && d.accountNumber) {
+    accounts["NG"] = { type: "bank", bankName: d.bankName, accountNumber: d.accountNumber, accountName: d.accountName };
+  }
+  if (d.paypalEmail) {
+    accounts["DEFAULT"] = { type: "paypal", paypalEmail: d.paypalEmail, paypalName: d.paypalName };
+  }
+  if (d.usBankName && d.usShowBank) {
+    accounts["US"] = { type: "bank", bankName: d.usBankName, accountNumber: d.usAccountNumber, accountName: d.usAccountName };
+  } else if (d.usPaypalEmail && d.usShowPaypal) {
+    accounts["US"] = { type: "paypal", paypalEmail: d.usPaypalEmail, paypalName: d.usPaypalName };
+  }
+  res.json({ accounts });
 });
 
 export default router;
