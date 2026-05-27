@@ -8,10 +8,12 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Copy, Check } from "lucide-react";
 import { getConfig } from "@/lib/currency";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 export default function Deposit() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [amount, setAmount] = useState("");
   const [txId, setTxId] = useState("");
@@ -26,7 +28,6 @@ export default function Deposit() {
     query: { queryKey: getGetDepositAccountQueryKey() },
   });
 
-  // New format: { accounts: { NG: { type, ... }, DEFAULT: { type, ... }, ... } }
   const allAccounts = (accountRaw as any)?.accounts ?? {};
   const myAccount = allAccounts[country] ?? allAccounts["DEFAULT"] ?? null;
 
@@ -58,10 +59,10 @@ export default function Deposit() {
             <div className="w-16 h-16 rounded-full bg-green-500/15 flex items-center justify-center mx-auto mb-5">
               <Check size={32} className="text-green-400" />
             </div>
-            <h2 className="text-2xl font-black mb-2">Deposit Submitted</h2>
-            <p className="text-muted-foreground mb-6">Your deposit is pending admin approval. It will reflect in your balance within 24 hours.</p>
+            <h2 className="text-2xl font-black mb-2">{t("deposit.submittedTitle")}</h2>
+            <p className="text-muted-foreground mb-6">{t("deposit.submittedDesc")}</p>
             <Button className="bg-primary text-primary-foreground hover:opacity-90" onClick={() => { setSuccess(false); setAmount(""); setTxId(""); setStep(1); }}>
-              Make Another Deposit
+              {t("deposit.another")}
             </Button>
           </div>
         </main>
@@ -77,7 +78,7 @@ export default function Deposit() {
 
   const AmountField = () => (
     <div className="mt-3">
-      <label className="text-sm font-medium mb-2 block">Amount to Deposit ({cfg.symbol})</label>
+      <label className="text-sm font-medium mb-2 block">{t("deposit.amount")} ({cfg.symbol})</label>
       <div className="relative">
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">{cfg.symbol}</span>
         <Input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="Enter amount" className="pl-7" />
@@ -90,17 +91,16 @@ export default function Deposit() {
       return <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-8 bg-muted rounded animate-pulse" />)}</div>;
     }
     if (!myAccount) {
-      return <p className="text-muted-foreground text-sm">Deposit details are not configured yet. Please check back later.</p>;
+      return <p className="text-muted-foreground text-sm">{t("deposit.notConfigured")}</p>;
     }
 
-    /* ── Bank Transfer ── */
     if (myAccount.type === "bank") {
       if (!myAccount.accountNumber) {
         return <p className="text-muted-foreground text-sm">Bank account not fully configured yet.</p>;
       }
       return (
         <div className="space-y-3">
-          {[{ label: "Bank Name", value: myAccount.bankName }, { label: "Account Name", value: myAccount.accountName }].map(item => (
+          {[{ label: t("withdraw.bankName"), value: myAccount.bankName }, { label: t("withdraw.accountName"), value: myAccount.accountName }].map(item => (
             <div key={item.label} className="flex justify-between p-3 bg-background rounded-lg">
               <span className="text-sm text-muted-foreground">{item.label}</span>
               <span className="font-semibold text-sm">{item.value}</span>
@@ -108,20 +108,19 @@ export default function Deposit() {
           ))}
           <div className="flex justify-between items-center p-3 bg-primary/10 border border-primary/30 rounded-lg">
             <div>
-              <p className="text-xs text-muted-foreground">Account Number</p>
+              <p className="text-xs text-muted-foreground">{t("withdraw.accountNumber")}</p>
               <p className="font-black text-lg text-primary">{myAccount.accountNumber}</p>
             </div>
             <CopyBtn val={myAccount.accountNumber} k="bank-acc" />
           </div>
           <AmountField />
           <Button className="w-full bg-primary text-primary-foreground hover:opacity-90 font-bold" onClick={() => setStep(2)} disabled={!amount || parseFloat(amount) <= 0}>
-            I Have Made This Payment
+            {t("deposit.madePmt")}
           </Button>
         </div>
       );
     }
 
-    /* ── PayPal ── */
     if (myAccount.type === "paypal") {
       if (!myAccount.paypalEmail) {
         return <p className="text-muted-foreground text-sm">PayPal account not configured yet.</p>;
@@ -146,32 +145,27 @@ export default function Deposit() {
           </div>
           <AmountField />
           <Button className="w-full bg-primary text-primary-foreground hover:opacity-90 font-bold" onClick={() => setStep(2)} disabled={!amount || parseFloat(amount) <= 0}>
-            I Have Sent This Payment
+            {t("deposit.sentPmt")}
           </Button>
         </div>
       );
     }
 
-    return <p className="text-muted-foreground text-sm">Deposit details not available. Please check back later.</p>;
+    return <p className="text-muted-foreground text-sm">{t("deposit.notConfigured")}</p>;
   };
 
-  const stepOneLabel = myAccount?.type === "bank" ? "Transfer to this bank account" : "Send payment via PayPal";
-  const stepTwoHint = myAccount?.type === "bank"
-    ? "Find this in your bank app under transaction history"
-    : "Find this in your PayPal activity or bank app";
+  const isBank = myAccount?.type === "bank";
+  const stepOneLabel = isBank ? t("deposit.step1Bank") : t("deposit.step1Paypal");
+  const stepTwoHint = isBank ? t("deposit.txHintBank") : t("deposit.txHintPaypal");
+  const subtitle = isBank ? t("deposit.subtitleBank") : t("deposit.subtitlePaypal");
 
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
       <main className="pt-16 max-w-xl mx-auto px-4 sm:pl-16 py-8">
-        <h1 className="text-2xl font-black mb-1">Deposit Funds</h1>
-        <p className="text-muted-foreground text-sm mb-8">
-          {myAccount?.type === "bank"
-            ? "Transfer to our account and confirm with your transaction ID"
-            : "Send via PayPal and confirm with your transaction reference"}
-        </p>
+        <h1 className="text-2xl font-black mb-1">{t("deposit.title")}</h1>
+        <p className="text-muted-foreground text-sm mb-8">{subtitle}</p>
 
-        {/* Step 1 */}
         <div className="bg-card border border-border rounded-2xl p-6 mb-4">
           <div className="flex items-center gap-3 mb-5">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step >= 1 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>1</div>
@@ -180,15 +174,14 @@ export default function Deposit() {
           {renderDepositInfo()}
         </div>
 
-        {/* Step 2 */}
         {step === 2 && (
           <div className="bg-card border border-border rounded-2xl p-6">
             <div className="flex items-center gap-3 mb-5">
               <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">2</div>
-              <h2 className="font-bold">Paste your Transaction / Reference ID</h2>
+              <h2 className="font-bold">{t("deposit.step2")}</h2>
             </div>
             <div className="mb-4">
-              <label className="text-sm font-medium mb-2 block">Transaction ID / Reference</label>
+              <label className="text-sm font-medium mb-2 block">{t("deposit.txId")}</label>
               <Input value={txId} onChange={e => setTxId(e.target.value)} placeholder="Paste your transaction reference here" />
               <p className="text-xs text-muted-foreground mt-2">{stepTwoHint}</p>
             </div>
@@ -197,7 +190,7 @@ export default function Deposit() {
               disabled={!txId || mutation.isPending}
               onClick={() => mutation.mutate({ data: { amount: parseFloat(amount), transactionId: txId } })}
             >
-              {mutation.isPending ? "Submitting..." : "Submit Deposit"}
+              {mutation.isPending ? t("deposit.submitting") : t("deposit.submit")}
             </Button>
           </div>
         )}

@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Mail, Lock, Shield, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -22,15 +23,15 @@ const TERMS = `TERMS OF SERVICE
 
 By using Gold Mailer, you agree to the following terms:
 
-1. ELIGIBILITY: You must be 18 years or older and a resident of Nigeria to use this platform.
+1. ELIGIBILITY: You must be 18 years or older to use this platform.
 
-2. STAKING: The minimum stake is ₦2,700 and maximum is ₦100,000. Funds are locked for 7 days.
+2. STAKING: The minimum stake is $3 and maximum is $100. Funds are locked for 7 days.
 
-3. PROFITS: Profit for a ₦2,700 stake is ₦8,000 after 7 days. Higher deposits earn proportionally more.
+3. PROFITS: Profit for a $3 stake is $8 after 7 days. Higher deposits earn proportionally more.
 
-4. DAILY REWARDS: Users may claim ₦100 daily reward per active stake.
+4. DAILY REWARDS: Users may claim $0.10 daily reward per active stake.
 
-5. SIGNUP BONUS: A one-time ₦3,000 bonus is credited upon adding your first card.
+5. SIGNUP BONUS: A one-time bonus is credited upon adding your first card.
 
 6. WITHDRAWALS: Withdrawal requests are subject to admin approval within 24-48 hours.
 
@@ -47,6 +48,7 @@ Gold Mailer collects and uses your personal data (name, email, card details) sol
 export default function Register() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [showTerms, setShowTerms] = useState(true);
   const [agreed, setAgreed] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -133,8 +135,8 @@ export default function Register() {
           <Link href="/">
             <span className="text-primary font-black text-2xl tracking-widest cursor-pointer">GOLDMAILER</span>
           </Link>
-          <h1 className="text-2xl font-bold mt-4 mb-1">Create Account</h1>
-          <p className="text-muted-foreground text-sm">Start your investment journey today</p>
+          <h1 className="text-2xl font-bold mt-4 mb-1">{t("auth.createAccount")}</h1>
+          <p className="text-muted-foreground text-sm">{t("auth.startEarning")}</p>
         </div>
 
         <div className="bg-card border border-border rounded-2xl p-8 shadow-xl">
@@ -145,7 +147,7 @@ export default function Register() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email Address</FormLabel>
+                    <FormLabel>{t("auth.emailAddress")}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -168,7 +170,7 @@ export default function Register() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>{t("auth.password")}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -199,15 +201,15 @@ export default function Register() {
                 disabled={registerMutation.isPending}
                 data-testid="button-register-submit"
               >
-                {registerMutation.isPending ? "Creating Account..." : "Create Account"}
+                {registerMutation.isPending ? t("auth.registering") : t("auth.createAccount")}
               </Button>
             </form>
           </Form>
 
           <p className="text-center text-sm text-muted-foreground mt-6">
-            Already have an account?{" "}
+            {t("auth.alreadyHaveAccount")}{" "}
             <Link href="/login">
-              <span className="text-primary hover:underline cursor-pointer font-medium">Sign In</span>
+              <span className="text-primary hover:underline cursor-pointer font-medium">{t("auth.signIn")}</span>
             </Link>
           </p>
         </div>

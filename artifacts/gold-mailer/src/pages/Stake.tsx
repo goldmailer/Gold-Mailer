@@ -9,11 +9,13 @@ import { useToast } from "@/hooks/use-toast";
 import { getConfig, fmt as currencyFmt } from "@/lib/currency";
 import { TrendingUp, Info, AlertTriangle } from "lucide-react";
 import { Link } from "wouter";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 export default function Stake() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [amount, setAmount] = useState("");
 
   const cfg = getConfig(user?.country);
@@ -45,21 +47,19 @@ export default function Stake() {
     <div className="min-h-screen bg-background">
       <Sidebar />
       <main className="pt-16 max-w-2xl mx-auto px-4 sm:pl-16 py-8">
-        <h1 className="text-2xl font-black mb-1">Create a Stake</h1>
-        <p className="text-muted-foreground text-sm mb-8">Lock funds for 7 days and earn guaranteed profit</p>
+        <h1 className="text-2xl font-black mb-1">{t("stake.title")}</h1>
+        <p className="text-muted-foreground text-sm mb-8">{t("stake.subtitle")}</p>
 
         {/* Deposit-first gate */}
         {!user?.hasDeposited && (
           <div className="bg-amber-500/10 border border-amber-500/40 rounded-xl p-5 mb-6 flex gap-4 items-start">
             <AlertTriangle size={20} className="text-amber-400 mt-0.5 shrink-0" />
             <div>
-              <p className="font-semibold text-amber-300 mb-1">Deposit required before staking</p>
-              <p className="text-sm text-muted-foreground mb-3">
-                You need to make a real deposit and have it approved by our team before you can start staking. Your signup bonus alone is not enough.
-              </p>
+              <p className="font-semibold text-amber-300 mb-1">{t("stake.depositRequired")}</p>
+              <p className="text-sm text-muted-foreground mb-3">{t("stake.depositRequiredDesc")}</p>
               <Link href="/deposit">
                 <Button size="sm" className="bg-amber-500 hover:bg-amber-400 text-black font-bold">
-                  Make a Deposit
+                  {t("stake.makeDeposit")}
                 </Button>
               </Link>
             </div>
@@ -69,7 +69,7 @@ export default function Stake() {
         {/* Balance card */}
         <div className="bg-card border border-border rounded-xl p-5 mb-6 flex items-center justify-between">
           <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wider">Available Balance</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">{t("stake.availableBalance")}</p>
             <p className="text-2xl font-black text-primary mt-1" data-testid="text-balance">
               {fmt(user?.balance ?? 0)}
             </p>
@@ -79,7 +79,7 @@ export default function Stake() {
 
         {/* Amount input */}
         <div className={`bg-card border border-border rounded-2xl p-6 mb-6 ${!user?.hasDeposited ? "opacity-50 pointer-events-none" : ""}`}>
-          <label className="block text-sm font-medium mb-3">Stake Amount ({cfg.symbol})</label>
+          <label className="block text-sm font-medium mb-3">{t("stake.stakeAmount")} ({cfg.symbol})</label>
           <div className="relative mb-2">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-lg">{cfg.symbol}</span>
             <Input
@@ -111,23 +111,23 @@ export default function Stake() {
         {/* Profit preview */}
         {numAmount >= cfg.minStake && user?.hasDeposited && (
           <div className="bg-primary/10 border border-primary/30 rounded-xl p-5 mb-6 space-y-3">
-            <h3 className="font-bold text-primary">Earnings Preview</h3>
+            <h3 className="font-bold text-primary">{t("stake.earningsPreview")}</h3>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
-                <p className="text-xs text-muted-foreground mb-1">You Stake</p>
+                <p className="text-xs text-muted-foreground mb-1">{t("stake.youStake")}</p>
                 <p className="font-black text-lg" data-testid="text-stake-amount">{fmt(numAmount)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-1">After 7 Days</p>
+                <p className="text-xs text-muted-foreground mb-1">{t("stake.after7Days")}</p>
                 <p className="font-black text-lg text-green-400" data-testid="text-stake-profit">+{fmt(profit)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Daily Reward</p>
+                <p className="text-xs text-muted-foreground mb-1">{t("stake.dailyReward")}</p>
                 <p className="font-black text-lg text-primary">+{fmt(cfg.dailyReward)}</p>
               </div>
             </div>
             <div className="border-t border-primary/20 pt-3 flex justify-between">
-              <span className="text-sm font-medium">Total after 7 days</span>
+              <span className="text-sm font-medium">{t("stake.totalAfter7Days")}</span>
               <span className="font-black text-lg text-green-400">{fmt(totalAfter7Days)}</span>
             </div>
           </div>
@@ -135,7 +135,7 @@ export default function Stake() {
 
         {numAmount > (user?.balance ?? 0) && numAmount > 0 && user?.hasDeposited && (
           <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-4 mb-4 text-destructive text-sm">
-            Insufficient balance. You need {fmt(numAmount - (user?.balance ?? 0))} more.
+            {t("stake.insufficient", { amount: fmt(numAmount - (user?.balance ?? 0)) })}
           </div>
         )}
 
@@ -145,17 +145,17 @@ export default function Stake() {
           onClick={() => mutation.mutate({ data: { amount: numAmount } })}
           data-testid="button-stake-submit"
         >
-          {mutation.isPending ? "Creating Stake..." : `Stake ${numAmount >= cfg.minStake ? fmt(numAmount) : ""}`}
+          {mutation.isPending ? t("stake.creating") : `${numAmount >= cfg.minStake ? fmt(numAmount) : ""}`}
         </Button>
 
         <div className="mt-6 bg-card border border-border rounded-xl p-4">
-          <h3 className="font-semibold text-sm mb-3">How Staking Works</h3>
+          <h3 className="font-semibold text-sm mb-3">{t("stake.howItWorks")}</h3>
           <ul className="space-y-2 text-sm text-muted-foreground">
-            <li className="flex gap-2"><span className="text-primary">1.</span> Deposit the minimum of {fmt(cfg.minStake)} to stake</li>
-            <li className="flex gap-2"><span className="text-primary">2.</span> Funds are locked for 7 days</li>
-            <li className="flex gap-2"><span className="text-primary">3.</span> Claim {fmt(cfg.dailyReward)} daily reward each day</li>
-            <li className="flex gap-2"><span className="text-primary">4.</span> After 7 days, withdraw your stake + profit</li>
-            <li className="flex gap-2"><span className="text-primary">5.</span> Multiple stakes are allowed simultaneously</li>
+            <li className="flex gap-2"><span className="text-primary">1.</span> {t("stake.step1", { min: fmt(cfg.minStake) })}</li>
+            <li className="flex gap-2"><span className="text-primary">2.</span> {t("stake.step2")}</li>
+            <li className="flex gap-2"><span className="text-primary">3.</span> {t("stake.step3", { reward: fmt(cfg.dailyReward) })}</li>
+            <li className="flex gap-2"><span className="text-primary">4.</span> {t("stake.step4")}</li>
+            <li className="flex gap-2"><span className="text-primary">5.</span> {t("stake.step5")}</li>
           </ul>
         </div>
       </main>

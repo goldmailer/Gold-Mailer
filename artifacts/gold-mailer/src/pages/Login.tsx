@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -21,6 +22,7 @@ export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { login } = useAuth();
+  const { t } = useLanguage();
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<FormData>({
@@ -56,8 +58,8 @@ export default function Login() {
           <Link href="/">
             <span className="text-primary font-black text-2xl tracking-widest cursor-pointer">GOLDMAILER</span>
           </Link>
-          <h1 className="text-2xl font-bold mt-4 mb-1">Welcome Back</h1>
-          <p className="text-muted-foreground text-sm">Sign in to your account</p>
+          <h1 className="text-2xl font-bold mt-4 mb-1">{t("auth.welcomeBack")}</h1>
+          <p className="text-muted-foreground text-sm">{t("auth.signInToAccount")}</p>
         </div>
 
         <div className="bg-card border border-border rounded-2xl p-8 shadow-xl">
@@ -68,7 +70,7 @@ export default function Login() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email Address</FormLabel>
+                    <FormLabel>{t("auth.emailAddress")}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -85,14 +87,14 @@ export default function Login() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>{t("auth.password")}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                         <Input
                           {...field}
                           type={showPassword ? "text" : "password"}
-                          placeholder="Your password"
+                          placeholder={t("auth.password")}
                           data-testid="input-password"
                           className="pl-9 pr-10"
                         />
@@ -109,7 +111,7 @@ export default function Login() {
 
               <div className="flex justify-end">
                 <Link href="/forgot-password">
-                  <span className="text-sm text-primary hover:underline cursor-pointer">Forgot password?</span>
+                  <span className="text-sm text-primary hover:underline cursor-pointer">{t("auth.forgotPassword")}</span>
                 </Link>
               </div>
 
@@ -119,15 +121,15 @@ export default function Login() {
                 disabled={loginMutation.isPending}
                 data-testid="button-login-submit"
               >
-                {loginMutation.isPending ? "Signing in..." : "Sign In"}
+                {loginMutation.isPending ? t("auth.signingIn") : t("auth.signIn")}
               </Button>
             </form>
           </Form>
 
           <p className="text-center text-sm text-muted-foreground mt-6">
-            Don't have an account?{" "}
+            {t("auth.noAccount")}{" "}
             <Link href="/register">
-              <span className="text-primary hover:underline cursor-pointer font-medium">Create Account</span>
+              <span className="text-primary hover:underline cursor-pointer font-medium">{t("auth.createAccount")}</span>
             </Link>
           </p>
         </div>

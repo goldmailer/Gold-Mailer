@@ -9,23 +9,26 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SupportChat } from "@/components/SupportChat";
-
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/cards", label: "View Cards", icon: CreditCard },
-  { href: "/stake", label: "Stake Now", icon: TrendingUp },
-  { href: "/deposit", label: "Deposit", icon: ArrowDownCircle },
-  { href: "/withdraw", label: "Withdraw", icon: ArrowUpCircle },
-  { href: "/transactions", label: "Transactions", icon: List },
-  { href: "/referrals", label: "Referrals", icon: Users },
-  { href: "/settings", label: "Settings", icon: Settings },
-];
+import { useLanguage } from "@/i18n/LanguageContext";
 
 export function Sidebar() {
   const [open, setOpen] = useState(false);
   const { user, logout } = useAuth();
   const [location] = useLocation();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  const navItems = [
+    { href: "/dashboard", label: t("nav.dashboard"), icon: LayoutDashboard },
+    { href: "/cards", label: t("nav.viewCards"), icon: CreditCard },
+    { href: "/stake", label: t("nav.stakeNow"), icon: TrendingUp },
+    { href: "/deposit", label: t("nav.deposit"), icon: ArrowDownCircle },
+    { href: "/withdraw", label: t("nav.withdraw"), icon: ArrowUpCircle },
+    { href: "/transactions", label: t("nav.transactions"), icon: List },
+    { href: "/referrals", label: t("nav.referrals"), icon: Users },
+    { href: "/settings", label: t("nav.settings"), icon: Settings },
+  ];
+
   const logoutMutation = useLogout({
     mutation: {
       onSuccess: () => {
@@ -93,7 +96,7 @@ export function Sidebar() {
           {navItems.map(({ href, label, icon: Icon }) => (
             <Link key={href} href={href} onClick={() => setOpen(false)}>
               <div
-                data-testid={`nav-${label.toLowerCase().replace(/\s+/g, "-")}`}
+                data-testid={`nav-${href.replace("/", "")}`}
                 className={`flex items-center gap-3 px-4 py-3 mx-2 rounded-lg cursor-pointer transition-all ${
                   location === href
                     ? "bg-primary/15 text-primary"
@@ -116,7 +119,7 @@ export function Sidebar() {
             disabled={logoutMutation.isPending}
           >
             <LogOut size={18} />
-            <span>Log Out</span>
+            <span>{t("nav.logOut")}</span>
           </Button>
         </div>
       </aside>

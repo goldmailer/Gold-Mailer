@@ -11,6 +11,7 @@ import { getConfig, fmt as currencyFmt } from "@/lib/currency";
 import { getLocalCurrency } from "@/lib/countries";
 import { Check, AlertTriangle, Info, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const NIGERIAN_BANKS = [
   "Access Bank","First Bank of Nigeria","Guaranty Trust Bank (GTBank)","Zenith Bank",
@@ -24,6 +25,7 @@ const NIGERIAN_BANKS = [
 export default function Withdraw() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [success, setSuccess] = useState(false);
 
@@ -48,7 +50,7 @@ export default function Withdraw() {
   });
 
   const hasApprovedWithdrawal = (txData ?? []).some(
-    (t: any) => t.type === "withdrawal" && t.status === "approved"
+    (tx: any) => tx.type === "withdrawal" && tx.status === "approved"
   );
   const FIRST_MIN = cfg.firstWithdrawMin;
   const minWithdraw = hasApprovedWithdrawal ? 0.01 : FIRST_MIN;
@@ -128,14 +130,16 @@ export default function Withdraw() {
             <div className="w-16 h-16 rounded-full bg-green-500/15 flex items-center justify-center mx-auto mb-5">
               <Check size={32} className="text-green-400" />
             </div>
-            <h2 className="text-2xl font-black mb-2">Withdrawal Submitted</h2>
+            <h2 className="text-2xl font-black mb-2">
+              {isNGN ? "Withdrawal Submitted" : "Withdrawal Submitted"}
+            </h2>
             <p className="text-muted-foreground mb-6">
               {isNGN
                 ? "Your withdrawal request is pending admin approval. Funds will be sent to your bank within 24-48 hours."
                 : "Your withdrawal request is pending admin approval. Funds will be sent via PayPal within 24-48 hours."}
             </p>
             <Button className="bg-primary text-primary-foreground hover:opacity-90" onClick={resetForms}>
-              New Withdrawal
+              {t("withdraw.submit")}
             </Button>
           </div>
         </main>
@@ -147,23 +151,21 @@ export default function Withdraw() {
     <div className="min-h-screen bg-background">
       <Sidebar />
       <main className="pt-16 max-w-xl mx-auto px-4 sm:pl-16 py-8">
-        <h1 className="text-2xl font-black mb-1">Withdraw Funds</h1>
-        <p className="text-muted-foreground text-sm mb-8">
-          {isNGN ? "Send funds to your Nigerian bank account" : "Receive funds via PayPal"}
-        </p>
+        <h1 className="text-2xl font-black mb-1">{t("withdraw.title")}</h1>
+        <p className="text-muted-foreground text-sm mb-8">{t("withdraw.subtitle")}</p>
 
         {/* Deposit-first gate */}
         {!user?.hasDeposited && (
           <div className="bg-amber-500/10 border border-amber-500/40 rounded-xl p-5 mb-6 flex gap-4 items-start">
             <AlertTriangle size={20} className="text-amber-400 mt-0.5 shrink-0" />
             <div>
-              <p className="font-semibold text-amber-300 mb-1">Deposit required before withdrawing</p>
+              <p className="font-semibold text-amber-300 mb-1">{t("stake.depositRequired")}</p>
               <p className="text-sm text-muted-foreground mb-3">
-                You must make a real deposit and have it approved before you can withdraw funds. Your signup bonus alone does not qualify.
+                You must make a real deposit and have it approved before you can withdraw funds.
               </p>
               <Link href="/deposit">
                 <Button size="sm" className="bg-amber-500 hover:bg-amber-400 text-black font-bold">
-                  Make a Deposit
+                  {t("stake.makeDeposit")}
                 </Button>
               </Link>
             </div>
@@ -175,7 +177,7 @@ export default function Withdraw() {
           <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 mb-6 flex gap-3 items-start">
             <Info size={18} className="text-blue-400 mt-0.5 shrink-0" />
             <div>
-              <p className="font-semibold text-blue-300 text-sm mb-0.5">First withdrawal minimum</p>
+              <p className="font-semibold text-blue-300 text-sm mb-0.5">{t("withdraw.minNote")}</p>
               <p className="text-sm text-muted-foreground">
                 Your first withdrawal must be at least <span className="text-foreground font-bold">{fmt(FIRST_MIN)}</span>.
                 After it is approved you can withdraw any amount.
@@ -185,16 +187,16 @@ export default function Withdraw() {
         )}
 
         <div className="bg-card border border-border rounded-xl p-4 mb-6 flex justify-between">
-          <span className="text-sm text-muted-foreground">Available Balance</span>
+          <span className="text-sm text-muted-foreground">{t("dash.availableBalance")}</span>
           <span className="font-black text-primary">{fmt(user?.balance ?? 0)}</span>
         </div>
 
         <div className={`bg-card border border-border rounded-2xl p-6 space-y-5 ${!user?.hasDeposited ? "opacity-50 pointer-events-none" : ""}`}>
 
-          {/* Amount in USD */}
+          {/* Amount */}
           <div>
             <label className="text-sm font-medium mb-2 block">
-              Amount (USD)
+              {t("withdraw.amount")} (USD)
               {!hasApprovedWithdrawal && user?.hasDeposited && (
                 <span className="ml-2 text-xs text-muted-foreground font-normal">— min {fmt(FIRST_MIN)} for first withdrawal</span>
               )}
@@ -210,12 +212,11 @@ export default function Withdraw() {
               />
             </div>
 
-            {/* Local currency estimate */}
             {localEstimate !== null && (
               <div className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground">
                 <ArrowRight size={13} className="text-primary/60" />
                 <span>
-                  Estimated equivalent:{" "}
+                  {t("withdraw.localEstimate")}{" "}
                   <span className="text-foreground font-semibold">
                     {localCurrency!.symbol}{localEstimate.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} {localCurrency!.name}
                   </span>
@@ -236,7 +237,7 @@ export default function Withdraw() {
           {isNGN ? (
             <>
               <div>
-                <label className="text-sm font-medium mb-2 block">Select Bank</label>
+                <label className="text-sm font-medium mb-2 block">{t("withdraw.bankName")}</label>
                 <Select value={bankForm.bankName} onValueChange={val => setBankForm({ ...bankForm, bankName: val })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select your bank" />
@@ -249,7 +250,7 @@ export default function Withdraw() {
                 </Select>
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">Account Number</label>
+                <label className="text-sm font-medium mb-2 block">{t("withdraw.accountNumber")}</label>
                 <Input
                   value={bankForm.accountNumber}
                   onChange={e => setBankForm({ ...bankForm, accountNumber: e.target.value.slice(0, 20) })}
@@ -257,7 +258,7 @@ export default function Withdraw() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">Account Name</label>
+                <label className="text-sm font-medium mb-2 block">{t("withdraw.accountName")}</label>
                 <Input
                   value={bankForm.accountName}
                   onChange={e => setBankForm({ ...bankForm, accountName: e.target.value })}
@@ -299,7 +300,7 @@ export default function Withdraw() {
               (enteredAmount > 0 && enteredAmount < minWithdraw)
             }
           >
-            {mutation.isPending ? "Submitting..." : "Submit Withdrawal Request"}
+            {mutation.isPending ? t("withdraw.submitting") : t("withdraw.submit")}
           </Button>
         </div>
       </main>

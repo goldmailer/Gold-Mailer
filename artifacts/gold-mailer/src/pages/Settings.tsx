@@ -7,19 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Lock, Mail, User } from "lucide-react";
-
-const COUNTRIES = [
-  { code: "NG", label: "Nigeria (₦)" },
-  { code: "US", label: "United States ($)" },
-  { code: "UK", label: "United Kingdom (£)" },
-  { code: "CA", label: "Canada (C$)" },
-];
+import { Eye, EyeOff, Lock, Mail, User, Globe } from "lucide-react";
+import { useLanguage, LANGUAGE_NAMES, SUPPORTED_LANGUAGES } from "@/i18n/LanguageContext";
+import { ALL_COUNTRIES } from "@/lib/countries";
 
 export default function Settings() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { t, language, setLanguage } = useLanguage();
 
   const [emailForm, setEmailForm] = useState({ newEmail: "" });
   const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "" });
@@ -30,14 +26,14 @@ export default function Settings() {
     firstName: user?.firstName ?? "",
     lastName: user?.lastName ?? "",
     phone: (user as any)?.phone ?? "",
-    country: (user as any)?.country ?? "NG",
+    country: (user as any)?.country ?? "US",
     gender: user?.gender ?? "",
   });
 
   const emailMutation = useChangeEmail({
     mutation: {
       onSuccess: () => {
-        toast({ title: "Email updated", description: "Your email has been changed successfully." });
+        toast({ title: t("settings.changeEmail"), description: "Your email has been changed successfully." });
         queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
         setEmailForm({ newEmail: "" });
       },
@@ -50,7 +46,7 @@ export default function Settings() {
   const pwMutation = useChangePassword({
     mutation: {
       onSuccess: () => {
-        toast({ title: "Password changed", description: "Your password has been updated successfully." });
+        toast({ title: t("settings.changePassword") });
         setPwForm({ currentPassword: "", newPassword: "" });
       },
       onError: (err: any) => {
@@ -62,7 +58,7 @@ export default function Settings() {
   const profileMutation = useUpdateProfile({
     mutation: {
       onSuccess: () => {
-        toast({ title: "Profile updated", description: "Your profile details have been saved." });
+        toast({ title: t("settings.profileDetails") });
         queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
       },
       onError: (err: any) => {
@@ -73,7 +69,7 @@ export default function Settings() {
 
   const handleProfileSave = () => {
     if (!profileForm.firstName.trim() || !profileForm.lastName.trim()) {
-      toast({ title: "Name is required", description: "Please enter your first and last name.", variant: "destructive" });
+      toast({ title: t("settings.firstName") + " & " + t("settings.lastName") + " required", variant: "destructive" });
       return;
     }
     profileMutation.mutate({
@@ -94,14 +90,45 @@ export default function Settings() {
     <div className="min-h-screen bg-background">
       <Sidebar />
       <main className="pt-16 max-w-2xl mx-auto px-4 sm:pl-16 py-8">
-        <h1 className="text-2xl font-black mb-1">Account Settings</h1>
-        <p className="text-muted-foreground text-sm mb-8">Manage your account details and credentials</p>
+        <h1 className="text-2xl font-black mb-1">{t("settings.title")}</h1>
+        <p className="text-muted-foreground text-sm mb-8">{t("settings.subtitle")}</p>
 
         <div className="space-y-6">
           {/* Current email info */}
           <div className="bg-card border border-border rounded-xl p-5">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Current Email</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{t("settings.currentEmail")}</p>
             <p className="font-semibold text-foreground">{user?.email}</p>
+          </div>
+
+          {/* Language */}
+          <div className="bg-card border border-border rounded-2xl p-6">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
+                <Globe size={18} className="text-primary" />
+              </div>
+              <div>
+                <h2 className="font-bold">{t("settings.language")}</h2>
+                <p className="text-xs text-muted-foreground">{t("settings.languageSubtitle")}</p>
+              </div>
+            </div>
+            <Select
+              value={language}
+              onValueChange={(val) => {
+                setLanguage(val as any);
+                toast({ title: t("settings.languageSaved") });
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SUPPORTED_LANGUAGES.map(lang => (
+                  <SelectItem key={lang} value={lang}>
+                    {LANGUAGE_NAMES[lang]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Profile details */}
@@ -111,44 +138,44 @@ export default function Settings() {
                 <User size={18} className="text-primary" />
               </div>
               <div>
-                <h2 className="font-bold">Profile Details</h2>
-                <p className="text-xs text-muted-foreground">Update your name, country, and phone number</p>
+                <h2 className="font-bold">{t("settings.profileDetails")}</h2>
+                <p className="text-xs text-muted-foreground">{t("settings.profileSubtitle")}</p>
               </div>
             </div>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">First Name</label>
+                  <label className="text-sm font-medium mb-2 block">{t("settings.firstName")}</label>
                   <Input
                     value={profileForm.firstName}
                     onChange={e => setProfileForm({ ...profileForm, firstName: e.target.value })}
-                    placeholder="First name"
+                    placeholder={t("settings.firstName")}
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Last Name</label>
+                  <label className="text-sm font-medium mb-2 block">{t("settings.lastName")}</label>
                   <Input
                     value={profileForm.lastName}
                     onChange={e => setProfileForm({ ...profileForm, lastName: e.target.value })}
-                    placeholder="Last name"
+                    placeholder={t("settings.lastName")}
                   />
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">Country</label>
+                <label className="text-sm font-medium mb-2 block">{t("settings.country")}</label>
                 <Select value={profileForm.country} onValueChange={val => setProfileForm({ ...profileForm, country: val })}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select country" />
+                    <SelectValue placeholder={t("settings.country")} />
                   </SelectTrigger>
-                  <SelectContent>
-                    {COUNTRIES.map(c => (
-                      <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>
+                  <SelectContent className="max-h-72">
+                    {ALL_COUNTRIES.map(c => (
+                      <SelectItem key={c.code} value={c.code}>{c.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">Phone Number</label>
+                <label className="text-sm font-medium mb-2 block">{t("settings.phone")}</label>
                 <Input
                   type="tel"
                   value={profileForm.phone}
@@ -157,16 +184,16 @@ export default function Settings() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">Gender</label>
+                <label className="text-sm font-medium mb-2 block">{t("settings.gender")}</label>
                 <Select value={profileForm.gender} onValueChange={val => setProfileForm({ ...profileForm, gender: val })}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select gender" />
+                    <SelectValue placeholder={t("settings.gender")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                    <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                    <SelectItem value="male">{t("settings.male")}</SelectItem>
+                    <SelectItem value="female">{t("settings.female")}</SelectItem>
+                    <SelectItem value="other">{t("settings.other")}</SelectItem>
+                    <SelectItem value="prefer_not_to_say">{t("settings.preferNotToSay")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -175,7 +202,7 @@ export default function Settings() {
                 onClick={handleProfileSave}
                 disabled={profileMutation.isPending}
               >
-                {profileMutation.isPending ? "Saving..." : "Save Profile"}
+                {profileMutation.isPending ? t("settings.saving") : t("settings.saveProfile")}
               </Button>
             </div>
           </div>
@@ -187,13 +214,13 @@ export default function Settings() {
                 <Mail size={18} className="text-primary" />
               </div>
               <div>
-                <h2 className="font-bold">Change Email</h2>
-                <p className="text-xs text-muted-foreground">Update your login email address</p>
+                <h2 className="font-bold">{t("settings.changeEmail")}</h2>
+                <p className="text-xs text-muted-foreground">{t("settings.changeEmailSubtitle")}</p>
               </div>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">New Email Address</label>
+                <label className="text-sm font-medium mb-2 block">{t("settings.newEmail")}</label>
                 <Input
                   type="email"
                   value={emailForm.newEmail}
@@ -206,7 +233,7 @@ export default function Settings() {
                 onClick={() => emailMutation.mutate({ data: emailForm })}
                 disabled={!emailForm.newEmail || emailMutation.isPending}
               >
-                {emailMutation.isPending ? "Updating..." : "Update Email"}
+                {emailMutation.isPending ? t("settings.updating") : t("settings.updateEmail")}
               </Button>
             </div>
           </div>
@@ -218,19 +245,19 @@ export default function Settings() {
                 <Lock size={18} className="text-primary" />
               </div>
               <div>
-                <h2 className="font-bold">Change Password</h2>
-                <p className="text-xs text-muted-foreground">Keep your account secure</p>
+                <h2 className="font-bold">{t("settings.changePassword")}</h2>
+                <p className="text-xs text-muted-foreground">{t("settings.changePasswordSubtitle")}</p>
               </div>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">Current Password</label>
+                <label className="text-sm font-medium mb-2 block">{t("settings.currentPassword")}</label>
                 <div className="relative">
                   <Input
                     type={showCurrent ? "text" : "password"}
                     value={pwForm.currentPassword}
                     onChange={e => setPwForm({ ...pwForm, currentPassword: e.target.value })}
-                    placeholder="Your current password"
+                    placeholder={t("settings.currentPassword")}
                     className="pr-10"
                   />
                   <button type="button" onClick={() => setShowCurrent(!showCurrent)}
@@ -240,13 +267,13 @@ export default function Settings() {
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">New Password</label>
+                <label className="text-sm font-medium mb-2 block">{t("settings.newPassword")}</label>
                 <div className="relative">
                   <Input
                     type={showNew ? "text" : "password"}
                     value={pwForm.newPassword}
                     onChange={e => setPwForm({ ...pwForm, newPassword: e.target.value })}
-                    placeholder="At least 6 characters"
+                    placeholder={t("settings.newPassword")}
                     className="pr-10"
                   />
                   <button type="button" onClick={() => setShowNew(!showNew)}
@@ -260,7 +287,7 @@ export default function Settings() {
                 onClick={() => pwMutation.mutate({ data: pwForm })}
                 disabled={!pwForm.currentPassword || !pwForm.newPassword || pwMutation.isPending}
               >
-                {pwMutation.isPending ? "Updating..." : "Update Password"}
+                {pwMutation.isPending ? t("settings.updating") : t("settings.updatePassword")}
               </Button>
             </div>
           </div>

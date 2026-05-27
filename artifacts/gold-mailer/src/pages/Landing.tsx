@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Shield, TrendingUp, Zap, ChevronRight, Lock, Globe, Award, CheckCircle2, Star } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const p1 = "/people/person1.jpg";
 const p2 = "/people/person2.jpg";
@@ -11,6 +12,7 @@ const ADMIN_TAP_COUNT = 10;
 
 export default function Landing() {
   const [, setLocation] = useLocation();
+  const { t } = useLanguage();
   const [tapCount, setTapCount] = useState(0);
   const [showPinModal, setShowPinModal] = useState(false);
   const [pin, setPin] = useState("");
@@ -46,6 +48,15 @@ export default function Landing() {
     }
   };
 
+  const features = [
+    { icon: Shield, titleKey: "landing.feature1title", descKey: "landing.feature1desc" },
+    { icon: TrendingUp, titleKey: "landing.feature2title", descKey: "landing.feature2desc" },
+    { icon: Zap, titleKey: "landing.feature3title", descKey: "landing.feature3desc" },
+    { icon: Lock, titleKey: "landing.feature4title", descKey: "landing.feature4desc" },
+    { icon: Globe, titleKey: "landing.feature5title", descKey: "landing.feature5desc" },
+    { icon: Award, titleKey: "landing.feature6title", descKey: "landing.feature6desc" },
+  ];
+
   return (
     <div className="min-h-screen bg-background text-foreground">
 
@@ -56,11 +67,11 @@ export default function Landing() {
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={() => setLocation("/login")}
               className="text-muted-foreground hover:text-foreground">
-              Sign In
+              {t("landing.signIn")}
             </Button>
             <Button size="sm" onClick={() => setLocation("/register")}
               className="bg-primary text-primary-foreground hover:opacity-90 font-bold px-5">
-              Get Started
+              {t("landing.openAccount")}
             </Button>
           </div>
         </div>
@@ -68,7 +79,6 @@ export default function Landing() {
 
       {/* ── HERO ─────────────────────────────────────────────── */}
       <section className="relative pt-24 pb-0 overflow-hidden">
-        {/* Background glow blobs */}
         <div className="absolute inset-0 pointer-events-none" aria-hidden>
           <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/4" />
           <div className="absolute top-1/2 right-0 w-[400px] h-[400px] bg-blue-500/8 rounded-full blur-[100px]" />
@@ -77,43 +87,36 @@ export default function Landing() {
         <div className="relative max-w-6xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center min-h-[85vh]">
           {/* Left — text */}
           <div className="py-16 lg:py-24">
-            {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/35 bg-primary/10 text-primary text-sm font-semibold mb-8">
               <Star size={13} fill="currentColor" />
-              The Global Staking Platform
+              {t("landing.badge")}
             </div>
 
             <h1 className="text-5xl lg:text-6xl font-black tracking-tight leading-[1.08] mb-6">
-              Grow Your Money<br />
-              <span className="text-primary">The Smart Way</span>
+              {t("landing.title1")}<br />
+              <span className="text-primary">{t("landing.title2")}</span>
             </h1>
 
             <p className="text-muted-foreground text-lg leading-relaxed mb-4 max-w-md">
-              Stake your funds, earn guaranteed returns in 7 days, and collect daily rewards — all in your local currency.
+              {t("landing.subtitle")}
             </p>
 
-            {/* Trust bullets */}
             <ul className="space-y-2 mb-10">
-              {[
-                "Guaranteed returns in 7 days",
-                "Daily rewards on every active stake",
-                "Available in all countries worldwide",
-              ].map(point => (
-                <li key={point} className="flex items-center gap-2.5 text-sm text-muted-foreground">
+              {(["landing.bullet1", "landing.bullet2", "landing.bullet3"] as const).map(key => (
+                <li key={key} className="flex items-center gap-2.5 text-sm text-muted-foreground">
                   <CheckCircle2 size={16} className="text-primary shrink-0" />
-                  {point}
+                  {t(key)}
                 </li>
               ))}
             </ul>
 
-            {/* CTAs */}
             <div className="flex flex-col sm:flex-row gap-3">
               <Button
                 size="lg"
                 onClick={() => setLocation("/register")}
                 className="bg-primary text-primary-foreground hover:opacity-90 px-8 py-6 text-base font-black gold-glow"
               >
-                Open Free Account <ChevronRight size={18} className="ml-1" />
+                {t("landing.openAccount")} <ChevronRight size={18} className="ml-1" />
               </Button>
               <Button
                 variant="outline"
@@ -121,16 +124,16 @@ export default function Landing() {
                 onClick={() => setLocation("/login")}
                 className="px-8 py-6 text-base border-white/10 hover:bg-white/5"
               >
-                Sign In
+                {t("landing.signIn")}
               </Button>
             </div>
 
             <p className="mt-5 text-xs text-muted-foreground">
-              Get a <span className="text-primary font-semibold">free signup bonus</span> when you add your card — no credit check required.
+              {t("landing.signupBonus")}
             </p>
           </div>
 
-          {/* Mobile hero image — shown only on small screens */}
+          {/* Mobile hero image */}
           <div className="lg:hidden w-full mt-6 mb-4 flex items-start justify-center gap-4">
             <img
               src={p1}
@@ -156,12 +159,9 @@ export default function Landing() {
 
           {/* Right — floating photo collage (desktop) */}
           <div className="relative hidden lg:block" style={{ minHeight: "640px" }}>
-
-            {/* Soft background glow — behind everything */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[580px] rounded-full bg-primary/10 blur-[90px] pointer-events-none" />
             <div className="absolute top-1/4 right-0 w-[250px] h-[250px] rounded-full bg-blue-500/8 blur-[70px] pointer-events-none" />
 
-            {/* Stat chips */}
             <div className="absolute top-16 right-2 bg-card/95 backdrop-blur-sm border border-border rounded-2xl px-4 py-3 shadow-xl z-30">
               <p className="text-xs text-muted-foreground">7-Day Returns</p>
               <p className="text-xl font-black text-primary">Up to 3x+</p>
@@ -171,51 +171,23 @@ export default function Landing() {
               <p className="text-lg font-black text-green-400">+$0.10/day</p>
             </div>
 
-            {/* Person 2 — top-left, smaller, slight tilt left */}
-            <div
-              className="absolute top-8 left-4 z-20 shadow-2xl"
-              style={{ width: 228, height: 292, transform: "rotate(-4deg)" }}
-            >
-              <img
-                src={p2}
-                alt="Winning investor"
-                className="w-full h-full object-cover object-top"
-                style={{ borderRadius: "55% 45% 50% 50% / 40% 60% 40% 60%" }}
-              />
+            <div className="absolute top-8 left-4 z-20 shadow-2xl"
+              style={{ width: 228, height: 292, transform: "rotate(-4deg)" }}>
+              <img src={p2} alt="Winning investor" className="w-full h-full object-cover object-top"
+                style={{ borderRadius: "55% 45% 50% 50% / 40% 60% 40% 60%" }} />
             </div>
 
-            {/* Person 1 — main centre, large organic blob */}
-            <div
-              className="absolute z-10 shadow-[0_30px_80px_rgba(0,0,0,0.55)]"
-              style={{
-                width: 340,
-                height: 480,
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-              }}
-            >
-              <img
-                src={p1}
-                alt="Excited investor"
-                className="w-full h-full object-cover object-top"
-                style={{ borderRadius: "42% 58% 60% 40% / 40% 42% 58% 60%" }}
-              />
+            <div className="absolute z-10 shadow-[0_30px_80px_rgba(0,0,0,0.55)]"
+              style={{ width: 340, height: 480, top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}>
+              <img src={p1} alt="Excited investor" className="w-full h-full object-cover object-top"
+                style={{ borderRadius: "42% 58% 60% 40% / 40% 42% 58% 60%" }} />
             </div>
 
-            {/* Person 3 — bottom-right, smaller, slight tilt right */}
-            <div
-              className="absolute bottom-4 right-4 z-20 shadow-2xl"
-              style={{ width: 222, height: 278, transform: "rotate(4deg)" }}
-            >
-              <img
-                src={p3}
-                alt="Happy investor"
-                className="w-full h-full object-cover object-top"
-                style={{ borderRadius: "50% 50% 45% 55% / 60% 60% 40% 40%" }}
-              />
+            <div className="absolute bottom-4 right-4 z-20 shadow-2xl"
+              style={{ width: 222, height: 278, transform: "rotate(4deg)" }}>
+              <img src={p3} alt="Happy investor" className="w-full h-full object-cover object-top"
+                style={{ borderRadius: "50% 50% 45% 55% / 60% 60% 40% 40%" }} />
             </div>
-
           </div>
         </div>
       </section>
@@ -224,14 +196,14 @@ export default function Landing() {
       <section className="border-y border-white/5 bg-card/40 py-10">
         <div className="max-w-5xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           {[
-            { value: "From $3", label: "Minimum Stake" },
-            { value: "3x+", label: "7-Day Returns" },
-            { value: "4", label: "Countries" },
-            { value: "Daily", label: "Reward Claims" },
+            { valKey: "landing.stat1val", labelKey: "landing.stat1label" },
+            { valKey: "landing.stat2val", labelKey: "landing.stat2label" },
+            { valKey: "landing.stat3val", labelKey: "landing.stat3label" },
+            { valKey: "landing.stat4val", labelKey: "landing.stat4label" },
           ].map(s => (
-            <div key={s.label}>
-              <p className="text-2xl md:text-3xl font-black text-primary mb-1">{s.value}</p>
-              <p className="text-muted-foreground text-sm">{s.label}</p>
+            <div key={s.labelKey}>
+              <p className="text-2xl md:text-3xl font-black text-primary mb-1">{t(s.valKey)}</p>
+              <p className="text-muted-foreground text-sm">{t(s.labelKey)}</p>
             </div>
           ))}
         </div>
@@ -241,24 +213,17 @@ export default function Landing() {
       <section className="py-24 px-6">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-black mb-3">Why Gold Mailer?</h2>
-            <p className="text-muted-foreground text-lg">Built for serious investors who demand real results</p>
+            <h2 className="text-3xl md:text-4xl font-black mb-3">{t("landing.featuresTitle")}</h2>
+            <p className="text-muted-foreground text-lg">{t("landing.featuresSubtitle")}</p>
           </div>
           <div className="grid md:grid-cols-3 gap-5">
-            {[
-              { icon: Shield, title: "Bank-Grade Security", desc: "Your funds and data are protected with end-to-end encryption and secure session management." },
-              { icon: TrendingUp, title: "Guaranteed Returns", desc: "Stake any amount and earn guaranteed profit in just 7 days. Returns scale proportionally with your deposit." },
-              { icon: Zap, title: "Daily Rewards", desc: "Claim ₦100 / $0.10 every day on each active stake. Consistent earnings from day one." },
-              { icon: Lock, title: "Virtual Cards", desc: "Add your debit card once, manage it as a secure virtual card directly from your dashboard." },
-              { icon: Globe, title: "Global Reach", desc: "Available in 195+ countries worldwide. Withdraw directly to your local bank or PayPal." },
-              { icon: Award, title: "Instant Signup Bonus", desc: "Receive a signup bonus the moment you add your card. Start growing before you even stake." },
-            ].map(f => (
-              <div key={f.title} className="p-6 rounded-2xl bg-card border border-border hover:border-primary/40 transition-all duration-200 group">
+            {features.map(f => (
+              <div key={f.titleKey} className="p-6 rounded-2xl bg-card border border-border hover:border-primary/40 transition-all duration-200 group">
                 <div className="w-11 h-11 rounded-xl bg-primary/15 flex items-center justify-center mb-4 group-hover:bg-primary/25 transition-colors">
                   <f.icon size={20} className="text-primary" />
                 </div>
-                <h3 className="font-bold text-base mb-2">{f.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{f.desc}</p>
+                <h3 className="font-bold text-base mb-2">{t(f.titleKey)}</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">{t(f.descKey)}</p>
               </div>
             ))}
           </div>
@@ -294,7 +259,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── COUNTRIES ─────────────────────────────────────────── */}
+      {/* ── GLOBE / COUNTRIES ─────────────────────────────────── */}
       <section className="py-20 px-6">
         <style>{`
           @keyframes flagScrollL {
@@ -307,12 +272,11 @@ export default function Landing() {
           }
         `}</style>
         <div className="max-w-2xl mx-auto text-center">
-          <h2 className="text-2xl md:text-3xl font-black mb-3">Available Worldwide</h2>
-          <p className="text-muted-foreground mb-10">195+ countries · Earn in USD, withdraw locally</p>
+          <h2 className="text-2xl md:text-3xl font-black mb-3">{t("landing.globeTitle")}</h2>
+          <p className="text-muted-foreground mb-10">{t("landing.globeSubtitle")}</p>
 
           <div className="flex justify-center">
             <div className="relative">
-              {/* Globe ball — scrolling flags clipped to a circle */}
               <div
                 className="relative w-64 h-64 rounded-full overflow-hidden"
                 style={{ border: "1.5px solid rgba(255,255,255,0.10)" }}
@@ -329,43 +293,23 @@ export default function Landing() {
                 ].map((row, i) => {
                   const repeated = `${row.flags}   ${row.flags}   ${row.flags}   `;
                   return (
-                    <div
-                      key={i}
-                      className="whitespace-nowrap"
-                      style={{
-                        fontSize: "22px",
-                        lineHeight: "32px",
-                        animation: `flagScroll${row.dir} ${row.speed}s linear infinite`,
-                      }}
-                    >
+                    <div key={i} className="whitespace-nowrap"
+                      style={{ fontSize: "22px", lineHeight: "32px", animation: `flagScroll${row.dir} ${row.speed}s linear infinite` }}>
                       {repeated}
                     </div>
                   );
                 })}
-
-                {/* 3-D sphere shading overlay */}
-                <div
-                  className="absolute inset-0 pointer-events-none rounded-full"
-                  style={{
-                    background: "radial-gradient(ellipse at 38% 32%, rgba(255,255,255,0.07) 0%, transparent 45%, rgba(0,0,0,0.55) 100%)",
-                  }}
-                />
-                {/* Inset shadow for depth */}
-                <div
-                  className="absolute inset-0 pointer-events-none rounded-full"
-                  style={{ boxShadow: "inset 0 0 55px rgba(0,0,0,0.65), inset 0 0 20px rgba(0,0,0,0.4)" }}
-                />
+                <div className="absolute inset-0 pointer-events-none rounded-full"
+                  style={{ background: "radial-gradient(ellipse at 38% 32%, rgba(255,255,255,0.07) 0%, transparent 45%, rgba(0,0,0,0.55) 100%)" }} />
+                <div className="absolute inset-0 pointer-events-none rounded-full"
+                  style={{ boxShadow: "inset 0 0 55px rgba(0,0,0,0.65), inset 0 0 20px rgba(0,0,0,0.4)" }} />
               </div>
-
-              {/* Gold glow around globe */}
-              <div
-                className="absolute inset-0 rounded-full pointer-events-none"
-                style={{ boxShadow: "0 0 45px rgba(245,197,24,0.18), 0 0 90px rgba(245,197,24,0.07)" }}
-              />
+              <div className="absolute inset-0 rounded-full pointer-events-none"
+                style={{ boxShadow: "0 0 45px rgba(245,197,24,0.18), 0 0 90px rgba(245,197,24,0.07)" }} />
             </div>
           </div>
 
-          <p className="mt-8 text-sm text-muted-foreground">Join investors from every corner of the globe</p>
+          <p className="mt-8 text-sm text-muted-foreground">{t("landing.globeCaption")}</p>
         </div>
       </section>
 
@@ -373,16 +317,16 @@ export default function Landing() {
       <section className="py-24 px-6">
         <div className="max-w-2xl mx-auto text-center">
           <div className="bg-gradient-to-br from-primary/15 via-primary/8 to-blue-500/10 border border-primary/25 rounded-3xl p-12">
-            <h2 className="text-3xl md:text-4xl font-black mb-4">Ready to Start Earning?</h2>
-            <p className="text-muted-foreground mb-8 text-lg">Join thousands of investors growing their wealth with Gold Mailer. Free to join, no hidden fees.</p>
+            <h2 className="text-3xl md:text-4xl font-black mb-4">{t("landing.ctaTitle")}</h2>
+            <p className="text-muted-foreground mb-8 text-lg">{t("landing.ctaSubtitle")}</p>
             <Button
               size="lg"
               onClick={() => setLocation("/register")}
               className="bg-primary text-primary-foreground hover:opacity-90 px-12 py-6 text-lg font-black gold-glow"
             >
-              Open Free Account Now
+              {t("landing.ctaButton")}
             </Button>
-            <p className="mt-4 text-xs text-muted-foreground">No credit check · Instant signup bonus · Withdraw anytime</p>
+            <p className="mt-4 text-xs text-muted-foreground">{t("landing.ctaFooter")}</p>
           </div>
         </div>
       </section>

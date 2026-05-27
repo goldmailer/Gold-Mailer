@@ -12,16 +12,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { fmt as currencyFmt, getConfig } from "@/lib/currency";
 import { TrendingUp, Wallet, Clock, Gift, ChevronRight, AlertCircle, Copy, Check, Users } from "lucide-react";
 import { Link } from "wouter";
-
-function daysLabel(d: number) {
-  if (d <= 0) return "Matured";
-  return `${d} day${d === 1 ? "" : "s"} remaining`;
-}
+import { useLanguage } from "@/i18n/LanguageContext";
 
 export default function Dashboard() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
 
   const fmt = (n: number) => currencyFmt(n, user?.country);
@@ -45,7 +42,7 @@ export default function Dashboard() {
   const claimMutation = useClaimDailyReward({
     mutation: {
       onSuccess: (data: any) => {
-        toast({ title: "Daily reward claimed!", description: `${fmt(data.amount)} added to your balance.` });
+        toast({ title: t("dash.dailyRewardAvailable"), description: `${fmt(data.amount)} added to your balance.` });
         queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetStakesQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
@@ -56,7 +53,14 @@ export default function Dashboard() {
     },
   });
 
-  const greeting = user?.firstName ? `Welcome back, ${user.firstName}` : "Welcome back";
+  const greeting = user?.firstName
+    ? t("dash.welcomeBack", { name: user.firstName })
+    : "Welcome back";
+
+  function daysLabel(d: number) {
+    if (d <= 0) return t("dash.matured");
+    return t("dash.daysRemaining", { d: String(d), s: d === 1 ? "" : "s", e: d === 1 ? "" : "e" });
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -69,7 +73,7 @@ export default function Dashboard() {
             <p className="text-muted-foreground text-sm mb-1">{greeting}</p>
             <div className="flex items-end gap-4 flex-wrap">
               <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Available Balance</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{t("dash.availableBalance")}</p>
                 {dashLoading ? (
                   <Skeleton className="h-10 w-44 mt-1" />
                 ) : (
@@ -82,7 +86,7 @@ export default function Dashboard() {
                 <div className="mb-1">
                   <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-primary text-xs font-medium animate-pulse">
                     <Gift size={12} />
-                    Daily reward available
+                    {t("dash.dailyRewardAvailable")}
                   </div>
                 </div>
               )}
@@ -94,19 +98,17 @@ export default function Dashboard() {
           {/* Stats grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: "Total Staked", value: fmt(dash?.totalStaked ?? 0), icon: TrendingUp, color: "text-primary" },
-              { label: "Total Profit", value: fmt(dash?.totalProfit ?? 0), icon: Wallet, color: "text-green-400" },
-              { label: "Active Stakes", value: String(dash?.activeStakes ?? 0), icon: Clock, color: "text-blue-400" },
-              { label: "Pending Deposits", value: String(dash?.pendingDeposits ?? 0), icon: AlertCircle, color: "text-yellow-400" },
+              { label: t("dash.totalStaked"), value: fmt(dash?.totalStaked ?? 0), icon: TrendingUp, color: "text-primary" },
+              { label: t("dash.totalProfit"), value: fmt(dash?.totalProfit ?? 0), icon: Wallet, color: "text-green-400" },
+              { label: t("dash.activeStakes"), value: String(dash?.activeStakes ?? 0), icon: Clock, color: "text-blue-400" },
+              { label: t("dash.pendingDeposits"), value: String(dash?.pendingDeposits ?? 0), icon: AlertCircle, color: "text-yellow-400" },
             ].map(stat => (
               <div key={stat.label} className="bg-card border border-border rounded-xl p-4">
                 <div className={`${stat.color} mb-2`}><stat.icon size={20} /></div>
                 {dashLoading ? (
                   <Skeleton className="h-7 w-24 mb-1" />
                 ) : (
-                  <p className="text-xl font-black text-foreground" data-testid={`stat-${stat.label.toLowerCase().replace(/\s/g, "-")}`}>
-                    {stat.value}
-                  </p>
+                  <p className="text-xl font-black text-foreground">{stat.value}</p>
                 )}
                 <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
               </div>
@@ -116,14 +118,13 @@ export default function Dashboard() {
           {/* Quick actions */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { href: "/stake", label: "Stake Now", bg: "bg-primary text-primary-foreground" },
-              { href: "/deposit", label: "Deposit", bg: "bg-card border border-border text-foreground hover:border-primary/50" },
-              { href: "/withdraw", label: "Withdraw", bg: "bg-card border border-border text-foreground hover:border-primary/50" },
-              { href: "/cards", label: "View Cards", bg: "bg-card border border-border text-foreground hover:border-primary/50" },
+              { href: "/stake", label: t("dash.stakeNow"), bg: "bg-primary text-primary-foreground" },
+              { href: "/deposit", label: t("dash.deposit"), bg: "bg-card border border-border text-foreground hover:border-primary/50" },
+              { href: "/withdraw", label: t("dash.withdraw"), bg: "bg-card border border-border text-foreground hover:border-primary/50" },
+              { href: "/cards", label: t("dash.viewCards"), bg: "bg-card border border-border text-foreground hover:border-primary/50" },
             ].map(action => (
               <Link key={action.href} href={action.href}>
-                <button data-testid={`button-quick-${action.label.toLowerCase().replace(/\s/g, "-")}`}
-                  className={`w-full py-3 rounded-xl text-sm font-semibold transition-colors ${action.bg}`}>
+                <button className={`w-full py-3 rounded-xl text-sm font-semibold transition-colors ${action.bg}`}>
                   {action.label}
                 </button>
               </Link>
@@ -138,9 +139,9 @@ export default function Dashboard() {
                   <Users size={20} className="text-primary" />
                 </div>
                 <div>
-                  <h2 className="font-bold text-base">Refer a Friend</h2>
+                  <h2 className="font-bold text-base">{t("dash.referFriend")}</h2>
                   <p className="text-xs text-muted-foreground">
-                    Earn {fmt(cfg.referralBonus)} for every friend who joins and adds a card
+                    {t("dash.referralBonus", { amount: fmt(cfg.referralBonus) })}
                   </p>
                 </div>
               </div>
@@ -151,11 +152,11 @@ export default function Dashboard() {
                   className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:opacity-80 transition-opacity shrink-0"
                 >
                   {copied ? <Check size={14} /> : <Copy size={14} />}
-                  {copied ? "Copied!" : "Copy"}
+                  {copied ? t("dash.copied") : t("dash.copy")}
                 </button>
               </div>
               <p className="text-xs text-muted-foreground mt-3">
-                Your referral code: <span className="font-mono font-bold text-foreground">{user?.referralCode}</span>
+                {t("dash.referralCode")} <span className="font-mono font-bold text-foreground">{user?.referralCode}</span>
               </p>
             </div>
           )}
@@ -163,10 +164,10 @@ export default function Dashboard() {
           {/* Active stakes */}
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-lg">Active Stakes</h2>
+              <h2 className="font-bold text-lg">{t("dash.activeStakesTitle")}</h2>
               <Link href="/stake">
                 <span className="text-sm text-primary hover:underline cursor-pointer flex items-center gap-1">
-                  New Stake <ChevronRight size={14} />
+                  {t("dash.newStake")} <ChevronRight size={14} />
                 </span>
               </Link>
             </div>
@@ -180,10 +181,10 @@ export default function Dashboard() {
             ) : !stakes || stakes.length === 0 ? (
               <div className="text-center py-16 bg-card border border-border rounded-2xl">
                 <TrendingUp size={40} className="text-muted-foreground mx-auto mb-3" />
-                <p className="text-muted-foreground mb-4">No active stakes yet</p>
+                <p className="text-muted-foreground mb-4">{t("dash.noActiveStakes")}</p>
                 <Link href="/stake">
                   <Button className="bg-primary text-primary-foreground hover:opacity-90" data-testid="button-create-first-stake">
-                    Create Your First Stake
+                    {t("dash.createFirstStake")}
                   </Button>
                 </Link>
               </div>
@@ -202,8 +203,8 @@ export default function Dashboard() {
                         <span className="text-xs text-muted-foreground">{daysLabel(stake.daysRemaining)}</span>
                       </div>
                       <p className="font-black text-xl text-foreground">{fmt(stake.amount)}</p>
-                      <p className="text-sm text-green-400 font-medium">Profit: +{fmt(stake.profit)}</p>
-                      <p className="text-xs text-muted-foreground">Daily claimed: {fmt(stake.totalDailyClaimed)}</p>
+                      <p className="text-sm text-green-400 font-medium">{t("dash.profit")} +{fmt(stake.profit)}</p>
+                      <p className="text-xs text-muted-foreground">{t("dash.dailyClaimed")} {fmt(stake.totalDailyClaimed)}</p>
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       {stake.status === "active" && !stake.dailyClaimedToday && (
@@ -214,14 +215,14 @@ export default function Dashboard() {
                           data-testid={`button-claim-daily-${stake.id}`}
                           className="bg-primary text-primary-foreground hover:opacity-90 text-xs"
                         >
-                          <Gift size={12} className="mr-1" /> Claim {fmt(cfg.dailyReward)}
+                          <Gift size={12} className="mr-1" /> {t("dash.claim", { amount: fmt(cfg.dailyReward) })}
                         </Button>
                       )}
                       {stake.status === "active" && stake.dailyClaimedToday && (
-                        <span className="text-xs text-muted-foreground">Claimed today</span>
+                        <span className="text-xs text-muted-foreground">{t("dash.claimedToday")}</span>
                       )}
                       <div className="text-right">
-                        <p className="text-xs text-muted-foreground">Ends</p>
+                        <p className="text-xs text-muted-foreground">{t("dash.ends")}</p>
                         <p className="text-xs font-medium">{new Date(stake.endDate).toLocaleDateString()}</p>
                       </div>
                     </div>
