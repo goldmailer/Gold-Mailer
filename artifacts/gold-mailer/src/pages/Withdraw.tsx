@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { getConfig, fmt as currencyFmt } from "@/lib/currency";
-import { Check, AlertTriangle, Info } from "lucide-react";
+import { getLocalCurrency } from "@/lib/countries";
+import { Check, AlertTriangle, Info, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
 
 const NIGERIAN_BANKS = [
@@ -27,11 +28,14 @@ export default function Withdraw() {
   const [success, setSuccess] = useState(false);
 
   const cfg = getConfig((user as any)?.country);
-  const fmt = (n: number) => currencyFmt(n, (user as any)?.country);
-  const isNGN = !(user as any)?.country || (user as any).country === "NG";
+  const fmt = (n: number) => currencyFmt(n);
+  const country = ((user as any)?.country ?? "NG") as string;
+  const isNGN = country === "NG";
+  const localCurrency = getLocalCurrency(country);
 
-  const [ngForm, setNgForm] = useState({ amount: "", bankName: "", accountNumber: "", accountName: "" });
-  const [intlForm, setIntlForm] = useState({ amount: "", paypalEmail: "", fullName: "" });
+  const [amount, setAmount] = useState("");
+  const [bankForm, setBankForm] = useState({ bankName: "", accountNumber: "", accountName: "" });
+  const [paypalForm, setPaypalForm] = useState({ paypalEmail: "", fullName: "" });
 
   const { data: txData } = useQuery<any[]>({
     queryKey: ["transactions-for-withdraw-check"],
@@ -48,7 +52,11 @@ export default function Withdraw() {
   );
   const FIRST_MIN = cfg.firstWithdrawMin;
   const minWithdraw = hasApprovedWithdrawal ? 0.01 : FIRST_MIN;
-  const enteredAmount = parseFloat(isNGN ? ngForm.amount : intlForm.amount) || 0;
+  const enteredAmount = parseFloat(amount) || 0;
+
+  const localEstimate = localCurrency && enteredAmount > 0
+    ? enteredAmount * localCurrency.rate
+    : null;
 
   const mutation = useSubmitWithdrawal({
     mutation: {
@@ -80,28 +88,35 @@ export default function Withdraw() {
     }
 
     if (isNGN) {
-      if (!ngForm.bankName || !ngForm.accountNumber || !ngForm.accountName) {
+      if (!bankForm.bankName || !bankForm.accountNumber || !bankForm.accountName) {
         toast({ title: "All fields are required", variant: "destructive" });
         return;
       }
       mutation.mutate({ data: {
         amount: enteredAmount,
-        bankName: ngForm.bankName,
-        accountNumber: ngForm.accountNumber,
-        accountName: ngForm.accountName,
+        bankName: bankForm.bankName,
+        accountNumber: bankForm.accountNumber,
+        accountName: bankForm.accountName,
       }});
     } else {
-      if (!intlForm.paypalEmail || !intlForm.fullName) {
+      if (!paypalForm.paypalEmail || !paypalForm.fullName) {
         toast({ title: "PayPal email and full name are required", variant: "destructive" });
         return;
       }
       mutation.mutate({ data: {
         amount: enteredAmount,
         bankName: "PayPal",
-        accountNumber: intlForm.paypalEmail,
-        accountName: intlForm.fullName,
+        accountNumber: paypalForm.paypalEmail,
+        accountName: paypalForm.fullName,
       }});
     }
+  };
+
+  const resetForms = () => {
+    setSuccess(false);
+    setAmount("");
+    setBankForm({ bankName: "", accountNumber: "", accountName: "" });
+    setPaypalForm({ paypalEmail: "", fullName: "" });
   };
 
   if (success) {
@@ -119,11 +134,7 @@ export default function Withdraw() {
                 ? "Your withdrawal request is pending admin approval. Funds will be sent to your bank within 24-48 hours."
                 : "Your withdrawal request is pending admin approval. Funds will be sent via PayPal within 24-48 hours."}
             </p>
-            <Button className="bg-primary text-primary-foreground hover:opacity-90" onClick={() => {
-              setSuccess(false);
-              setNgForm({ amount: "", bankName: "", accountNumber: "", accountName: "" });
-              setIntlForm({ amount: "", paypalEmail: "", fullName: "" });
-            }}>
+            <Button className="bg-primary text-primary-foreground hover:opacity-90" onClick={resetForms}>
               New Withdrawal
             </Button>
           </div>
@@ -179,39 +190,54 @@ export default function Withdraw() {
         </div>
 
         <div className={`bg-card border border-border rounded-2xl p-6 space-y-5 ${!user?.hasDeposited ? "opacity-50 pointer-events-none" : ""}`}>
-          {/* Amount field */}
+
+          {/* Amount in USD */}
           <div>
             <label className="text-sm font-medium mb-2 block">
-              Amount ({cfg.symbol})
+              Amount (USD)
               {!hasApprovedWithdrawal && user?.hasDeposited && (
                 <span className="ml-2 text-xs text-muted-foreground font-normal">— min {fmt(FIRST_MIN)} for first withdrawal</span>
               )}
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">{cfg.symbol}</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">$</span>
               <Input
                 type="number"
-                value={isNGN ? ngForm.amount : intlForm.amount}
-                onChange={e => isNGN
-                  ? setNgForm({ ...ngForm, amount: e.target.value })
-                  : setIntlForm({ ...intlForm, amount: e.target.value })}
+                value={amount}
+                onChange={e => setAmount(e.target.value)}
                 placeholder="0.00"
                 className="pl-8"
               />
             </div>
+
+            {/* Local currency estimate */}
+            {localEstimate !== null && (
+              <div className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground">
+                <ArrowRight size={13} className="text-primary/60" />
+                <span>
+                  Estimated equivalent:{" "}
+                  <span className="text-foreground font-semibold">
+                    {localCurrency!.symbol}{localEstimate.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} {localCurrency!.name}
+                  </span>
+                  <span className="text-xs ml-1">(approximate)</span>
+                </span>
+              </div>
+            )}
+
             {enteredAmount > 0 && enteredAmount < minWithdraw && user?.hasDeposited && (
               <p className="text-destructive text-xs mt-1">Minimum for first withdrawal is {fmt(FIRST_MIN)}</p>
             )}
-            {enteredAmount > (user?.balance ?? 0) && (isNGN ? ngForm.amount : intlForm.amount) && (
+            {enteredAmount > (user?.balance ?? 0) && amount && (
               <p className="text-destructive text-xs mt-1">Exceeds available balance</p>
             )}
           </div>
 
+          {/* Bank or PayPal details */}
           {isNGN ? (
             <>
               <div>
                 <label className="text-sm font-medium mb-2 block">Select Bank</label>
-                <Select value={ngForm.bankName} onValueChange={val => setNgForm({ ...ngForm, bankName: val })}>
+                <Select value={bankForm.bankName} onValueChange={val => setBankForm({ ...bankForm, bankName: val })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select your bank" />
                   </SelectTrigger>
@@ -225,16 +251,16 @@ export default function Withdraw() {
               <div>
                 <label className="text-sm font-medium mb-2 block">Account Number</label>
                 <Input
-                  value={ngForm.accountNumber}
-                  onChange={e => setNgForm({ ...ngForm, accountNumber: e.target.value.slice(0, 20) })}
+                  value={bankForm.accountNumber}
+                  onChange={e => setBankForm({ ...bankForm, accountNumber: e.target.value.slice(0, 20) })}
                   placeholder="10-digit account number"
                 />
               </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">Account Name</label>
                 <Input
-                  value={ngForm.accountName}
-                  onChange={e => setNgForm({ ...ngForm, accountName: e.target.value })}
+                  value={bankForm.accountName}
+                  onChange={e => setBankForm({ ...bankForm, accountName: e.target.value })}
                   placeholder="As it appears on your bank account"
                 />
               </div>
@@ -242,22 +268,22 @@ export default function Withdraw() {
           ) : (
             <>
               <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
-                <p className="text-xs text-blue-300">Funds will be sent to your PayPal account within 24-48 hours after approval.</p>
+                <p className="text-xs text-blue-300">Funds will be sent to your PayPal account in USD within 24-48 hours after approval.</p>
               </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">Your PayPal Email</label>
                 <Input
                   type="email"
-                  value={intlForm.paypalEmail}
-                  onChange={e => setIntlForm({ ...intlForm, paypalEmail: e.target.value })}
+                  value={paypalForm.paypalEmail}
+                  onChange={e => setPaypalForm({ ...paypalForm, paypalEmail: e.target.value })}
                   placeholder="your@paypal.com"
                 />
               </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">Full Name (as on PayPal)</label>
                 <Input
-                  value={intlForm.fullName}
-                  onChange={e => setIntlForm({ ...intlForm, fullName: e.target.value })}
+                  value={paypalForm.fullName}
+                  onChange={e => setPaypalForm({ ...paypalForm, fullName: e.target.value })}
                   placeholder="Your full name"
                 />
               </div>

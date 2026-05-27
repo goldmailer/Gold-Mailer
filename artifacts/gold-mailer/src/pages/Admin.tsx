@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import {
   useAdminGetUsers, useAdminDeleteUser, useAdminTopUpBalance, useAdminUpdateUser,
@@ -8,20 +8,14 @@ import {
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ALL_COUNTRIES } from "@/lib/countries";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Plus, Check, X, ArrowLeft, Settings, Users, List, Pencil, ToggleLeft, ToggleRight, MessageSquare, Send } from "lucide-react";
 import { Link } from "wouter";
 
-const COUNTRIES = [
-  { code: "NG", label: "Nigeria (₦)" },
-  { code: "US", label: "United States ($)" },
-  { code: "UK", label: "United Kingdom (£)" },
-  { code: "CA", label: "Canada (C$)" },
-];
-
 function fmt(n: number) {
-  return `₦${n.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -134,7 +128,7 @@ function EditUserModal({ user, onClose }: { user: any; onClose: () => void }) {
             <Select value={form.country} onValueChange={val => setForm({ ...form, country: val })}>
               <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
               <SelectContent>
-                {COUNTRIES.map(c => <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>)}
+                {ALL_COUNTRIES.map(c => <SelectItem key={c.code} value={c.code}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -159,7 +153,7 @@ export default function Admin() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<"users" | "transactions" | "settings" | "support">("users");
-  const [userFilter, setUserFilter] = useState<"all" | "us" | "other">("all");
+  const [countryFilter, setCountryFilter] = useState<string>("all");
   const [topUpUserId, setTopUpUserId] = useState<number | null>(null);
   const [editUser, setEditUser] = useState<any | null>(null);
 
@@ -229,11 +223,27 @@ export default function Admin() {
   const allUsers = Array.isArray(usersRaw) ? usersRaw : [];
   const transactions = Array.isArray(transactionsRaw) ? transactionsRaw : [];
 
-  const users = allUsers.filter((u: any) => {
-    if (userFilter === "us") return u.country === "US";
-    if (userFilter === "other") return u.country !== "US";
-    return true;
-  });
+  const users = countryFilter === "all"
+    ? allUsers
+    : allUsers.filter((u: any) => (u.country ?? "NG") === countryFilter);
+
+  const countryStats = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const u of allUsers) {
+      const c = (u as any).country ?? "NG";
+      counts[c] = (counts[c] ?? 0) + 1;
+    }
+    return counts;
+  }, [allUsers]);
+
+  const countriesWithUsers = useMemo(() =>
+    ALL_COUNTRIES.filter(c => countryStats[c.code])
+      .sort((a, b) => (countryStats[b.code] ?? 0) - (countryStats[a.code] ?? 0)),
+    [countryStats]);
+
+  const countriesWithoutUsers = useMemo(() =>
+    ALL_COUNTRIES.filter(c => !countryStats[c.code]),
+    [countryStats]);
 
   const { data: depositAccount } = useGetDepositAccount({ query: { queryKey: getGetDepositAccountQueryKey() } });
 
@@ -373,17 +383,38 @@ export default function Admin() {
           <div>
             <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
               <h2 className="font-bold text-lg">
-                {userFilter === "us" ? "US Users" : userFilter === "other" ? "Non-US Users" : "All Users"} ({users.length})
+                {countryFilter === "all"
+                  ? "All Users"
+                  : (ALL_COUNTRIES.find(c => c.code === countryFilter)?.name ?? countryFilter) + " Users"
+                } ({users.length})
               </h2>
-              {/* Filter buttons */}
-              <div className="flex items-center gap-1 bg-card border border-border rounded-lg p-1">
-                {([["all", "All"], ["us", "🇺🇸 US Only"], ["other", "Other Countries"]] as const).map(([key, label]) => (
-                  <button key={key} onClick={() => setUserFilter(key)}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${userFilter === key ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-                    {label}
-                  </button>
-                ))}
-              </div>
+              {/* Country switcher */}
+              <Select value={countryFilter} onValueChange={setCountryFilter}>
+                <SelectTrigger className="w-52 h-9 text-xs">
+                  <SelectValue placeholder="Filter by country" />
+                </SelectTrigger>
+                <SelectContent className="max-h-80">
+                  <SelectItem value="all">All Countries ({allUsers.length})</SelectItem>
+                  {countriesWithUsers.length > 0 && (
+                    <SelectGroup>
+                      <SelectLabel className="text-xs text-primary">Countries with users</SelectLabel>
+                      {countriesWithUsers.map(c => (
+                        <SelectItem key={c.code} value={c.code}>
+                          {c.name} ({countryStats[c.code]})
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  )}
+                  {countriesWithoutUsers.length > 0 && (
+                    <SelectGroup>
+                      <SelectLabel className="text-xs text-muted-foreground">No users yet</SelectLabel>
+                      {countriesWithoutUsers.map(c => (
+                        <SelectItem key={c.code} value={c.code}>{c.name}</SelectItem>
+                      ))}
+                    </SelectGroup>
+                  )}
+                </SelectContent>
+              </Select>
             </div>
 
             {usersLoading ? (

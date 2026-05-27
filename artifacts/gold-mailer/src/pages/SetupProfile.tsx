@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { User, Camera } from "lucide-react";
+import { ALL_COUNTRIES } from "@/lib/countries";
 
 const schema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -164,11 +165,10 @@ export default function SetupProfile() {
                         <SelectValue placeholder="Select your country" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="US">United States</SelectItem>
-                      <SelectItem value="NG">Nigeria</SelectItem>
-                      <SelectItem value="UK">United Kingdom</SelectItem>
-                      <SelectItem value="CA">Canada</SelectItem>
+                    <SelectContent className="max-h-72">
+                      {ALL_COUNTRIES.map(c => (
+                        <SelectItem key={c.code} value={c.code}>{c.name}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
