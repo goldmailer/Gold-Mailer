@@ -97,7 +97,7 @@ export default function Landing() {
               {[
                 "Guaranteed returns in 7 days",
                 "Daily rewards on every active stake",
-                "Available in the USA, UK, Canada & Nigeria",
+                "Available in all countries worldwide",
               ].map(point => (
                 <li key={point} className="flex items-center gap-2.5 text-sm text-muted-foreground">
                   <CheckCircle2 size={16} className="text-primary shrink-0" />
@@ -135,31 +135,31 @@ export default function Landing() {
             <img
               src={p1}
               alt="Happy investor"
-              className="w-[130px] h-[170px] object-cover object-top shadow-2xl"
+              className="w-[155px] h-[205px] object-cover object-top shadow-2xl"
               style={{ borderRadius: "55% 45% 55% 45% / 50% 60% 40% 50%" }}
             />
-            <div className="flex flex-col gap-3 pt-8">
+            <div className="flex flex-col gap-3 pt-10">
               <img
                 src={p2}
                 alt="Excited investor"
-                className="w-[100px] h-[125px] object-cover object-top shadow-xl"
+                className="w-[118px] h-[148px] object-cover object-top shadow-xl"
                 style={{ transform: "rotate(3deg)", borderRadius: "50% 50% 45% 55% / 45% 55% 45% 55%" }}
               />
               <img
                 src={p3}
                 alt="Celebrating investor"
-                className="w-[100px] h-[115px] object-cover object-top shadow-xl"
+                className="w-[118px] h-[138px] object-cover object-top shadow-xl"
                 style={{ transform: "rotate(-3deg)", borderRadius: "45% 55% 50% 50% / 55% 45% 55% 45%" }}
               />
             </div>
           </div>
 
           {/* Right — floating photo collage (desktop) */}
-          <div className="relative hidden lg:block" style={{ minHeight: "580px" }}>
+          <div className="relative hidden lg:block" style={{ minHeight: "640px" }}>
 
             {/* Soft background glow — behind everything */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[460px] h-[520px] rounded-full bg-primary/10 blur-[90px] pointer-events-none" />
-            <div className="absolute top-1/4 right-0 w-[220px] h-[220px] rounded-full bg-blue-500/8 blur-[70px] pointer-events-none" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[580px] rounded-full bg-primary/10 blur-[90px] pointer-events-none" />
+            <div className="absolute top-1/4 right-0 w-[250px] h-[250px] rounded-full bg-blue-500/8 blur-[70px] pointer-events-none" />
 
             {/* Stat chips */}
             <div className="absolute top-16 right-2 bg-card/95 backdrop-blur-sm border border-border rounded-2xl px-4 py-3 shadow-xl z-30">
@@ -173,8 +173,8 @@ export default function Landing() {
 
             {/* Person 2 — top-left, smaller, slight tilt left */}
             <div
-              className="absolute top-10 left-6 z-20 shadow-2xl"
-              style={{ width: 195, height: 250, transform: "rotate(-4deg)" }}
+              className="absolute top-8 left-4 z-20 shadow-2xl"
+              style={{ width: 228, height: 292, transform: "rotate(-4deg)" }}
             >
               <img
                 src={p2}
@@ -188,8 +188,8 @@ export default function Landing() {
             <div
               className="absolute z-10 shadow-[0_30px_80px_rgba(0,0,0,0.55)]"
               style={{
-                width: 295,
-                height: 415,
+                width: 340,
+                height: 480,
                 top: "50%",
                 left: "50%",
                 transform: "translate(-50%, -50%)",
@@ -205,8 +205,8 @@ export default function Landing() {
 
             {/* Person 3 — bottom-right, smaller, slight tilt right */}
             <div
-              className="absolute bottom-6 right-6 z-20 shadow-2xl"
-              style={{ width: 190, height: 240, transform: "rotate(4deg)" }}
+              className="absolute bottom-4 right-4 z-20 shadow-2xl"
+              style={{ width: 222, height: 278, transform: "rotate(4deg)" }}
             >
               <img
                 src={p3}
@@ -250,7 +250,7 @@ export default function Landing() {
               { icon: TrendingUp, title: "Guaranteed Returns", desc: "Stake any amount and earn guaranteed profit in just 7 days. Returns scale proportionally with your deposit." },
               { icon: Zap, title: "Daily Rewards", desc: "Claim ₦100 / $0.10 every day on each active stake. Consistent earnings from day one." },
               { icon: Lock, title: "Virtual Cards", desc: "Add your debit card once, manage it as a secure virtual card directly from your dashboard." },
-              { icon: Globe, title: "Global Reach", desc: "Available in Nigeria, USA, UK, and Canada. Withdraw directly to your local bank or PayPal." },
+              { icon: Globe, title: "Global Reach", desc: "Available in 195+ countries worldwide. Withdraw directly to your local bank or PayPal." },
               { icon: Award, title: "Instant Signup Bonus", desc: "Receive a signup bonus the moment you add your card. Start growing before you even stake." },
             ].map(f => (
               <div key={f.title} className="p-6 rounded-2xl bg-card border border-border hover:border-primary/40 transition-all duration-200 group">
@@ -295,24 +295,77 @@ export default function Landing() {
       </section>
 
       {/* ── COUNTRIES ─────────────────────────────────────────── */}
-      <section className="py-16 px-6">
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-2xl md:text-3xl font-black mb-3">Available In</h2>
-          <p className="text-muted-foreground mb-8">Stake and earn in your local currency</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { flag: "🇺🇸", name: "United States", currency: "$ Dollar" },
-              { flag: "🇬🇧", name: "United Kingdom", currency: "£ Pound" },
-              { flag: "🇨🇦", name: "Canada", currency: "C$ Dollar" },
-              { flag: "🇳🇬", name: "Nigeria", currency: "₦ Naira" },
-            ].map(c => (
-              <div key={c.name} className="p-5 rounded-2xl bg-card border border-border hover:border-primary/30 transition-colors">
-                <p className="text-3xl mb-2">{c.flag}</p>
-                <p className="font-bold text-sm">{c.name}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{c.currency}</p>
+      <section className="py-20 px-6">
+        <style>{`
+          @keyframes flagScrollL {
+            from { transform: translateX(0); }
+            to   { transform: translateX(-33.33%); }
+          }
+          @keyframes flagScrollR {
+            from { transform: translateX(-33.33%); }
+            to   { transform: translateX(0); }
+          }
+        `}</style>
+        <div className="max-w-2xl mx-auto text-center">
+          <h2 className="text-2xl md:text-3xl font-black mb-3">Available Worldwide</h2>
+          <p className="text-muted-foreground mb-10">195+ countries · Earn in USD, withdraw locally</p>
+
+          <div className="flex justify-center">
+            <div className="relative">
+              {/* Globe ball — scrolling flags clipped to a circle */}
+              <div
+                className="relative w-64 h-64 rounded-full overflow-hidden"
+                style={{ border: "1.5px solid rgba(255,255,255,0.10)" }}
+              >
+                {[
+                  { flags: "🇺🇸 🇬🇧 🇨🇦 🇳🇬 🇦🇺 🇩🇪 🇫🇷 🇯🇵 🇧🇷 🇮🇳 🇰🇷 🇿🇦 🇲🇽 🇮🇹 🇪🇸", dir: "L", speed: 14 },
+                  { flags: "🇷🇺 🇸🇦 🇦🇪 🇸🇬 🇹🇷 🇳🇱 🇸🇪 🇨🇭 🇦🇷 🇵🇭 🇮🇩 🇵🇰 🇧🇩 🇪🇬 🇲🇾", dir: "R", speed: 18 },
+                  { flags: "🇹🇭 🇻🇳 🇨🇴 🇵🇱 🇺🇦 🇰🇪 🇬🇭 🇸🇳 🇪🇹 🇹🇿 🇨🇮 🇨🇲 🇿🇼 🇲🇦 🇹🇳", dir: "L", speed: 16 },
+                  { flags: "🇩🇿 🇮🇶 🇨🇱 🇵🇪 🇻🇪 🇪🇨 🇧🇴 🇬🇹 🇭🇳 🇨🇷 🇵🇦 🇩🇰 🇫🇮 🇳🇴 🇮🇸", dir: "R", speed: 20 },
+                  { flags: "🇮🇪 🇵🇹 🇬🇷 🇦🇹 🇧🇪 🇨🇿 🇭🇺 🇷🇴 🇯🇲 🇹🇹 🇧🇧 🇩🇴 🇨🇺 🇱🇰 🇲🇲", dir: "L", speed: 13 },
+                  { flags: "🇰🇭 🇧🇳 🇲🇻 🇧🇹 🇳🇿 🇫🇯 🇵🇬 🇮🇱 🇯🇴 🇱🇧 🇸🇾 🇶🇦 🇰🇼 🇧🇭 🇴🇲", dir: "R", speed: 17 },
+                  { flags: "🇦🇿 🇬🇪 🇦🇲 🇰🇿 🇺🇿 🇹🇲 🇰🇬 🇹🇯 🇲🇳 🇦🇫 🇳🇵 🇸🇱 🇱🇷 🇬🇳 🇬🇦", dir: "L", speed: 15 },
+                  { flags: "🇧🇫 🇲🇱 🇳🇪 🇨🇩 🇦🇴 🇿🇲 🇲🇿 🇲🇼 🇧🇮 🇷🇼 🇺🇬 🇸🇸 🇸🇴 🇩🇯 🇪🇷", dir: "R", speed: 19 },
+                ].map((row, i) => {
+                  const repeated = `${row.flags}   ${row.flags}   ${row.flags}   `;
+                  return (
+                    <div
+                      key={i}
+                      className="whitespace-nowrap"
+                      style={{
+                        fontSize: "22px",
+                        lineHeight: "32px",
+                        animation: `flagScroll${row.dir} ${row.speed}s linear infinite`,
+                      }}
+                    >
+                      {repeated}
+                    </div>
+                  );
+                })}
+
+                {/* 3-D sphere shading overlay */}
+                <div
+                  className="absolute inset-0 pointer-events-none rounded-full"
+                  style={{
+                    background: "radial-gradient(ellipse at 38% 32%, rgba(255,255,255,0.07) 0%, transparent 45%, rgba(0,0,0,0.55) 100%)",
+                  }}
+                />
+                {/* Inset shadow for depth */}
+                <div
+                  className="absolute inset-0 pointer-events-none rounded-full"
+                  style={{ boxShadow: "inset 0 0 55px rgba(0,0,0,0.65), inset 0 0 20px rgba(0,0,0,0.4)" }}
+                />
               </div>
-            ))}
+
+              {/* Gold glow around globe */}
+              <div
+                className="absolute inset-0 rounded-full pointer-events-none"
+                style={{ boxShadow: "0 0 45px rgba(245,197,24,0.18), 0 0 90px rgba(245,197,24,0.07)" }}
+              />
+            </div>
           </div>
+
+          <p className="mt-8 text-sm text-muted-foreground">Join investors from every corner of the globe</p>
         </div>
       </section>
 
