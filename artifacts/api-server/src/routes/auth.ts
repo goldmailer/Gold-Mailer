@@ -213,20 +213,26 @@ router.post("/auth/login", async (req, res) => {
 
   // Record daily login strip — 1 strip per unique calendar day
   const now = new Date();
-  let newTotalStrips = user.totalStrips ?? 0;
-  let newLoginStreak = user.loginStreak ?? 0;
-  const lastLogin = user.lastLoginDate;
+  let newTotalStrips = (user as any).totalStrips ?? 0;
+  let newLoginStreak = (user as any).loginStreak ?? 0;
 
-  if (!lastLogin || !isSameDay(lastLogin, now)) {
-    newTotalStrips += 1;
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    newLoginStreak = (lastLogin && isSameDay(lastLogin, yesterday)) ? newLoginStreak + 1 : 1;
-    await db.update(usersTable).set({
-      totalStrips: newTotalStrips,
-      loginStreak: newLoginStreak,
-      lastLoginDate: now,
-    }).where(eq(usersTable.id, user.id));
+  try {
+    const lastLogin = (user as any).lastLoginDate as Date | null;
+    if (!lastLogin || !isSameDay(lastLogin, now)) {
+      newTotalStrips += 1;
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
+      newLoginStreak = (lastLogin && isSameDay(lastLogin, yesterday)) ? newLoginStreak + 1 : 1;
+      await db.update(usersTable).set({
+        totalStrips: newTotalStrips,
+        loginStreak: newLoginStreak,
+        lastLoginDate: now,
+      } as any).where(eq(usersTable.id, user.id));
+    }
+  } catch (_stripErr) {
+    // Columns may not exist in production yet — login still succeeds
+    newTotalStrips = 0;
+    newLoginStreak = 0;
   }
 
   const hasDeposited = await checkHasDeposited(user.id);
