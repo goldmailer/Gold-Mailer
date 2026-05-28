@@ -22,9 +22,6 @@ export const usersTable = pgTable("users", {
   referredBy: text("referred_by"),
   country: text("country").default("NG"),
   phone: text("phone"),
-  loginStreak: integer("login_streak").notNull().default(0),
-  totalStrips: integer("total_strips").notNull().default(0),
-  lastLoginDate: timestamp("last_login_date"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

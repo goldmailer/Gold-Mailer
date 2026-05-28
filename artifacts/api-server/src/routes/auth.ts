@@ -6,12 +6,6 @@ import { eq, and, gt, count } from "drizzle-orm";
 import { sendVerificationEmail, sendPasswordResetEmail } from "../lib/email";
 import { requireAuth } from "../lib/auth-middleware";
 
-function isSameDay(d1: Date, d2: Date): boolean {
-  return d1.getFullYear() === d2.getFullYear() &&
-    d1.getMonth() === d2.getMonth() &&
-    d1.getDate() === d2.getDate();
-}
-
 function buildUserResponse(user: any, hasDeposited: boolean) {
   return {
     id: user.id,
@@ -30,8 +24,6 @@ function buildUserResponse(user: any, hasDeposited: boolean) {
     referralCode: user.referralCode,
     country: user.country ?? "NG",
     phone: user.phone ?? null,
-    loginStreak: user.loginStreak ?? 0,
-    totalStrips: user.totalStrips ?? 0,
     createdAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : user.createdAt,
   };
 }
@@ -211,34 +203,10 @@ router.post("/auth/login", async (req, res) => {
   req.session.userId = user.id;
   req.session.isAdmin = user.isAdmin;
 
-  // Record daily login strip — 1 strip per unique calendar day
-  const now = new Date();
-  let newTotalStrips = (user as any).totalStrips ?? 0;
-  let newLoginStreak = (user as any).loginStreak ?? 0;
-
-  try {
-    const lastLogin = (user as any).lastLoginDate as Date | null;
-    if (!lastLogin || !isSameDay(lastLogin, now)) {
-      newTotalStrips += 1;
-      const yesterday = new Date(now);
-      yesterday.setDate(yesterday.getDate() - 1);
-      newLoginStreak = (lastLogin && isSameDay(lastLogin, yesterday)) ? newLoginStreak + 1 : 1;
-      await db.update(usersTable).set({
-        totalStrips: newTotalStrips,
-        loginStreak: newLoginStreak,
-        lastLoginDate: now,
-      } as any).where(eq(usersTable.id, user.id));
-    }
-  } catch (_stripErr) {
-    // Columns may not exist in production yet — login still succeeds
-    newTotalStrips = 0;
-    newLoginStreak = 0;
-  }
-
   const hasDeposited = await checkHasDeposited(user.id);
   res.json({
     message: "Login successful",
-    user: buildUserResponse({ ...user, totalStrips: newTotalStrips, loginStreak: newLoginStreak }, hasDeposited),
+    user: buildUserResponse(user, hasDeposited),
   });
 });
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetDashboard, useGetStakes, useClaimDailyReward,
@@ -11,14 +11,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { fmt as currencyFmt, getConfig } from "@/lib/currency";
 import {
-  TrendingUp, Wallet, Clock, Gift, ChevronRight, AlertCircle,
-  CheckCircle2, Star, ArrowUpCircle, BarChart3, Zap
+  TrendingUp, Wallet, Clock, Gift, ChevronRight, AlertCircle, CheckCircle2, ArrowUpCircle
 } from "lucide-react";
 import { Link } from "wouter";
 import { useLanguage } from "@/i18n/LanguageContext";
-
-const STRIPS_TO_CLAIM = 50;
-const STRIP_VALUE = 2;
 
 function Countdown({ endDate }: { endDate: string }) {
   const [remaining, setRemaining] = useState("");
@@ -49,7 +45,7 @@ function Countdown({ endDate }: { endDate: string }) {
 }
 
 export default function Dashboard() {
-  const { user, updateUser } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { t } = useLanguage();
@@ -95,37 +91,9 @@ export default function Dashboard() {
     }
   };
 
-  const [claimingStrips, setClaimingStrips] = useState(false);
-  const handleClaimStrips = async () => {
-    setClaimingStrips(true);
-    try {
-      const res = await fetch("/api/user/claim-strips", {
-        method: "POST",
-        credentials: "include",
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed");
-      toast({ title: "Strips claimed!", description: `$${STRIP_VALUE.toFixed(2)} added to your balance.` });
-      queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
-      queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
-      // Update local user state
-      const me = await fetch("/api/auth/me", { credentials: "include" }).then(r => r.json());
-      if (me?.id) updateUser(me);
-    } catch (e: any) {
-      toast({ title: "Claim failed", description: e.message, variant: "destructive" });
-    } finally {
-      setClaimingStrips(false);
-    }
-  };
-
   const greeting = user?.firstName
     ? t("dash.welcomeBack", { name: user.firstName })
     : "Welcome back";
-
-  const totalStrips = (dash as any)?.totalStrips ?? user?.totalStrips ?? 0;
-  const loginStreak = (dash as any)?.loginStreak ?? user?.loginStreak ?? 0;
-  const stripsProgress = Math.min(totalStrips % STRIPS_TO_CLAIM, STRIPS_TO_CLAIM);
-  const canClaim = totalStrips >= STRIPS_TO_CLAIM;
 
   function daysLabel(d: number) {
     if (d <= 0) return t("dash.matured");
@@ -137,52 +105,6 @@ export default function Dashboard() {
       <Sidebar />
 
       <main className="pl-0 pt-0">
-        {/* ── Login Strip Banner ─────────────────────────────── */}
-        <div className="border-b border-border bg-gradient-to-r from-primary/5 to-primary/10">
-          <div className="max-w-5xl mx-auto px-4 sm:pl-16 py-3">
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                  <Star size={14} className="text-primary" fill="currentColor" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="text-xs font-bold text-foreground">Daily Login Strips</span>
-                    <span className="text-xs text-muted-foreground">
-                      {totalStrips} strip{totalStrips !== 1 ? "s" : ""} · {loginStreak} day streak
-                    </span>
-                    {canClaim && (
-                      <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full font-medium animate-pulse">
-                        Claimable!
-                      </span>
-                    )}
-                  </div>
-                  <div className="relative h-2 bg-background/50 rounded-full overflow-hidden w-full max-w-xs">
-                    <div
-                      className="h-full bg-gradient-to-r from-primary to-yellow-400 rounded-full transition-all duration-500"
-                      style={{ width: `${(stripsProgress / STRIPS_TO_CLAIM) * 100}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {stripsProgress}/{STRIPS_TO_CLAIM} — {STRIPS_TO_CLAIM} strips = ${STRIP_VALUE} balance
-                  </p>
-                </div>
-              </div>
-              {canClaim && (
-                <Button
-                  size="sm"
-                  onClick={handleClaimStrips}
-                  disabled={claimingStrips}
-                  className="bg-primary text-primary-foreground hover:opacity-90 text-xs font-bold shrink-0"
-                >
-                  <Zap size={12} className="mr-1" />
-                  {claimingStrips ? "Claiming..." : `Claim $${STRIP_VALUE}`}
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-
         {/* ── Header / Balance ───────────────────────────────── */}
         <div className="border-b border-border bg-card/30">
           <div className="max-w-5xl mx-auto px-4 sm:pl-16 pt-6 pb-6">
@@ -301,7 +223,6 @@ export default function Dashboard() {
                           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                             stake.status === "active" && !isMatured ? "bg-blue-500/15 text-blue-400" :
                             isMatured ? "bg-green-500/15 text-green-400" :
-                            stake.status === "completed" ? "bg-muted text-muted-foreground" :
                             "bg-muted text-muted-foreground"
                           }`}>
                             {isMatured ? "MATURED" : stake.status.toUpperCase()}

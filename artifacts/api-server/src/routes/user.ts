@@ -65,8 +65,6 @@ router.put("/user/profile", requireAuth, async (req, res) => {
     referralCode: user.referralCode,
     country: user.country ?? "NG",
     phone: user.phone ?? null,
-    loginStreak: user.loginStreak ?? 0,
-    totalStrips: user.totalStrips ?? 0,
     createdAt: user.createdAt.toISOString(),
   });
 });
@@ -154,57 +152,6 @@ router.get("/user/dashboard", requireAuth, async (req, res) => {
     pendingWithdrawals,
     totalDeposited,
     totalWithdrawn,
-    totalStrips: user.totalStrips ?? 0,
-    loginStreak: user.loginStreak ?? 0,
-  });
-});
-
-// GET /user/login-streak
-router.get("/user/login-streak", requireAuth, async (req, res) => {
-  const users = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!)).limit(1);
-  if (users.length === 0) {
-    res.status(401).json({ error: "User not found" });
-    return;
-  }
-  const user = users[0];
-  res.json({
-    loginStreak: user.loginStreak ?? 0,
-    totalStrips: user.totalStrips ?? 0,
-    claimable: (user.totalStrips ?? 0) >= 50,
-  });
-});
-
-// POST /user/claim-strips
-router.post("/user/claim-strips", requireAuth, async (req, res) => {
-  const users = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!)).limit(1);
-  if (users.length === 0) {
-    res.status(401).json({ error: "User not found" });
-    return;
-  }
-  const user = users[0];
-  const strips = user.totalStrips ?? 0;
-  if (strips < 50) {
-    res.status(400).json({ error: "You need at least 50 strips to claim. You have " + strips + "." });
-    return;
-  }
-
-  const STRIPS_PER_CLAIM = 50;
-  const CLAIM_VALUE = 2; // $2 per 50 strips
-  const claimable = Math.floor(strips / STRIPS_PER_CLAIM);
-  const deduct = claimable * STRIPS_PER_CLAIM;
-  const reward = claimable * CLAIM_VALUE;
-
-  await db.update(usersTable).set({
-    totalStrips: strips - deduct,
-    balance: sql`${usersTable.balance} + ${reward}`,
-  }).where(eq(usersTable.id, req.session.userId!));
-
-  const updated = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!)).limit(1);
-  res.json({
-    message: `Claimed $${reward.toFixed(2)} from ${deduct} strips!`,
-    reward,
-    newBalance: parseFloat(updated[0].balance),
-    newTotalStrips: updated[0].totalStrips ?? 0,
   });
 });
 
