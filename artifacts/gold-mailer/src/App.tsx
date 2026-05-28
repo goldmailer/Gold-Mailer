@@ -21,6 +21,7 @@ import Withdraw from "@/pages/Withdraw";
 import Transactions from "@/pages/Transactions";
 import Settings from "@/pages/Settings";
 import Referrals from "@/pages/Referrals";
+import Exchange from "@/pages/Exchange";
 import Admin from "@/pages/Admin";
 import NotFound from "@/pages/not-found";
 
@@ -68,6 +69,9 @@ function Router() {
       </Route>
       <Route path="/referrals">
         <ProtectedRoute><Referrals /></ProtectedRoute>
+      </Route>
+      <Route path="/exchange">
+        <ProtectedRoute><Exchange /></ProtectedRoute>
       </Route>
 
       <Route path="/admin" component={Admin} />

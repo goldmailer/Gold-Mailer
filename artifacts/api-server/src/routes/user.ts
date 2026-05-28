@@ -1,7 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db, usersTable, stakesTable, transactionsTable } from "@workspace/db";
-import { eq, sum, count, and } from "drizzle-orm";
+import { eq, sum, count, and, sql } from "drizzle-orm";
 import { requireAuth } from "../lib/auth-middleware";
 
 async function checkHasDeposited(userId: number): Promise<boolean> {
@@ -23,10 +23,8 @@ const router = Router();
 // PUT /user/profile
 router.put("/user/profile", requireAuth, async (req, res) => {
   const { firstName, lastName, middleName, age, gender, country, phone } = req.body;
-  // Reject base64 data URLs — they are too large for the DB and a security risk
   let avatarUrl: string | null = req.body.avatarUrl || null;
   if (avatarUrl && avatarUrl.startsWith("data:")) avatarUrl = null;
-  // Also cap any URL to 2000 chars
   if (avatarUrl && avatarUrl.length > 2000) avatarUrl = null;
 
   if (!firstName || !lastName) {
@@ -67,6 +65,8 @@ router.put("/user/profile", requireAuth, async (req, res) => {
     referralCode: user.referralCode,
     country: user.country ?? "NG",
     phone: user.phone ?? null,
+    loginStreak: user.loginStreak ?? 0,
+    totalStrips: user.totalStrips ?? 0,
     createdAt: user.createdAt.toISOString(),
   });
 });
@@ -119,42 +119,92 @@ router.get("/user/dashboard", requireAuth, async (req, res) => {
   }
   const user = users[0];
 
-  const activeStakes = await db
-    .select()
-    .from(stakesTable)
-    .where(eq(stakesTable.userId, userId));
+  const allStakes = await db.select().from(stakesTable).where(eq(stakesTable.userId, userId));
+  const activeStakes = allStakes.filter(s => s.status === "active");
+  const completedStakes = allStakes.filter(s => s.status === "completed");
 
-  const activeCount = activeStakes.filter(s => s.status === "active").length;
+  const activeCount = activeStakes.length;
+  const completedCount = completedStakes.length;
 
-  const totalStaked = activeStakes
-    .filter(s => s.status === "active")
-    .reduce((sum, s) => sum + parseFloat(s.amount), 0);
-
-  const totalProfit = activeStakes
-    .reduce((sum, s) => sum + parseFloat(s.profit) + parseFloat(s.totalDailyClaimed), 0);
+  const totalStaked = activeStakes.reduce((sum, s) => sum + parseFloat(s.amount), 0);
+  const totalProfit = allStakes.reduce((sum, s) => sum + parseFloat(s.profit) + parseFloat(s.totalDailyClaimed), 0);
 
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const dailyRewardAvailable = activeStakes
-    .filter(s => s.status === "active")
-    .some(s => !s.lastDailyClaim || s.lastDailyClaim < todayStart);
+  const dailyRewardAvailable = activeStakes.some(s => !s.lastDailyClaim || s.lastDailyClaim < todayStart);
 
-  const pendingTransactions = await db
-    .select()
-    .from(transactionsTable)
-    .where(eq(transactionsTable.userId, userId));
-
-  const pendingDeposits = pendingTransactions.filter(t => t.type === "deposit" && t.status === "pending").length;
-  const pendingWithdrawals = pendingTransactions.filter(t => t.type === "withdrawal" && t.status === "pending").length;
+  const allTxs = await db.select().from(transactionsTable).where(eq(transactionsTable.userId, userId));
+  const pendingDeposits = allTxs.filter(t => t.type === "deposit" && t.status === "pending").length;
+  const pendingWithdrawals = allTxs.filter(t => t.type === "withdrawal" && t.status === "pending").length;
+  const totalDeposited = allTxs
+    .filter(t => t.type === "deposit" && t.status === "approved")
+    .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+  const totalWithdrawn = allTxs
+    .filter(t => t.type === "withdrawal" && t.status === "approved")
+    .reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
   res.json({
     balance: parseFloat(user.balance),
     totalStaked,
     totalProfit,
     activeStakes: activeCount,
+    completedStakes: completedCount,
     dailyRewardAvailable,
     pendingDeposits,
     pendingWithdrawals,
+    totalDeposited,
+    totalWithdrawn,
+    totalStrips: user.totalStrips ?? 0,
+    loginStreak: user.loginStreak ?? 0,
+  });
+});
+
+// GET /user/login-streak
+router.get("/user/login-streak", requireAuth, async (req, res) => {
+  const users = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!)).limit(1);
+  if (users.length === 0) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  const user = users[0];
+  res.json({
+    loginStreak: user.loginStreak ?? 0,
+    totalStrips: user.totalStrips ?? 0,
+    claimable: (user.totalStrips ?? 0) >= 50,
+  });
+});
+
+// POST /user/claim-strips
+router.post("/user/claim-strips", requireAuth, async (req, res) => {
+  const users = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!)).limit(1);
+  if (users.length === 0) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  const user = users[0];
+  const strips = user.totalStrips ?? 0;
+  if (strips < 50) {
+    res.status(400).json({ error: "You need at least 50 strips to claim. You have " + strips + "." });
+    return;
+  }
+
+  const STRIPS_PER_CLAIM = 50;
+  const CLAIM_VALUE = 2; // $2 per 50 strips
+  const claimable = Math.floor(strips / STRIPS_PER_CLAIM);
+  const deduct = claimable * STRIPS_PER_CLAIM;
+  const reward = claimable * CLAIM_VALUE;
+
+  await db.update(usersTable).set({
+    totalStrips: strips - deduct,
+    balance: sql`${usersTable.balance} + ${reward}`,
+  }).where(eq(usersTable.id, req.session.userId!));
+
+  const updated = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!)).limit(1);
+  res.json({
+    message: `Claimed $${reward.toFixed(2)} from ${deduct} strips!`,
+    reward,
+    newBalance: parseFloat(updated[0].balance),
+    newTotalStrips: updated[0].totalStrips ?? 0,
   });
 });
 
@@ -186,7 +236,7 @@ router.get("/user/referral", requireAuth, async (req, res) => {
   });
 });
 
-// GET /user/referrals — list of users referred by the current user
+// GET /user/referrals
 router.get("/user/referrals", requireAuth, async (req, res) => {
   const userId = req.session.userId!;
   const me = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);

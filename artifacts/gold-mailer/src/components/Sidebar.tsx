@@ -5,7 +5,7 @@ import { useLogout, getGetMeQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   LayoutDashboard, CreditCard, TrendingUp, ArrowDownCircle,
-  ArrowUpCircle, List, Settings, LogOut, Menu, X, User, Users
+  ArrowUpCircle, List, Settings, LogOut, Menu, X, User, Users, ArrowLeftRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SupportChat } from "@/components/SupportChat";
@@ -25,6 +25,7 @@ export function Sidebar() {
     { href: "/deposit", label: t("nav.deposit"), icon: ArrowDownCircle },
     { href: "/withdraw", label: t("nav.withdraw"), icon: ArrowUpCircle },
     { href: "/transactions", label: t("nav.transactions"), icon: List },
+    { href: "/exchange", label: "Exchange", icon: ArrowLeftRight },
     { href: "/referrals", label: t("nav.referrals"), icon: Users },
     { href: "/settings", label: t("nav.settings"), icon: Settings },
   ];

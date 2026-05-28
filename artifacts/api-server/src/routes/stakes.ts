@@ -35,7 +35,6 @@ router.get("/stakes", requireAuth, async (req, res) => {
 router.post("/stakes", requireAuth, async (req, res) => {
   const amount = parseFloat(req.body.amount);
 
-  // Fetch user first to get country config
   const users = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!)).limit(1);
   if (users.length === 0) {
     res.status(401).json({ error: "User not found" });
@@ -52,7 +51,6 @@ router.post("/stakes", requireAuth, async (req, res) => {
     return;
   }
 
-  // Require at least minStake in approved deposits before staking
   const depositCheck = await db
     .select({ total: sum(transactionsTable.amount) })
     .from(transactionsTable)
@@ -87,7 +85,6 @@ router.post("/stakes", requireAuth, async (req, res) => {
     endDate,
   }).returning();
 
-  // Deduct from balance
   await db.update(usersTable).set({
     balance: sql`${usersTable.balance} - ${amount}`,
   }).where(eq(usersTable.id, req.session.userId!));
@@ -127,7 +124,6 @@ router.post("/stakes/:id/claim-daily", requireAuth, async (req, res) => {
     return;
   }
 
-  // Get user's country config for daily reward amount
   const users = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!)).limit(1);
   const cfg = getCountryConfig(users[0]?.country);
   const dailyReward = cfg.dailyReward;
@@ -145,6 +141,45 @@ router.post("/stakes/:id/claim-daily", requireAuth, async (req, res) => {
   res.json({
     message: `Daily reward of ${cfg.symbol}${dailyReward} claimed successfully!`,
     amount: dailyReward,
+    newBalance: parseFloat(updatedUsers[0].balance),
+  });
+});
+
+// POST /stakes/:id/withdraw-to-balance
+router.post("/stakes/:id/withdraw-to-balance", requireAuth, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const stakes = await db.select().from(stakesTable).where(eq(stakesTable.id, id)).limit(1);
+  if (stakes.length === 0 || stakes[0].userId !== req.session.userId) {
+    res.status(404).json({ error: "Stake not found" });
+    return;
+  }
+  const stake = stakes[0];
+  if (stake.status !== "active") {
+    res.status(400).json({ error: "Stake is not active" });
+    return;
+  }
+
+  const now = new Date();
+  const endDate = new Date(stake.endDate);
+  if (now < endDate) {
+    const daysLeft = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    res.status(400).json({ error: `Stake is still locked. ${daysLeft} day(s) remaining.` });
+    return;
+  }
+
+  const stakeAmount = parseFloat(stake.amount);
+  const profit = parseFloat(stake.profit);
+  const total = stakeAmount + profit;
+
+  await db.update(stakesTable).set({ status: "completed" }).where(eq(stakesTable.id, id));
+  await db.update(usersTable).set({
+    balance: sql`${usersTable.balance} + ${total}`,
+  }).where(eq(usersTable.id, req.session.userId!));
+
+  const updatedUsers = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!)).limit(1);
+  res.json({
+    message: `Successfully withdrew ${total.toFixed(2)} to your balance.`,
+    amount: total,
     newBalance: parseFloat(updatedUsers[0].balance),
   });
 });

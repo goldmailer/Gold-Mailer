@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useChangePassword, useChangeEmail, useUpdateProfile, getGetMeQueryKey } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,12 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Lock, Mail, User, Globe } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, User, Globe, Shield } from "lucide-react";
 import { useLanguage, LANGUAGE_NAMES, SUPPORTED_LANGUAGES } from "@/i18n/LanguageContext";
 import { ALL_COUNTRIES } from "@/lib/countries";
 
 export default function Settings() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { t, language, setLanguage } = useLanguage();
@@ -23,12 +23,25 @@ export default function Settings() {
   const [showNew, setShowNew] = useState(false);
 
   const [profileForm, setProfileForm] = useState({
-    firstName: user?.firstName ?? "",
-    lastName: user?.lastName ?? "",
-    phone: (user as any)?.phone ?? "",
-    country: (user as any)?.country ?? "US",
-    gender: user?.gender ?? "",
+    firstName: "",
+    lastName: "",
+    phone: "",
+    country: "NG",
+    gender: "",
   });
+
+  // Sync profile form when user data loads or changes
+  useEffect(() => {
+    if (user) {
+      setProfileForm({
+        firstName: user.firstName ?? "",
+        lastName: user.lastName ?? "",
+        phone: (user as any)?.phone ?? "",
+        country: (user as any)?.country ?? "NG",
+        gender: user.gender ?? "",
+      });
+    }
+  }, [user?.id, user?.firstName, user?.lastName]);
 
   const emailMutation = useChangeEmail({
     mutation: {
@@ -57,9 +70,10 @@ export default function Settings() {
 
   const profileMutation = useUpdateProfile({
     mutation: {
-      onSuccess: () => {
-        toast({ title: t("settings.profileDetails") });
+      onSuccess: (data: any) => {
+        toast({ title: "Profile saved!", description: "Your profile has been updated." });
         queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+        if (data?.id) updateUser(data);
       },
       onError: (err: any) => {
         toast({ title: "Failed to update profile", description: err?.data?.error || err?.message || "Please try again", variant: "destructive" });
@@ -69,7 +83,7 @@ export default function Settings() {
 
   const handleProfileSave = () => {
     if (!profileForm.firstName.trim() || !profileForm.lastName.trim()) {
-      toast({ title: t("settings.firstName") + " & " + t("settings.lastName") + " required", variant: "destructive" });
+      toast({ title: "First and last name are required", variant: "destructive" });
       return;
     }
     profileMutation.mutate({
@@ -94,10 +108,31 @@ export default function Settings() {
         <p className="text-muted-foreground text-sm mb-8">{t("settings.subtitle")}</p>
 
         <div className="space-y-6">
-          {/* Current email info */}
-          <div className="bg-card border border-border rounded-xl p-5">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{t("settings.currentEmail")}</p>
-            <p className="font-semibold text-foreground">{user?.email}</p>
+          {/* Account info summary */}
+          <div className="bg-card border border-border rounded-xl p-5 space-y-2">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Account Info</p>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">{t("settings.currentEmail")}</span>
+              <span className="font-semibold text-sm">{user?.email}</span>
+            </div>
+            {user?.firstName && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Name</span>
+                <span className="font-semibold text-sm">{user.firstName} {user.lastName ?? ""}</span>
+              </div>
+            )}
+            {(user as any)?.country && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Country</span>
+                <span className="font-semibold text-sm">{ALL_COUNTRIES.find(c => c.code === (user as any).country)?.name ?? (user as any).country}</span>
+              </div>
+            )}
+            {(user as any)?.phone && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Phone</span>
+                <span className="font-semibold text-sm">{(user as any).phone}</span>
+              </div>
+            )}
           </div>
 
           {/* Language */}
@@ -291,6 +326,7 @@ export default function Settings() {
               </Button>
             </div>
           </div>
+
         </div>
       </main>
     </div>

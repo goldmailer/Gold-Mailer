@@ -6,6 +6,36 @@ import { eq, and, gt, count } from "drizzle-orm";
 import { sendVerificationEmail, sendPasswordResetEmail } from "../lib/email";
 import { requireAuth } from "../lib/auth-middleware";
 
+function isSameDay(d1: Date, d2: Date): boolean {
+  return d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate();
+}
+
+function buildUserResponse(user: any, hasDeposited: boolean) {
+  return {
+    id: user.id,
+    email: user.email,
+    firstName: user.firstName,
+    middleName: user.middleName,
+    lastName: user.lastName,
+    age: user.age,
+    gender: user.gender,
+    avatarUrl: user.avatarUrl,
+    isVerified: user.isVerified,
+    profileComplete: user.profileComplete,
+    cardAdded: user.cardAdded,
+    balance: parseFloat(user.balance),
+    hasDeposited,
+    referralCode: user.referralCode,
+    country: user.country ?? "NG",
+    phone: user.phone ?? null,
+    loginStreak: user.loginStreak ?? 0,
+    totalStrips: user.totalStrips ?? 0,
+    createdAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : user.createdAt,
+  };
+}
+
 const router = Router();
 
 function generateOtp(): string {
@@ -181,29 +211,28 @@ router.post("/auth/login", async (req, res) => {
   req.session.userId = user.id;
   req.session.isAdmin = user.isAdmin;
 
-  const hasDeposited = await checkHasDeposited(user.id);
+  // Record daily login strip — 1 strip per unique calendar day
+  const now = new Date();
+  let newTotalStrips = user.totalStrips ?? 0;
+  let newLoginStreak = user.loginStreak ?? 0;
+  const lastLogin = user.lastLoginDate;
 
+  if (!lastLogin || !isSameDay(lastLogin, now)) {
+    newTotalStrips += 1;
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    newLoginStreak = (lastLogin && isSameDay(lastLogin, yesterday)) ? newLoginStreak + 1 : 1;
+    await db.update(usersTable).set({
+      totalStrips: newTotalStrips,
+      loginStreak: newLoginStreak,
+      lastLoginDate: now,
+    }).where(eq(usersTable.id, user.id));
+  }
+
+  const hasDeposited = await checkHasDeposited(user.id);
   res.json({
     message: "Login successful",
-    user: {
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      middleName: user.middleName,
-      lastName: user.lastName,
-      age: user.age,
-      gender: user.gender,
-      avatarUrl: user.avatarUrl,
-      isVerified: user.isVerified,
-      profileComplete: user.profileComplete,
-      cardAdded: user.cardAdded,
-      balance: parseFloat(user.balance),
-      hasDeposited,
-      referralCode: user.referralCode,
-      country: user.country ?? "NG",
-      phone: user.phone ?? null,
-      createdAt: user.createdAt.toISOString(),
-    },
+    user: buildUserResponse({ ...user, totalStrips: newTotalStrips, loginStreak: newLoginStreak }, hasDeposited),
   });
 });
 
@@ -275,26 +304,7 @@ router.get("/auth/me", requireAuth, async (req, res) => {
   }
   const user = users[0];
   const hasDeposited = await checkHasDeposited(user.id);
-
-  res.json({
-    id: user.id,
-    email: user.email,
-    firstName: user.firstName,
-    middleName: user.middleName,
-    lastName: user.lastName,
-    age: user.age,
-    gender: user.gender,
-    avatarUrl: user.avatarUrl,
-    isVerified: user.isVerified,
-    profileComplete: user.profileComplete,
-    cardAdded: user.cardAdded,
-    balance: parseFloat(user.balance),
-    hasDeposited,
-    referralCode: user.referralCode,
-    country: user.country ?? "NG",
-    phone: user.phone ?? null,
-    createdAt: user.createdAt.toISOString(),
-  });
+  res.json(buildUserResponse(user, hasDeposited));
 });
 
 export default router;
