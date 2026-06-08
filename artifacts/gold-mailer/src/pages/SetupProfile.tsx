@@ -24,6 +24,14 @@ const schema = z.object({
   avatarUrl: z.string().optional(),
   country: z.string().min(1, "Country is required"),
   phone: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.country === "NG" && !data.phone?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Phone number is required for Nigerian accounts",
+      path: ["phone"],
+    });
+  }
 });
 type FormData = z.infer<typeof schema>;
 
@@ -177,8 +185,17 @@ export default function SetupProfile() {
 
               <FormField control={form.control} name="phone" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Phone Number <span className="text-muted-foreground text-xs">(optional)</span></FormLabel>
-                  <FormControl><Input {...field} type="tel" placeholder="+1 234 567 8900" data-testid="input-phone" /></FormControl>
+                  <FormLabel>
+                    Phone Number{" "}
+                    {form.watch("country") === "NG"
+                      ? <span className="text-destructive">*</span>
+                      : <span className="text-muted-foreground text-xs">(optional)</span>
+                    }
+                  </FormLabel>
+                  <FormControl><Input {...field} type="tel" placeholder="+234 800 000 0000" data-testid="input-phone" /></FormControl>
+                  {form.watch("country") === "NG" && (
+                    <p className="text-xs text-muted-foreground">Required for Nigerian accounts</p>
+                  )}
                   <FormMessage />
                 </FormItem>
               )} />

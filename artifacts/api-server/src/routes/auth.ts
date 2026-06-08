@@ -24,6 +24,7 @@ function buildUserResponse(user: any, hasDeposited: boolean) {
     referralCode: user.referralCode,
     country: user.country ?? "NG",
     phone: user.phone ?? null,
+    kycStatus: user.kycStatus ?? "none",
     createdAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : user.createdAt,
   };
 }

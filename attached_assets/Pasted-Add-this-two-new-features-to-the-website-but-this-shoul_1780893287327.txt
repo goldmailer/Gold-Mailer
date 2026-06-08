@@ -1,0 +1,32 @@
+Add this two new features to the website, but this should only apply to Nigeria account's only, new or existing, here add KYC verification to Nigeria account's, only Nigerian account new or old,
+Here's how it goes, what a user signups for Nigerian account after using email and password and verify they're email, next the fill there and phone number, make sure they put phone number, then after creating they're profile, it loads them to the dashboard but everything will be limited with a $20 bonus Balance on it the with the yellow arrow that say's very you'r account to unlock all access and claim your $20, there's the KYC, user's can upload a photo of they're 
+NIN
+VOTERS CARD
+PASSPORT
+after user uploads, it load them to the next page and says add your bank card card for withdrawal and submit for approving, now the ID photo the user give them a warning the the name on the ID should match there account name and the name on the bank card should match same on the ID they upload, create a place in my hidden admin panel dashboard where I can view pending KYC verification, display the user name of his account email and the ID picture, make the ID picture tap and view able so I can confirm its rights to approve the KYC, "now this KYC is to prevent Muti account in Nigeria" now in the hero page add something like we're are all connected with all earning platform,
+1. SurveyMonkey.com
+2. Google Forms.com  
+3. Typeform.com
+4. Qualtrics.com
+5. Jotform.com
+6. Microsoft Forms.com
+7. SurveySparrow.com
+8. LimeSurvey.com
+9. Pollfish.com
+10. Prolific.com
+11. Free cash.com
+
+Now this survey websites should be part of completing a tax to earn in every website, the in Nigeria account, add this more tax
+Socialearning.com
+ SproutGigs.com
+ Microworkers.co.
+RapidWorkers.com
+Clickworker.com
+ Amazon Mechanical Turk.com
+ Hive Micro.com
+Appen.com
+Toloka.com
+That's for Nigeria, add it to the dashboard, like complete tasks from other websites to earn money, tax can be $0.7, 
+"Just in case add your own among to the tax" user user clicks any taxt complete any task in that website submit proof wait for approval of taxt before they earn, the approval of taxt should also have a place in my admin panel for approving, now add AI support to the website that reply to user when we are not around to reply, the AI systems should know every function of the website so it can replace to user property, 
+
+"require for API key for AI set up"

@@ -11,7 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { fmt as currencyFmt, getConfig } from "@/lib/currency";
 import {
-  TrendingUp, Wallet, Clock, Gift, ChevronRight, AlertCircle, CheckCircle2, ArrowUpCircle
+  TrendingUp, Wallet, Clock, Gift, ChevronRight, AlertCircle, CheckCircle2,
+  ArrowUpCircle, ShieldCheck, ArrowRight, Lock
 } from "lucide-react";
 import { Link } from "wouter";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -44,6 +45,68 @@ function Countdown({ endDate }: { endDate: string }) {
   );
 }
 
+function KycBanner({ kycStatus }: { kycStatus: string }) {
+  if (kycStatus === "approved") return null;
+
+  if (kycStatus === "pending") {
+    return (
+      <div className="mx-4 sm:ml-16 mt-4">
+        <div className="max-w-5xl mx-auto">
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 flex items-center gap-3">
+            <Clock size={20} className="text-blue-400 shrink-0" />
+            <div>
+              <p className="text-sm font-bold text-blue-400">KYC Under Review</p>
+              <p className="text-xs text-muted-foreground">Your ID has been submitted. We'll verify it within 24–48 hours and credit your $20 bonus.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (kycStatus === "declined") {
+    return (
+      <div className="mx-4 sm:ml-16 mt-4">
+        <div className="max-w-5xl mx-auto">
+          <Link href="/kyc">
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-center gap-3 cursor-pointer hover:bg-red-500/15 transition-colors">
+              <AlertCircle size={20} className="text-red-400 shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-bold text-red-400">KYC Declined — Resubmit</p>
+                <p className="text-xs text-muted-foreground">Your ID was declined. Please upload a clearer photo. Tap here to try again.</p>
+              </div>
+              <ArrowRight size={16} className="text-red-400 shrink-0" />
+            </div>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Not submitted yet
+  return (
+    <div className="mx-4 sm:ml-16 mt-4">
+      <div className="max-w-5xl mx-auto">
+        <Link href="/kyc">
+          <div className="bg-amber-500/10 border-2 border-amber-500/50 rounded-xl p-4 flex items-center gap-3 cursor-pointer hover:bg-amber-500/15 transition-all group">
+            <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
+              <ShieldCheck size={20} className="text-amber-400" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-black text-amber-400">⚠ Verify your account to unlock all access and claim your $20!</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Upload your ID (NIN, Voters Card, or Passport) to get verified.</p>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <span className="text-xs font-bold text-amber-400 group-hover:translate-x-0.5 transition-transform">Verify Now</span>
+              <ArrowRight size={14} className="text-amber-400 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </div>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -55,6 +118,10 @@ export default function Dashboard() {
 
   const { data: dash, isLoading: dashLoading } = useGetDashboard();
   const { data: stakes, isLoading: stakesLoading } = useGetStakes();
+
+  const isNG = (user?.country ?? "NG") === "NG";
+  const kycStatus = (user as any)?.kycStatus ?? "none";
+  const isKycLocked = isNG && kycStatus !== "approved";
 
   const claimMutation = useClaimDailyReward({
     mutation: {
@@ -105,8 +172,11 @@ export default function Dashboard() {
       <Sidebar />
 
       <main className="pl-0 pt-0">
+        {/* KYC Banner for Nigerian users */}
+        {isNG && <KycBanner kycStatus={kycStatus} />}
+
         {/* ── Header / Balance ───────────────────────────────── */}
-        <div className="border-b border-border bg-card/30">
+        <div className="border-b border-border bg-card/30 mt-4">
           <div className="max-w-5xl mx-auto px-4 sm:pl-16 pt-6 pb-6">
             <p className="text-muted-foreground text-sm mb-1">{greeting}</p>
             <div className="flex items-end gap-4 flex-wrap">
@@ -120,6 +190,17 @@ export default function Dashboard() {
                   </p>
                 )}
               </div>
+
+              {/* $20 Locked bonus for unverified NG users */}
+              {isNG && kycStatus === "none" && (
+                <div className="mb-1">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-medium">
+                    <Lock size={12} />
+                    $20.00 bonus (locked — verify to claim)
+                  </div>
+                </div>
+              )}
+
               {!dashLoading && dash?.dailyRewardAvailable && (
                 <div className="mb-1">
                   <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-primary text-xs font-medium animate-pulse">
@@ -141,10 +222,12 @@ export default function Dashboard() {
               { label: t("dash.activeStakes"), value: String(dash?.activeStakes ?? 0), icon: Clock, color: "text-blue-400" },
               { label: "Completed Stakes", value: String((dash as any)?.completedStakes ?? 0), icon: CheckCircle2, color: "text-emerald-400" },
             ].map(stat => (
-              <div key={stat.label} className="bg-card border border-border rounded-xl p-4">
+              <div key={stat.label} className={`bg-card border rounded-xl p-4 ${isKycLocked ? "opacity-60" : ""}`}>
                 <div className={`${stat.color} mb-2`}><stat.icon size={20} /></div>
                 {dashLoading ? <Skeleton className="h-7 w-24 mb-1" /> : (
-                  <p className="text-xl font-black text-foreground">{stat.value}</p>
+                  <p className="text-xl font-black text-foreground">
+                    {isKycLocked ? <Lock size={16} className="text-muted-foreground" /> : stat.value}
+                  </p>
                 )}
                 <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
               </div>
@@ -158,10 +241,12 @@ export default function Dashboard() {
               { label: "Total Withdrawn", value: fmt((dash as any)?.totalWithdrawn ?? 0), icon: ArrowUpCircle, color: "text-orange-400" },
               { label: t("dash.pendingDeposits"), value: String(dash?.pendingDeposits ?? 0), icon: AlertCircle, color: "text-yellow-400" },
             ].map(stat => (
-              <div key={stat.label} className="bg-card border border-border rounded-xl p-4">
+              <div key={stat.label} className={`bg-card border border-border rounded-xl p-4 ${isKycLocked ? "opacity-60" : ""}`}>
                 <div className={`${stat.color} mb-2`}><stat.icon size={18} /></div>
                 {dashLoading ? <Skeleton className="h-6 w-20 mb-1" /> : (
-                  <p className="text-lg font-black text-foreground">{stat.value}</p>
+                  <p className="text-lg font-black text-foreground">
+                    {isKycLocked ? <Lock size={14} className="text-muted-foreground" /> : stat.value}
+                  </p>
                 )}
                 <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
               </div>
@@ -171,31 +256,73 @@ export default function Dashboard() {
           {/* ── Quick actions ────────────────────────────────── */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { href: "/stake", label: t("dash.stakeNow"), bg: "bg-primary text-primary-foreground" },
-              { href: "/deposit", label: t("dash.deposit"), bg: "bg-card border border-border text-foreground hover:border-primary/50" },
-              { href: "/withdraw", label: t("dash.withdraw"), bg: "bg-card border border-border text-foreground hover:border-primary/50" },
-              { href: "/exchange", label: "Exchange", bg: "bg-card border border-border text-foreground hover:border-primary/50" },
+              { href: "/stake", label: t("dash.stakeNow"), bg: "bg-primary text-primary-foreground", locked: isKycLocked },
+              { href: "/deposit", label: t("dash.deposit"), bg: "bg-card border border-border text-foreground hover:border-primary/50", locked: isKycLocked },
+              { href: "/withdraw", label: t("dash.withdraw"), bg: "bg-card border border-border text-foreground hover:border-primary/50", locked: isKycLocked },
+              { href: "/exchange", label: "Exchange", bg: "bg-card border border-border text-foreground hover:border-primary/50", locked: isKycLocked },
             ].map(action => (
-              <Link key={action.href} href={action.href}>
-                <button className={`w-full py-3 rounded-xl text-sm font-semibold transition-colors ${action.bg}`}>
-                  {action.label}
-                </button>
-              </Link>
+              <div key={action.href}>
+                {action.locked ? (
+                  <Link href="/kyc">
+                    <button className={`w-full py-3 rounded-xl text-sm font-semibold transition-colors opacity-60 ${action.bg} flex items-center justify-center gap-2`}>
+                      <Lock size={12} /> {action.label}
+                    </button>
+                  </Link>
+                ) : (
+                  <Link href={action.href}>
+                    <button className={`w-full py-3 rounded-xl text-sm font-semibold transition-colors ${action.bg}`}>
+                      {action.label}
+                    </button>
+                  </Link>
+                )}
+              </div>
             ))}
           </div>
+
+          {/* KYC prompt card for unverified NG users */}
+          {isKycLocked && kycStatus === "none" && (
+            <Link href="/kyc">
+              <div className="bg-gradient-to-r from-amber-500/10 to-primary/10 border-2 border-amber-500/40 rounded-2xl p-6 flex items-center gap-4 cursor-pointer hover:from-amber-500/15 hover:to-primary/15 transition-all">
+                <div className="w-14 h-14 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
+                  <ShieldCheck size={28} className="text-amber-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-black text-lg text-amber-400">Unlock Full Access + $20 Bonus</p>
+                  <p className="text-sm text-muted-foreground">Complete KYC verification to unlock staking, deposits, withdrawals, and claim your $20 signup bonus.</p>
+                </div>
+                <div className="shrink-0">
+                  <div className="bg-amber-500 text-black font-bold text-sm px-4 py-2 rounded-xl flex items-center gap-1">
+                    Verify <ArrowRight size={14} />
+                  </div>
+                </div>
+              </div>
+            </Link>
+          )}
 
           {/* ── Active stakes ────────────────────────────────── */}
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-bold text-lg">{t("dash.activeStakesTitle")}</h2>
-              <Link href="/stake">
-                <span className="text-sm text-primary hover:underline cursor-pointer flex items-center gap-1">
-                  {t("dash.newStake")} <ChevronRight size={14} />
-                </span>
-              </Link>
+              {!isKycLocked && (
+                <Link href="/stake">
+                  <span className="text-sm text-primary hover:underline cursor-pointer flex items-center gap-1">
+                    {t("dash.newStake")} <ChevronRight size={14} />
+                  </span>
+                </Link>
+              )}
             </div>
 
-            {stakesLoading ? (
+            {isKycLocked ? (
+              <div className="text-center py-16 bg-card border border-border rounded-2xl opacity-60">
+                <Lock size={40} className="text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground mb-2">Verify your account to start staking</p>
+                <Link href="/kyc">
+                  <Button className="bg-amber-500 text-black hover:bg-amber-400 font-bold">
+                    <ShieldCheck size={14} className="mr-2" /> Verify Now
+                  </Button>
+                </Link>
+              </div>
+            ) : stakesLoading ? (
               <div className="space-y-3">
                 {[1, 2].map(i => (
                   <div key={i} className="h-32 rounded-xl bg-card border border-border animate-pulse" />
@@ -227,9 +354,7 @@ export default function Dashboard() {
                           }`}>
                             {isMatured ? "MATURED" : stake.status.toUpperCase()}
                           </span>
-                          {stake.status === "active" && (
-                            <Countdown endDate={stake.endDate} />
-                          )}
+                          {stake.status === "active" && <Countdown endDate={stake.endDate} />}
                         </div>
                         <p className="font-black text-xl text-foreground">{fmt(stake.amount)}</p>
                         <p className="text-sm text-green-400 font-medium">{t("dash.profit")} +{fmt(stake.profit)}</p>
@@ -242,24 +367,18 @@ export default function Dashboard() {
                       </div>
                       <div className="flex flex-col items-end gap-2 shrink-0">
                         {isMatured && (
-                          <Button
-                            size="sm"
-                            onClick={() => handleWithdrawToBalance(stake.id)}
+                          <Button size="sm" onClick={() => handleWithdrawToBalance(stake.id)}
                             disabled={withdrawingId === stake.id}
-                            className="bg-green-500 hover:bg-green-400 text-black font-bold text-xs"
-                          >
+                            className="bg-green-500 hover:bg-green-400 text-black font-bold text-xs">
                             <ArrowUpCircle size={12} className="mr-1" />
                             {withdrawingId === stake.id ? "Withdrawing..." : `Withdraw ${fmt(stake.amount + stake.profit)}`}
                           </Button>
                         )}
                         {stake.status === "active" && !stake.dailyClaimedToday && !isMatured && (
-                          <Button
-                            size="sm"
-                            onClick={() => claimMutation.mutate({ id: stake.id })}
+                          <Button size="sm" onClick={() => claimMutation.mutate({ id: stake.id })}
                             disabled={claimMutation.isPending}
                             data-testid={`button-claim-daily-${stake.id}`}
-                            className="bg-primary text-primary-foreground hover:opacity-90 text-xs"
-                          >
+                            className="bg-primary text-primary-foreground hover:opacity-90 text-xs">
                             <Gift size={12} className="mr-1" /> {t("dash.claim", { amount: fmt(cfg.dailyReward) })}
                           </Button>
                         )}

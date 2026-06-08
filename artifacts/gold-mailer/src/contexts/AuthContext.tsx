@@ -19,6 +19,7 @@ interface User {
   referralCode: string | null;
   country: string | null;
   phone: string | null;
+  kycStatus: string;
   createdAt: string;
 }
 

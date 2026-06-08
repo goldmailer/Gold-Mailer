@@ -135,6 +135,29 @@ pool.query(`
   ALTER TABLE "transactions" ADD COLUMN IF NOT EXISTS "account_number" text;
   ALTER TABLE "transactions" ADD COLUMN IF NOT EXISTS "account_name" text;
   ALTER TABLE "transactions" ADD COLUMN IF NOT EXISTS "notes" text;
+
+  ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "kyc_status" text NOT NULL DEFAULT 'none';
+
+  CREATE TABLE IF NOT EXISTS "kyc_submissions" (
+    "id" serial PRIMARY KEY,
+    "user_id" integer NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+    "id_type" text NOT NULL,
+    "id_image_url" text NOT NULL,
+    "status" text NOT NULL DEFAULT 'pending',
+    "notes" text,
+    "created_at" timestamp NOT NULL DEFAULT now()
+  );
+
+  CREATE TABLE IF NOT EXISTS "task_submissions" (
+    "id" serial PRIMARY KEY,
+    "user_id" integer NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+    "website_name" text NOT NULL,
+    "website_url" text NOT NULL,
+    "proof_text" text NOT NULL,
+    "status" text NOT NULL DEFAULT 'pending',
+    "earned_amount" numeric(10,2) DEFAULT 0.70,
+    "created_at" timestamp NOT NULL DEFAULT now()
+  );
 `)
   .then(() => pool.query(`
     DO $$

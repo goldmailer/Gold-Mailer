@@ -7,6 +7,8 @@ import stakesRouter from "./stakes";
 import transactionsRouter from "./transactions";
 import adminRouter from "./admin";
 import supportRouter from "./support";
+import kycRouter from "./kyc";
+import tasksRouter from "./tasks";
 
 const router: IRouter = Router();
 
@@ -18,5 +20,7 @@ router.use(stakesRouter);
 router.use(transactionsRouter);
 router.use(adminRouter);
 router.use(supportRouter);
+router.use(kycRouter);
+router.use(tasksRouter);
 
 export default router;

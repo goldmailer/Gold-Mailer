@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ALL_COUNTRIES } from "@/lib/countries";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus, Check, X, ArrowLeft, Settings, Users, List, Pencil, ToggleLeft, ToggleRight, MessageSquare, Send } from "lucide-react";
+import { Trash2, Plus, Check, X, ArrowLeft, Settings, Users, List, Pencil, ToggleLeft, ToggleRight, MessageSquare, Send, ShieldCheck, ClipboardList, Eye, Clock } from "lucide-react";
 import { Link } from "wouter";
 
 function fmt(n: number) {
@@ -152,7 +152,7 @@ function EditUserModal({ user, onClose }: { user: any; onClose: () => void }) {
 export default function Admin() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState<"users" | "transactions" | "settings" | "support">("users");
+  const [tab, setTab] = useState<"users" | "transactions" | "settings" | "support" | "kyc" | "tasks">("users");
   const [countryFilter, setCountryFilter] = useState<string>("all");
   const [topUpUserId, setTopUpUserId] = useState<number | null>(null);
   const [editUser, setEditUser] = useState<any | null>(null);
@@ -162,6 +162,67 @@ export default function Admin() {
   const [supportInput, setSupportInput] = useState("");
   const [supportSending, setSupportSending] = useState(false);
   const supportMsgsEndRef = useRef<HTMLDivElement>(null);
+
+  // KYC state
+  const [kycImagePreview, setKycImagePreview] = useState<string | null>(null);
+  const [kycDeclineId, setKycDeclineId] = useState<number | null>(null);
+  const [kycDeclineNote, setKycDeclineNote] = useState("");
+
+  const { data: kycSubmissions = [], refetch: refetchKyc } = useQuery({
+    queryKey: ["admin-kyc"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/kyc", { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: tab === "kyc",
+    refetchInterval: tab === "kyc" ? 10000 : false,
+  });
+
+  const approveKyc = async (id: number) => {
+    const res = await fetch(`/api/admin/kyc/${id}/approve`, { method: "POST", credentials: "include" });
+    const data = await res.json();
+    if (res.ok) { toast({ title: "KYC approved! $20 credited." }); refetchKyc(); }
+    else toast({ title: "Error", description: data.error, variant: "destructive" });
+  };
+
+  const declineKyc = async () => {
+    if (!kycDeclineId) return;
+    const res = await fetch(`/api/admin/kyc/${kycDeclineId}/decline`, {
+      method: "POST", credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notes: kycDeclineNote }),
+    });
+    const data = await res.json();
+    if (res.ok) { toast({ title: "KYC declined." }); setKycDeclineId(null); setKycDeclineNote(""); refetchKyc(); }
+    else toast({ title: "Error", description: data.error, variant: "destructive" });
+  };
+
+  // Tasks state
+  const { data: taskSubmissions = [], refetch: refetchTasks } = useQuery({
+    queryKey: ["admin-tasks"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/tasks", { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: tab === "tasks",
+    refetchInterval: tab === "tasks" ? 10000 : false,
+  });
+
+  const approveTask = async (id: number) => {
+    const res = await fetch(`/api/admin/tasks/${id}/approve`, { method: "POST", credentials: "include" });
+    const data = await res.json();
+    if (res.ok) { toast({ title: data.message }); refetchTasks(); }
+    else toast({ title: "Error", description: data.error, variant: "destructive" });
+  };
+
+  const declineTask = async (id: number) => {
+    const res = await fetch(`/api/admin/tasks/${id}/decline`, { method: "POST", credentials: "include" });
+    const data = await res.json();
+    if (res.ok) { toast({ title: "Task declined." }); refetchTasks(); }
+    else toast({ title: "Error", description: data.error, variant: "destructive" });
+  };
 
   const { data: supportChats, refetch: refetchChats } = useQuery({
     queryKey: ["admin-support-chats"],
@@ -303,9 +364,14 @@ export default function Admin() {
     ? supportChats.reduce((s: number, c: any) => s + (c.unreadCount ?? 0), 0)
     : 0;
 
+  const pendingKycCount = Array.isArray(kycSubmissions) ? kycSubmissions.filter((k: any) => k.status === "pending").length : 0;
+  const pendingTasksCount = Array.isArray(taskSubmissions) ? taskSubmissions.filter((t: any) => t.status === "pending").length : 0;
+
   const tabs = [
     { key: "users", label: "Users", icon: Users },
     { key: "transactions", label: "Transactions", icon: List },
+    { key: "kyc", label: "KYC", icon: ShieldCheck, badge: pendingKycCount },
+    { key: "tasks", label: "Tasks", icon: ClipboardList, badge: pendingTasksCount },
     { key: "settings", label: "Settings", icon: Settings },
     { key: "support", label: "Support", icon: MessageSquare, badge: totalUnread },
   ] as const;
@@ -314,6 +380,40 @@ export default function Admin() {
     <div className="min-h-screen bg-background">
       {topUpUserId !== null && <TopUpModal userId={topUpUserId} onClose={() => setTopUpUserId(null)} />}
       {editUser !== null && <EditUserModal user={editUser} onClose={() => setEditUser(null)} />}
+
+      {/* KYC Image Preview Modal */}
+      {kycImagePreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setKycImagePreview(null)}>
+          <div className="relative max-w-lg w-full" onClick={e => e.stopPropagation()}>
+            <img src={kycImagePreview} alt="ID" className="w-full rounded-xl" />
+            <button onClick={() => setKycImagePreview(null)} className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1 hover:bg-black/80">
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* KYC Decline Note Modal */}
+      {kycDeclineId !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="bg-card border border-border rounded-2xl p-6 w-80 shadow-2xl">
+            <h3 className="font-bold mb-3">Decline KYC — Add Note</h3>
+            <textarea
+              value={kycDeclineNote}
+              onChange={e => setKycDeclineNote(e.target.value)}
+              placeholder="Reason for decline (shown to user)..."
+              rows={3}
+              className="w-full bg-background border border-border rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-primary mb-4"
+            />
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => { setKycDeclineId(null); setKycDeclineNote(""); }}>Cancel</Button>
+              <Button className="flex-1 bg-destructive text-destructive-foreground" onClick={declineKyc}>
+                Confirm Decline
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div className="border-b border-border bg-card/30">
@@ -674,6 +774,130 @@ export default function Admin() {
             </div>
           </div>
         )}
+        {/* ── KYC TAB ── */}
+        {tab === "kyc" && (
+          <div>
+            <h2 className="font-bold text-lg mb-1">KYC Verifications ({(kycSubmissions as any[]).length})</h2>
+            <p className="text-sm text-muted-foreground mb-6">Review and approve Nigerian user identity documents. Approving credits $20 to the user.</p>
+
+            {!(kycSubmissions as any[]).length ? (
+              <div className="text-center py-16 bg-card border border-border rounded-2xl">
+                <ShieldCheck size={36} className="text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground">No KYC submissions yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {(kycSubmissions as any[]).map((sub: any) => (
+                  <div key={sub.id} className={`bg-card border rounded-xl p-5 ${sub.status === "pending" ? "border-amber-500/30" : sub.status === "approved" ? "border-green-500/30" : "border-red-500/30"}`}>
+                    <div className="flex items-start justify-between gap-4 flex-wrap">
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-bold">{sub.user?.firstName ?? ""} {sub.user?.lastName ?? ""}</p>
+                          <StatusBadge status={sub.status} />
+                          <span className="text-xs text-muted-foreground">#{sub.id}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{sub.user?.email}</p>
+                        <p className="text-xs font-medium text-primary capitalize">
+                          ID Type: {sub.idType.replace("_", " ").toUpperCase()}
+                        </p>
+                        {sub.notes && (
+                          <p className="text-xs text-red-400 mt-1">Decline note: {sub.notes}</p>
+                        )}
+                        <p className="text-xs text-muted-foreground">{new Date(sub.createdAt).toLocaleString()}</p>
+                      </div>
+
+                      <div className="flex flex-col gap-2 items-end shrink-0">
+                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1"
+                          onClick={() => setKycImagePreview(sub.idImageUrl)}>
+                          <Eye size={11} /> View ID Photo
+                        </Button>
+                        {sub.status === "pending" && (
+                          <div className="flex gap-2">
+                            <Button size="sm" className="h-8 bg-green-600 hover:bg-green-700 text-white text-xs gap-1"
+                              onClick={() => approveKyc(sub.id)}>
+                              <Check size={11} /> Approve (+$20)
+                            </Button>
+                            <Button size="sm" variant="outline" className="h-8 text-destructive border-destructive/30 hover:bg-destructive/10 text-xs gap-1"
+                              onClick={() => { setKycDeclineId(sub.id); setKycDeclineNote(""); }}>
+                              <X size={11} /> Decline
+                            </Button>
+                          </div>
+                        )}
+                        {sub.status !== "pending" && (
+                          <span className="text-xs text-muted-foreground italic">Processed</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── TASKS TAB ── */}
+        {tab === "tasks" && (
+          <div>
+            <h2 className="font-bold text-lg mb-1">Task Submissions ({(taskSubmissions as any[]).length})</h2>
+            <p className="text-sm text-muted-foreground mb-6">Review task proof submissions. Approving credits $0.70 to the user.</p>
+
+            {!(taskSubmissions as any[]).length ? (
+              <div className="text-center py-16 bg-card border border-border rounded-2xl">
+                <ClipboardList size={36} className="text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground">No task submissions yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {(taskSubmissions as any[]).map((sub: any) => (
+                  <div key={sub.id} className={`bg-card border rounded-xl p-5 ${sub.status === "pending" ? "border-amber-500/30" : sub.status === "approved" ? "border-green-500/30" : "border-red-500/30"}`}>
+                    <div className="flex items-start justify-between gap-4 flex-wrap">
+                      <div className="space-y-1 flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-bold text-sm">{sub.websiteName}</p>
+                          <StatusBadge status={sub.status} />
+                          <span className="text-xs text-primary font-bold">+${sub.earnedAmount.toFixed(2)}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          User: {sub.user?.firstName ?? ""} {sub.user?.lastName ?? ""} ({sub.user?.email ?? `#${sub.userId}`})
+                        </p>
+                        <div className="bg-background border border-border rounded-lg p-3 mt-2">
+                          <p className="text-xs font-bold text-muted-foreground mb-1 flex items-center gap-1">
+                            <ClipboardList size={10} /> Proof submitted:
+                          </p>
+                          <p className="text-xs text-foreground break-words">{sub.proofText}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">{new Date(sub.createdAt).toLocaleString()}</p>
+                      </div>
+
+                      <div className="shrink-0 flex flex-col gap-2 items-end">
+                        {sub.status === "pending" && (
+                          <div className="flex gap-2">
+                            <Button size="sm" className="h-8 bg-green-600 hover:bg-green-700 text-white text-xs gap-1"
+                              onClick={() => approveTask(sub.id)}>
+                              <Check size={11} /> Approve
+                            </Button>
+                            <Button size="sm" variant="outline" className="h-8 text-destructive border-destructive/30 hover:bg-destructive/10 text-xs gap-1"
+                              onClick={() => declineTask(sub.id)}>
+                              <X size={11} /> Decline
+                            </Button>
+                          </div>
+                        )}
+                        {sub.status !== "pending" && (
+                          <span className="text-xs text-muted-foreground italic">Processed</span>
+                        )}
+                        <a href={sub.websiteUrl} target="_blank" rel="noopener noreferrer"
+                          className="text-xs text-primary hover:underline">
+                          Visit site ↗
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ── SUPPORT TAB ── */}
         {tab === "support" && (
           <div className="flex flex-col lg:flex-row gap-4" style={{ minHeight: 520 }}>
