@@ -2,6 +2,11 @@ import { Router } from "express";
 import { db, usersTable, kycSubmissionsTable } from "@workspace/db";
 import { eq, sql, inArray } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../lib/auth-middleware";
+import {
+  sendAdminKycSubmissionEmail,
+  sendUserKycApprovedEmail,
+  sendUserKycDeclinedEmail,
+} from "../lib/email";
 
 const router = Router();
 
@@ -56,6 +61,13 @@ router.post("/kyc/submit", requireAuth, async (req, res) => {
   await db.insert(kycSubmissionsTable).values({ userId, idType, idImageUrl, status: "pending" });
   await db.update(usersTable).set({ kycStatus: "pending" }).where(eq(usersTable.id, userId));
 
+  // Fire-and-forget: notify admin of new KYC submission
+  const userForEmail = await db.select({ email: usersTable.email })
+    .from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  if (userForEmail.length > 0) {
+    sendAdminKycSubmissionEmail(userForEmail[0].email, idType).catch(() => {});
+  }
+
   res.json({ message: "KYC submitted successfully. We will review and get back to you." });
 });
 
@@ -96,10 +108,35 @@ router.post("/admin/kyc/:id/approve", requireAdmin, async (req, res) => {
     .where(eq(kycSubmissionsTable.id, id)).limit(1);
   if (subs.length === 0) { res.status(404).json({ error: "Submission not found" }); return; }
 
+  const userId = subs[0].userId;
   await db.update(kycSubmissionsTable).set({ status: "approved" }).where(eq(kycSubmissionsTable.id, id));
   await db.update(usersTable)
     .set({ kycStatus: "approved", balance: sql`${usersTable.balance} + 20` })
-    .where(eq(usersTable.id, subs[0].userId));
+    .where(eq(usersTable.id, userId));
+
+  // Fetch user info for email + referral
+  const userData = await db.select({
+    email: usersTable.email,
+    firstName: usersTable.firstName,
+    referredBy: usersTable.referredBy,
+    country: usersTable.country,
+  }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+
+  if (userData.length > 0) {
+    const user = userData[0];
+    const bonusStr = "$20.00";
+
+    // Notify user their KYC is approved
+    sendUserKycApprovedEmail(user.email, user.firstName, bonusStr).catch(() => {});
+
+    // Credit referral bonus to referrer (if they were referred)
+    if (user.referredBy) {
+      const referralBonus = (user.country ?? "NG") === "NG" ? 500 : 0.5;
+      await db.update(usersTable)
+        .set({ balance: sql`${usersTable.balance} + ${referralBonus}` })
+        .where(eq(usersTable.referralCode, user.referredBy));
+    }
+  }
 
   res.json({ message: "KYC approved. $20 bonus credited to user." });
 });
@@ -113,9 +150,17 @@ router.post("/admin/kyc/:id/decline", requireAdmin, async (req, res) => {
     .where(eq(kycSubmissionsTable.id, id)).limit(1);
   if (subs.length === 0) { res.status(404).json({ error: "Submission not found" }); return; }
 
+  const userId = subs[0].userId;
   await db.update(kycSubmissionsTable).set({ status: "declined", notes: notes || null })
     .where(eq(kycSubmissionsTable.id, id));
-  await db.update(usersTable).set({ kycStatus: "declined" }).where(eq(usersTable.id, subs[0].userId));
+  await db.update(usersTable).set({ kycStatus: "declined" }).where(eq(usersTable.id, userId));
+
+  // Notify user their KYC was declined
+  const userData = await db.select({ email: usersTable.email, firstName: usersTable.firstName })
+    .from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  if (userData.length > 0) {
+    sendUserKycDeclinedEmail(userData[0].email, userData[0].firstName, notes).catch(() => {});
+  }
 
   res.json({ message: "KYC declined." });
 });

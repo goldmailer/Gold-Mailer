@@ -12,7 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { fmt as currencyFmt, getConfig } from "@/lib/currency";
 import {
   TrendingUp, Wallet, Clock, Gift, ChevronRight, AlertCircle, CheckCircle2,
-  ArrowUpCircle, ShieldCheck, ArrowRight, Lock
+  ArrowUpCircle, ShieldCheck, ArrowRight, Lock, Users, Copy, Check
 } from "lucide-react";
 import { Link } from "wouter";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -102,6 +102,74 @@ function KycBanner({ kycStatus }: { kycStatus: string }) {
             </div>
           </div>
         </Link>
+      </div>
+    </div>
+  );
+}
+
+function ReferralSection({ user }: { user: any }) {
+  const [copied, setCopied] = useState(false);
+  const [stats, setStats] = useState<{ totalReferrals: number; approvedReferrals: number; bonusPerReferral: number; bonusSymbol: string } | null>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetch("/api/referral/stats", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => setStats(d))
+      .catch(() => {});
+  }, []);
+
+  const refLink = user?.referralCode
+    ? `${window.location.origin}/register?ref=${user.referralCode}`
+    : null;
+
+  const copyLink = () => {
+    if (!refLink) return;
+    navigator.clipboard.writeText(refLink).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      toast({ title: "Copied!", description: "Referral link copied to clipboard." });
+    });
+  };
+
+  const bonusLabel = stats
+    ? `${stats.bonusSymbol}${stats.bonusPerReferral.toLocaleString()}`
+    : "...";
+
+  return (
+    <div className="bg-card border border-border rounded-2xl p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <Users size={18} className="text-primary" />
+        <h2 className="font-bold text-base">Refer a Friend</h2>
+      </div>
+      <p className="text-sm text-muted-foreground mb-4">
+        Share your link. When a friend signs up and gets KYC approved, you earn <span className="font-bold text-primary">{bonusLabel}</span> automatically.
+      </p>
+
+      {/* Referral link box */}
+      <div className="flex items-center gap-2 mb-5">
+        <div className="flex-1 bg-background border border-border rounded-xl px-3 py-2.5 text-xs text-muted-foreground font-mono truncate">
+          {refLink ?? "Loading..."}
+        </div>
+        <button
+          onClick={copyLink}
+          className="shrink-0 bg-primary text-primary-foreground rounded-xl px-3 py-2.5 text-xs font-bold flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+        >
+          {copied ? <Check size={14} /> : <Copy size={14} />}
+          {copied ? "Copied" : "Copy"}
+        </button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-background border border-border rounded-xl p-3 text-center">
+          <p className="text-xl font-black text-foreground">{stats?.totalReferrals ?? "—"}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Friends Invited</p>
+        </div>
+        <div className="bg-background border border-border rounded-xl p-3 text-center">
+          <p className="text-xl font-black text-primary">{stats?.approvedReferrals ?? "—"}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Verified (Bonus Paid)</p>
+        </div>
       </div>
     </div>
   );
@@ -278,6 +346,9 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
+
+          {/* ── Referral section ─────────────────────────────── */}
+          <ReferralSection user={user} />
 
           {/* KYC prompt card for unverified NG users */}
           {isKycLocked && kycStatus === "none" && (
