@@ -25,6 +25,7 @@ import Exchange from "@/pages/Exchange";
 import Admin from "@/pages/Admin";
 import KycUpload from "@/pages/KycUpload";
 import Tasks from "@/pages/Tasks";
+import Leaderboard from "@/pages/Leaderboard";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -81,6 +82,9 @@ function Router() {
       </Route>
       <Route path="/tasks">
         <ProtectedRoute><Tasks /></ProtectedRoute>
+      </Route>
+      <Route path="/leaderboard">
+        <ProtectedRoute><Leaderboard /></ProtectedRoute>
       </Route>
       <Route path="/admin" component={Admin} />
       <Route component={NotFound} />

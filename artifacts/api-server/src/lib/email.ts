@@ -75,44 +75,89 @@ export async function sendVerificationEmail(email: string, code: string) {
   const safeCode = escapeHtml(code);
 
   const bodyContent = `
-    <h2 style="margin:0 0 12px;font-size:22px;font-weight:800;color:#111111;">Confirm your email address</h2>
-    <p style="margin:0 0 20px;font-size:15px;color:#444444;line-height:1.6;">
-      Thanks for signing up with Gold Mailer. Enter the code below to confirm your email address and activate your account.
+    <h2 style="margin:0 0 8px;font-size:22px;font-weight:800;color:#111111;">Welcome to Gold Mailer!</h2>
+    <p style="margin:0 0 24px;font-size:15px;color:#555555;line-height:1.7;">
+      You're one step away from joining thousands of investors earning guaranteed returns on our global staking platform.
+      Please confirm your email address using the code below.
     </p>
 
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
-        <td align="center" style="padding:20px 0;">
-          <div style="display:inline-block;background-color:#f9f9f9;border:2px solid #f5c518;border-radius:10px;padding:20px 40px;">
-            <p style="margin:0;font-size:10px;font-weight:700;letter-spacing:2px;color:#888888;text-transform:uppercase;">Verification Code</p>
-            <p style="margin:8px 0 0;font-size:38px;font-weight:900;letter-spacing:10px;color:#111111;">${safeCode}</p>
+        <td align="center" style="padding:24px 0;">
+          <div style="display:inline-block;background-color:#fefce8;border:2px solid #f5c518;border-radius:12px;padding:24px 48px;text-align:center;">
+            <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:3px;color:#92400e;text-transform:uppercase;">Your Verification Code</p>
+            <p style="margin:10px 0 0;font-size:42px;font-weight:900;letter-spacing:10px;color:#1a1a1a;font-family:Courier,monospace;">${safeCode}</p>
+            <p style="margin:8px 0 0;font-size:12px;color:#b45309;">Expires in 20 minutes</p>
           </div>
         </td>
       </tr>
     </table>
 
-    <p style="margin:20px 0 8px;font-size:13px;color:#666666;line-height:1.6;">
-      This code was sent to <strong>${safeEmail}</strong>. It expires in <strong>20 minutes</strong>.
+    <p style="margin:4px 0 16px;font-size:13px;color:#666666;line-height:1.6;">
+      Enter this code on the verification page to activate your account. This code was sent to <strong style="color:#333;">${safeEmail}</strong>.
     </p>
-    <p style="margin:0;font-size:13px;color:#888888;">If you did not create a Gold Mailer account, you can safely ignore this email.</p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f8f8f8;border:1px solid #e8e8e8;border-radius:10px;margin:20px 0;">
+      <tr>
+        <td style="padding:20px 24px;">
+          <p style="margin:0 0 12px;font-size:13px;font-weight:700;color:#333;letter-spacing:0.5px;">What you get with Gold Mailer:</p>
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td style="padding:4px 0;font-size:13px;color:#555;">&#9733; Stake funds and earn guaranteed profit in 7 days</td>
+            </tr>
+            <tr>
+              <td style="padding:4px 0;font-size:13px;color:#555;">&#9733; Claim daily rewards of up to &#8358;100 per active stake</td>
+            </tr>
+            <tr>
+              <td style="padding:4px 0;font-size:13px;color:#555;">&#9733; Earn referral bonuses for every friend you invite</td>
+            </tr>
+            <tr>
+              <td style="padding:4px 0;font-size:13px;color:#555;">&#9733; Get a &#8358;3,000 signup bonus when you add your card</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    <p style="margin:0 0 6px;font-size:12px;color:#999999;line-height:1.6;">
+      If you did not create a Gold Mailer account, you can safely ignore this email — no action is needed on your part.
+    </p>
+    <p style="margin:0;font-size:12px;color:#999999;">
+      Need help? Contact us at <a href="mailto:1xemailsupportbox@gmail.com" style="color:#f5c518;text-decoration:none;">1xemailsupportbox@gmail.com</a>
+    </p>
   `;
 
-  const plainText = `GOLDMAILER — Confirm Your Email
+  const plainText = `Welcome to Gold Mailer!
 
-Your verification code is: ${code}
+You're one step away from joining thousands of investors earning guaranteed returns.
 
-This code expires in 20 minutes.
+Your email verification code is: ${code}
 
-If you did not sign up for a Gold Mailer account, please ignore this email.
+This code expires in 20 minutes. Enter it on the verification page to activate your account.
 
-© ${new Date().getFullYear()} Gold Mailer — goldmailer.xyz`;
+What you get with Gold Mailer:
+- Stake funds and earn guaranteed profit in 7 days
+- Claim daily rewards per active stake
+- Earn referral bonuses for every friend you invite
+- Get a signup bonus when you add your card
+
+If you did not create a Gold Mailer account, please ignore this email.
+
+Need help? Contact: 1xemailsupportbox@gmail.com
+
+© ${new Date().getFullYear()} Gold Mailer Ltd. — goldmailer.xyz
+Lagos, Nigeria | Available in NG, US, UK, CA`;
 
   const { error } = await resend.emails.send({
     from: FROM,
     to: email,
-    subject: `${code} is your Gold Mailer verification code`,
-    html: baseHtml("Confirm your email — Gold Mailer", `Your verification code is ${code}. It expires in 20 minutes.`, bodyContent),
+    subject: `Confirm your Gold Mailer account — ${code}`,
+    html: baseHtml("Welcome to Gold Mailer — Confirm Your Email", `Welcome! Your verification code is ${code}. Enter it to activate your account and start earning.`, bodyContent),
     text: plainText,
+    headers: {
+      "List-Unsubscribe": "<mailto:1xemailsupportbox@gmail.com?subject=unsubscribe>",
+      "X-Entity-Ref-ID": `verify-${Date.now()}`,
+    },
   });
 
   if (error) {

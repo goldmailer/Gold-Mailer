@@ -12,14 +12,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { fmt as currencyFmt, getConfig } from "@/lib/currency";
 import {
   TrendingUp, Wallet, Clock, Gift, ChevronRight, AlertCircle, CheckCircle2,
-  ArrowUpCircle, ShieldCheck, ArrowRight, Lock, Users, Copy, Check
+  ArrowUpCircle, ShieldCheck, ArrowRight, Lock, Users, Copy, Check,
+  Calculator, Activity, BarChart3, Zap, Star, Trophy,
+  CreditCard, Mail, Globe, Target, BadgeCheck
 } from "lucide-react";
 import { Link } from "wouter";
 import { useLanguage } from "@/i18n/LanguageContext";
 
+// ── Countdown timer ──────────────────────────────────────────────────────────
 function Countdown({ endDate }: { endDate: string }) {
   const [remaining, setRemaining] = useState("");
-
   useEffect(() => {
     function calc() {
       const diff = new Date(endDate).getTime() - Date.now();
@@ -36,7 +38,6 @@ function Countdown({ endDate }: { endDate: string }) {
     const id = setInterval(calc, 1000);
     return () => clearInterval(id);
   }, [endDate]);
-
   const isReady = remaining === "Ready";
   return (
     <span className={`text-xs font-mono font-bold ${isReady ? "text-green-400" : "text-primary"}`}>
@@ -45,9 +46,9 @@ function Countdown({ endDate }: { endDate: string }) {
   );
 }
 
+// ── KYC Banner ───────────────────────────────────────────────────────────────
 function KycBanner({ kycStatus }: { kycStatus: string }) {
   if (kycStatus === "approved") return null;
-
   if (kycStatus === "pending") {
     return (
       <div className="mx-4 sm:ml-16 mt-4">
@@ -63,7 +64,6 @@ function KycBanner({ kycStatus }: { kycStatus: string }) {
       </div>
     );
   }
-
   if (kycStatus === "declined") {
     return (
       <div className="mx-4 sm:ml-16 mt-4">
@@ -82,8 +82,6 @@ function KycBanner({ kycStatus }: { kycStatus: string }) {
       </div>
     );
   }
-
-  // Not submitted yet
   return (
     <div className="mx-4 sm:ml-16 mt-4">
       <div className="max-w-5xl mx-auto">
@@ -93,7 +91,7 @@ function KycBanner({ kycStatus }: { kycStatus: string }) {
               <ShieldCheck size={20} className="text-amber-400" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-black text-amber-400">⚠ Verify your account to unlock all access and claim your $20!</p>
+              <p className="text-sm font-black text-amber-400">Verify your account to unlock all access and claim your $20!</p>
               <p className="text-xs text-muted-foreground mt-0.5">Upload your ID (NIN, Voters Card, or Passport) to get verified.</p>
             </div>
             <div className="flex items-center gap-1 shrink-0">
@@ -107,6 +105,7 @@ function KycBanner({ kycStatus }: { kycStatus: string }) {
   );
 }
 
+// ── Referral section ─────────────────────────────────────────────────────────
 function ReferralSection({ user }: { user: any }) {
   const [copied, setCopied] = useState(false);
   const [stats, setStats] = useState<{ totalReferrals: number; approvedReferrals: number; bonusPerReferral: number; bonusSymbol: string } | null>(null);
@@ -114,15 +113,10 @@ function ReferralSection({ user }: { user: any }) {
 
   useEffect(() => {
     fetch("/api/referral/stats", { credentials: "include" })
-      .then(r => r.json())
-      .then(d => setStats(d))
-      .catch(() => {});
+      .then(r => r.json()).then(d => setStats(d)).catch(() => {});
   }, []);
 
-  const refLink = user?.referralCode
-    ? `${window.location.origin}/register?ref=${user.referralCode}`
-    : null;
-
+  const refLink = user?.referralCode ? `${window.location.origin}/register?ref=${user.referralCode}` : null;
   const copyLink = () => {
     if (!refLink) return;
     navigator.clipboard.writeText(refLink).then(() => {
@@ -131,36 +125,31 @@ function ReferralSection({ user }: { user: any }) {
       toast({ title: "Copied!", description: "Referral link copied to clipboard." });
     });
   };
-
-  const bonusLabel = stats
-    ? `${stats.bonusSymbol}${stats.bonusPerReferral.toLocaleString()}`
-    : "...";
+  const bonusLabel = stats ? `${stats.bonusSymbol}${stats.bonusPerReferral.toLocaleString()}` : "...";
 
   return (
     <div className="bg-card border border-border rounded-2xl p-5">
       <div className="flex items-center gap-2 mb-4">
         <Users size={18} className="text-primary" />
         <h2 className="font-bold text-base">Refer a Friend</h2>
+        <Link href="/referrals">
+          <span className="ml-auto text-xs text-primary flex items-center gap-0.5 hover:underline cursor-pointer">
+            View all <ChevronRight size={12} />
+          </span>
+        </Link>
       </div>
       <p className="text-sm text-muted-foreground mb-4">
         Share your link. When a friend signs up and gets KYC approved, you earn <span className="font-bold text-primary">{bonusLabel}</span> automatically.
       </p>
-
-      {/* Referral link box */}
       <div className="flex items-center gap-2 mb-5">
         <div className="flex-1 bg-background border border-border rounded-xl px-3 py-2.5 text-xs text-muted-foreground font-mono truncate">
           {refLink ?? "Loading..."}
         </div>
-        <button
-          onClick={copyLink}
-          className="shrink-0 bg-primary text-primary-foreground rounded-xl px-3 py-2.5 text-xs font-bold flex items-center gap-1.5 hover:opacity-90 transition-opacity"
-        >
+        <button onClick={copyLink} className="shrink-0 bg-primary text-primary-foreground rounded-xl px-3 py-2.5 text-xs font-bold flex items-center gap-1.5 hover:opacity-90 transition-opacity">
           {copied ? <Check size={14} /> : <Copy size={14} />}
           {copied ? "Copied" : "Copy"}
         </button>
       </div>
-
-      {/* Stats */}
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-background border border-border rounded-xl p-3 text-center">
           <p className="text-xl font-black text-foreground">{stats?.totalReferrals ?? "—"}</p>
@@ -175,6 +164,315 @@ function ReferralSection({ user }: { user: any }) {
   );
 }
 
+// ── NEW: Investment Calculator ────────────────────────────────────────────────
+function InvestmentCalculator({ country }: { country: string }) {
+  const cfg = getConfig(country);
+  const [amount, setAmount] = useState(cfg.minStake);
+  const profit = Math.floor((amount / 2700) * 8000);
+  const total = amount + profit;
+  const roi = amount > 0 ? ((profit / amount) * 100).toFixed(0) : "0";
+
+  return (
+    <div className="bg-card border border-border rounded-2xl p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
+          <Calculator size={16} className="text-primary" />
+        </div>
+        <div>
+          <h2 className="font-bold text-base">Investment Calculator</h2>
+          <p className="text-xs text-muted-foreground">See your 7-day returns before staking</p>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs font-medium text-muted-foreground">Stake Amount</label>
+            <span className="text-xs font-bold text-primary">{currencyFmt(amount, country)}</span>
+          </div>
+          <input
+            type="range"
+            min={cfg.minStake}
+            max={cfg.maxStake}
+            step={cfg.minStake}
+            value={amount}
+            onChange={e => setAmount(Number(e.target.value))}
+            className="w-full h-2 bg-border rounded-full appearance-none cursor-pointer accent-primary"
+          />
+          <div className="flex justify-between text-xs text-muted-foreground mt-1">
+            <span>{currencyFmt(cfg.minStake, country)}</span>
+            <span>{currencyFmt(cfg.maxStake, country)}</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-background border border-border rounded-xl p-3 text-center">
+            <p className="text-xs text-muted-foreground mb-1">You invest</p>
+            <p className="text-sm font-black text-foreground">{currencyFmt(amount, country)}</p>
+          </div>
+          <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-3 text-center">
+            <p className="text-xs text-muted-foreground mb-1">Profit</p>
+            <p className="text-sm font-black text-green-400">+{currencyFmt(profit, country)}</p>
+          </div>
+          <div className="bg-primary/10 border border-primary/30 rounded-xl p-3 text-center">
+            <p className="text-xs text-muted-foreground mb-1">You receive</p>
+            <p className="text-sm font-black text-primary">{currencyFmt(total, country)}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between bg-background border border-border rounded-xl px-4 py-3">
+          <span className="text-xs text-muted-foreground">Return on investment (7 days)</span>
+          <span className="text-sm font-black text-green-400">{roi}% ROI</span>
+        </div>
+
+        <Link href="/stake">
+          <Button className="w-full bg-primary text-primary-foreground hover:opacity-90 font-bold gap-2">
+            <TrendingUp size={16} /> Stake {currencyFmt(amount, country)} Now
+          </Button>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// ── NEW: Recent Activity ──────────────────────────────────────────────────────
+function RecentActivity({ country }: { country: string }) {
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/transactions?limit=5", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => { setTransactions(Array.isArray(d) ? d.slice(0, 5) : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const statusColors: Record<string, string> = {
+    approved: "text-green-400 bg-green-400/10",
+    pending: "text-amber-400 bg-amber-400/10",
+    declined: "text-red-400 bg-red-400/10",
+  };
+  const typeLabels: Record<string, string> = {
+    deposit: "Deposit",
+    withdrawal: "Withdrawal",
+    stake: "Stake",
+    daily_reward: "Daily Reward",
+    bonus: "Bonus",
+    referral_bonus: "Referral Bonus",
+  };
+
+  return (
+    <div className="bg-card border border-border rounded-2xl p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-blue-500/15 flex items-center justify-center">
+            <Activity size={16} className="text-blue-400" />
+          </div>
+          <div>
+            <h2 className="font-bold text-base">Recent Activity</h2>
+            <p className="text-xs text-muted-foreground">Latest account transactions</p>
+          </div>
+        </div>
+        <Link href="/transactions">
+          <span className="text-xs text-primary flex items-center gap-0.5 hover:underline cursor-pointer">
+            View all <ChevronRight size={12} />
+          </span>
+        </Link>
+      </div>
+
+      {loading ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="flex items-center gap-3">
+              <Skeleton className="w-8 h-8 rounded-full" />
+              <div className="flex-1 space-y-1.5">
+                <Skeleton className="h-3 w-32" />
+                <Skeleton className="h-3 w-20" />
+              </div>
+              <Skeleton className="h-4 w-16" />
+            </div>
+          ))}
+        </div>
+      ) : transactions.length === 0 ? (
+        <div className="text-center py-8">
+          <Activity size={28} className="text-muted-foreground mx-auto mb-2" />
+          <p className="text-xs text-muted-foreground">No transactions yet</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {transactions.map((tx: any) => (
+            <div key={tx.id} className="flex items-center gap-3 py-2 border-b border-border/50 last:border-0">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${statusColors[tx.status] ?? "text-muted-foreground bg-muted"}`}>
+                {tx.type === "deposit" ? "D" : tx.type === "withdrawal" ? "W" : tx.type === "daily_reward" ? "R" : "B"}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{typeLabels[tx.type] ?? tx.type}</p>
+                <p className="text-xs text-muted-foreground">{new Date(tx.createdAt).toLocaleDateString()}</p>
+              </div>
+              <div className="text-right shrink-0">
+                <p className={`text-sm font-bold ${tx.type === "withdrawal" ? "text-orange-400" : "text-green-400"}`}>
+                  {tx.type === "withdrawal" ? "-" : "+"}{currencyFmt(tx.amount, country)}
+                </p>
+                <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${statusColors[tx.status] ?? ""}`}>
+                  {tx.status}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── NEW: Account Health Score ─────────────────────────────────────────────────
+function AccountHealth({ user, hasStakes, isNG }: { user: any; hasStakes: boolean; isNG: boolean }) {
+  const checks = [
+    { label: "Email verified", done: true, icon: Mail },
+    { label: "Profile complete", done: !!user?.profileComplete, icon: Users },
+    { label: "Card added", done: !!(user as any)?.cardAdded, icon: CreditCard },
+    ...(isNG ? [{ label: "KYC approved", done: user?.kycStatus === "approved", icon: BadgeCheck }] : []),
+    { label: "First stake made", done: hasStakes, icon: TrendingUp },
+  ];
+  const score = Math.round((checks.filter(c => c.done).length / checks.length) * 100);
+  const scoreColor = score === 100 ? "text-green-400" : score >= 60 ? "text-primary" : "text-amber-400";
+  const barColor = score === 100 ? "bg-green-400" : score >= 60 ? "bg-primary" : "bg-amber-400";
+
+  return (
+    <div className="bg-card border border-border rounded-2xl p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-emerald-500/15 flex items-center justify-center">
+            <Target size={16} className="text-emerald-400" />
+          </div>
+          <div>
+            <h2 className="font-bold text-base">Account Health</h2>
+            <p className="text-xs text-muted-foreground">Profile completion score</p>
+          </div>
+        </div>
+        <div className="text-right">
+          <span className={`text-2xl font-black ${scoreColor}`}>{score}%</span>
+          {score === 100 && <p className="text-xs text-green-400">Complete!</p>}
+        </div>
+      </div>
+
+      <div className="h-2 bg-border rounded-full mb-4 overflow-hidden">
+        <div className={`h-full rounded-full transition-all duration-700 ${barColor}`} style={{ width: `${score}%` }} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-2">
+        {checks.map((c) => {
+          const Icon = c.icon;
+          return (
+            <div key={c.label} className="flex items-center gap-3">
+              <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${c.done ? "bg-green-500/20" : "bg-border"}`}>
+                {c.done
+                  ? <Check size={11} className="text-green-400" />
+                  : <span className="w-1.5 h-1.5 rounded-full bg-border block" />
+                }
+              </div>
+              <Icon size={13} className={c.done ? "text-foreground" : "text-muted-foreground"} />
+              <span className={`text-sm ${c.done ? "text-foreground" : "text-muted-foreground line-through opacity-60"}`}>{c.label}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── NEW: Platform Stats ───────────────────────────────────────────────────────
+function PlatformStats() {
+  const stats = [
+    { label: "Active Members", value: "12,847", icon: Users, color: "text-blue-400" },
+    { label: "Total Staked", value: "₦4.2B+", icon: TrendingUp, color: "text-primary" },
+    { label: "Payouts Made", value: "₦890M+", icon: Wallet, color: "text-green-400" },
+    { label: "Leaderboard Rank", value: "Live", icon: Trophy, color: "text-amber-400" },
+  ];
+  return (
+    <div className="bg-gradient-to-br from-primary/8 to-amber-500/5 border border-primary/20 rounded-2xl p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <Zap size={16} className="text-primary" />
+        <h2 className="font-bold text-base">Platform Overview</h2>
+        <span className="ml-auto flex items-center gap-1.5 text-xs text-green-400 font-medium">
+          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+          Live
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        {stats.map(s => {
+          const Icon = s.icon;
+          return (
+            <div key={s.label} className="bg-background/50 border border-border/50 rounded-xl p-3">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Icon size={13} className={s.color} />
+                <p className="text-xs text-muted-foreground">{s.label}</p>
+              </div>
+              <p className={`text-base font-black ${s.color}`}>{s.value}</p>
+            </div>
+          );
+        })}
+      </div>
+      <Link href="/leaderboard">
+        <div className="mt-3 flex items-center justify-center gap-2 py-2.5 bg-primary/10 border border-primary/20 rounded-xl hover:bg-primary/15 transition-colors cursor-pointer">
+          <Trophy size={14} className="text-primary" />
+          <span className="text-xs font-bold text-primary">View Leaderboard</span>
+          <ChevronRight size={12} className="text-primary" />
+        </div>
+      </Link>
+    </div>
+  );
+}
+
+// ── NEW: Earnings Breakdown ───────────────────────────────────────────────────
+function EarningsBreakdown({ dash, country }: { dash: any; country: string }) {
+  if (!dash) return null;
+  const staking = dash.totalProfit ?? 0;
+  const deposited = (dash as any).totalDeposited ?? 0;
+  const total = staking + deposited;
+  if (total === 0) return null;
+
+  const bars = [
+    { label: "Staking Profit", value: staking, color: "bg-primary", pct: total > 0 ? (staking / total) * 100 : 0 },
+    { label: "Total Deposited", value: deposited, color: "bg-blue-400", pct: total > 0 ? (deposited / total) * 100 : 0 },
+  ].filter(b => b.value > 0);
+
+  return (
+    <div className="bg-card border border-border rounded-2xl p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
+          <BarChart3 size={16} className="text-primary" />
+        </div>
+        <div>
+          <h2 className="font-bold text-base">Earnings Breakdown</h2>
+          <p className="text-xs text-muted-foreground">Where your money comes from</p>
+        </div>
+      </div>
+      <div className="space-y-4">
+        {bars.map(bar => (
+          <div key={bar.label}>
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-2">
+                <div className={`w-2.5 h-2.5 rounded-full ${bar.color}`} />
+                <span className="text-sm text-muted-foreground">{bar.label}</span>
+              </div>
+              <span className="text-sm font-bold">{currencyFmt(bar.value, country)}</span>
+            </div>
+            <div className="h-2 bg-border rounded-full overflow-hidden">
+              <div className={`h-full rounded-full ${bar.color} transition-all duration-700`} style={{ width: `${bar.pct}%` }} />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 flex items-center justify-between pt-3 border-t border-border">
+        <span className="text-sm text-muted-foreground font-medium">Total Activity</span>
+        <span className="text-base font-black text-foreground">{currencyFmt(total, country)}</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Main Dashboard ────────────────────────────────────────────────────────────
 export default function Dashboard() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -190,6 +488,7 @@ export default function Dashboard() {
   const isNG = (user?.country ?? "NG") === "NG";
   const kycStatus = (user as any)?.kycStatus ?? "none";
   const isKycLocked = isNG && kycStatus !== "approved";
+  const hasActiveStakes = Array.isArray(stakes) && stakes.length > 0;
 
   const claimMutation = useClaimDailyReward({
     mutation: {
@@ -209,10 +508,7 @@ export default function Dashboard() {
   const handleWithdrawToBalance = async (stakeId: number) => {
     setWithdrawingId(stakeId);
     try {
-      const res = await fetch(`/api/stakes/${stakeId}/withdraw-to-balance`, {
-        method: "POST",
-        credentials: "include",
-      });
+      const res = await fetch(`/api/stakes/${stakeId}/withdraw-to-balance`, { method: "POST", credentials: "include" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed");
       toast({ title: "Withdrawn to balance!", description: `${fmt(data.amount)} added to your balance.` });
@@ -226,54 +522,39 @@ export default function Dashboard() {
     }
   };
 
-  const greeting = user?.firstName
-    ? t("dash.welcomeBack", { name: user.firstName })
-    : "Welcome back";
-
-  function daysLabel(d: number) {
-    if (d <= 0) return t("dash.matured");
-    return t("dash.daysRemaining", { d: String(d), s: d === 1 ? "" : "s", e: d === 1 ? "" : "e" });
-  }
+  const greeting = user?.firstName ? t("dash.welcomeBack", { name: user.firstName }) : "Welcome back";
 
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
-
       <main className="pl-0 pt-0">
-        {/* KYC Banner for Nigerian users */}
+
+        {/* KYC Banner */}
         {isNG && <KycBanner kycStatus={kycStatus} />}
 
-        {/* ── Header / Balance ───────────────────────────────── */}
+        {/* ── Header / Balance ───────────────────────────────────── */}
         <div className="border-b border-border bg-card/30 mt-4">
           <div className="max-w-5xl mx-auto px-4 sm:pl-16 pt-6 pb-6">
             <p className="text-muted-foreground text-sm mb-1">{greeting}</p>
             <div className="flex items-end gap-4 flex-wrap">
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{t("dash.availableBalance")}</p>
-                {dashLoading ? (
-                  <Skeleton className="h-10 w-44 mt-1" />
-                ) : (
-                  <p className="text-4xl font-black text-primary" data-testid="text-balance">
-                    {fmt(dash?.balance ?? 0)}
-                  </p>
-                )}
+                {dashLoading
+                  ? <Skeleton className="h-10 w-44 mt-1" />
+                  : <p className="text-4xl font-black text-primary" data-testid="text-balance">{fmt(dash?.balance ?? 0)}</p>
+                }
               </div>
-
-              {/* $20 Locked bonus for unverified NG users */}
               {isNG && kycStatus === "none" && (
                 <div className="mb-1">
                   <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-medium">
-                    <Lock size={12} />
-                    $20.00 bonus (locked — verify to claim)
+                    <Lock size={12} /> $20.00 bonus (locked — verify to claim)
                   </div>
                 </div>
               )}
-
               {!dashLoading && dash?.dailyRewardAvailable && (
                 <div className="mb-1">
                   <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-primary text-xs font-medium animate-pulse">
-                    <Gift size={12} />
-                    {t("dash.dailyRewardAvailable")}
+                    <Gift size={12} /> {t("dash.dailyRewardAvailable")}
                   </div>
                 </div>
               )}
@@ -282,7 +563,8 @@ export default function Dashboard() {
         </div>
 
         <div className="max-w-5xl mx-auto px-4 sm:pl-16 py-8 space-y-8">
-          {/* ── Stats grid ──────────────────────────────────── */}
+
+          {/* ── Stats grid ─────────────────────────────────────────── */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { label: t("dash.totalStaked"), value: fmt(dash?.totalStaked ?? 0), icon: TrendingUp, color: "text-primary" },
@@ -290,7 +572,7 @@ export default function Dashboard() {
               { label: t("dash.activeStakes"), value: String(dash?.activeStakes ?? 0), icon: Clock, color: "text-blue-400" },
               { label: "Completed Stakes", value: String((dash as any)?.completedStakes ?? 0), icon: CheckCircle2, color: "text-emerald-400" },
             ].map(stat => (
-              <div key={stat.label} className={`bg-card border rounded-xl p-4 ${isKycLocked ? "opacity-60" : ""}`}>
+              <div key={stat.label} className={`bg-card border border-border rounded-xl p-4 ${isKycLocked ? "opacity-60" : ""}`}>
                 <div className={`${stat.color} mb-2`}><stat.icon size={20} /></div>
                 {dashLoading ? <Skeleton className="h-7 w-24 mb-1" /> : (
                   <p className="text-xl font-black text-foreground">
@@ -302,7 +584,7 @@ export default function Dashboard() {
             ))}
           </div>
 
-          {/* ── Extended analytics ──────────────────────────── */}
+          {/* ── Extended analytics ─────────────────────────────────── */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
               { label: "Total Deposited", value: fmt((dash as any)?.totalDeposited ?? 0), icon: ArrowUpCircle, color: "text-green-400" },
@@ -321,7 +603,7 @@ export default function Dashboard() {
             ))}
           </div>
 
-          {/* ── Quick actions ────────────────────────────────── */}
+          {/* ── Quick actions ──────────────────────────────────────── */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
               { href: "/stake", label: t("dash.stakeNow"), bg: "bg-primary text-primary-foreground", locked: isKycLocked },
@@ -347,10 +629,27 @@ export default function Dashboard() {
             ))}
           </div>
 
-          {/* ── Referral section ─────────────────────────────── */}
+          {/* ── NEW: Account Health + Platform Stats (2-col) ─────── */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <AccountHealth user={user} hasStakes={hasActiveStakes} isNG={isNG} />
+            <PlatformStats />
+          </div>
+
+          {/* ── NEW: Investment Calculator ──────────────────────────── */}
+          {!isKycLocked && (
+            <InvestmentCalculator country={user?.country ?? "NG"} />
+          )}
+
+          {/* ── Referral Section ────────────────────────────────────── */}
           <ReferralSection user={user} />
 
-          {/* KYC prompt card for unverified NG users */}
+          {/* ── NEW: Recent Activity + Earnings Breakdown (2-col) ──── */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <RecentActivity country={user?.country ?? "NG"} />
+            <EarningsBreakdown dash={dash} country={user?.country ?? "NG"} />
+          </div>
+
+          {/* KYC Prompt Card */}
           {isKycLocked && kycStatus === "none" && (
             <Link href="/kyc">
               <div className="bg-gradient-to-r from-amber-500/10 to-primary/10 border-2 border-amber-500/40 rounded-2xl p-6 flex items-center gap-4 cursor-pointer hover:from-amber-500/15 hover:to-primary/15 transition-all">
@@ -370,7 +669,7 @@ export default function Dashboard() {
             </Link>
           )}
 
-          {/* ── Active stakes ────────────────────────────────── */}
+          {/* ── Active Stakes ────────────────────────────────────────── */}
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-bold text-lg">{t("dash.activeStakesTitle")}</h2>
@@ -395,9 +694,7 @@ export default function Dashboard() {
               </div>
             ) : stakesLoading ? (
               <div className="space-y-3">
-                {[1, 2].map(i => (
-                  <div key={i} className="h-32 rounded-xl bg-card border border-border animate-pulse" />
-                ))}
+                {[1, 2].map(i => <div key={i} className="h-32 rounded-xl bg-card border border-border animate-pulse" />)}
               </div>
             ) : !stakes || stakes.length === 0 ? (
               <div className="text-center py-16 bg-card border border-border rounded-2xl">
@@ -469,6 +766,7 @@ export default function Dashboard() {
               </div>
             )}
           </div>
+
         </div>
       </main>
     </div>

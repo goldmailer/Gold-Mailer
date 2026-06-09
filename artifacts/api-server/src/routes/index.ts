@@ -10,6 +10,7 @@ import supportRouter from "./support";
 import kycRouter from "./kyc";
 import tasksRouter from "./tasks";
 import referralRouter from "./referral";
+import leaderboardRouter from "./leaderboard";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(supportRouter);
 router.use(kycRouter);
 router.use(tasksRouter);
 router.use(referralRouter);
+router.use(leaderboardRouter);
 
 export default router;

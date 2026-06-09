@@ -167,6 +167,7 @@ export default function Admin() {
   const [kycImagePreview, setKycImagePreview] = useState<string | null>(null);
   const [kycDeclineId, setKycDeclineId] = useState<number | null>(null);
   const [kycDeclineNote, setKycDeclineNote] = useState("");
+  const [kycFilter, setKycFilter] = useState<"all" | "pending" | "approved" | "declined">("all");
 
   const { data: kycSubmissions = [], refetch: refetchKyc } = useQuery({
     queryKey: ["admin-kyc"],
@@ -176,6 +177,8 @@ export default function Admin() {
       return res.json();
     },
     enabled: tab === "kyc",
+    staleTime: 0,
+    refetchOnMount: true,
     refetchInterval: tab === "kyc" ? 10000 : false,
   });
 
@@ -777,17 +780,51 @@ export default function Admin() {
         {/* ── KYC TAB ── */}
         {tab === "kyc" && (
           <div>
-            <h2 className="font-bold text-lg mb-1">KYC Verifications ({(kycSubmissions as any[]).length})</h2>
-            <p className="text-sm text-muted-foreground mb-6">Review and approve Nigerian user identity documents. Approving credits $20 to the user.</p>
+            <div className="flex items-start justify-between flex-wrap gap-2 mb-1">
+              <h2 className="font-bold text-lg">KYC Verifications ({(kycSubmissions as any[]).length})</h2>
+              <button onClick={() => refetchKyc()} className="text-xs text-primary flex items-center gap-1 hover:underline">
+                Refresh
+              </button>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">Review and approve identity documents. Approving credits $20 to the user.</p>
 
-            {!(kycSubmissions as any[]).length ? (
+            {/* Filter tabs */}
+            <div className="flex gap-1.5 mb-5 flex-wrap">
+              {(["all", "pending", "approved", "declined"] as const).map(f => {
+                const count = f === "all"
+                  ? (kycSubmissions as any[]).length
+                  : (kycSubmissions as any[]).filter((s: any) => s.status === f).length;
+                return (
+                  <button
+                    key={f}
+                    onClick={() => setKycFilter(f)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all ${
+                      kycFilter === f
+                        ? f === "pending" ? "bg-amber-500/20 text-amber-400 border border-amber-500/40"
+                        : f === "approved" ? "bg-green-500/20 text-green-400 border border-green-500/40"
+                        : f === "declined" ? "bg-red-500/20 text-red-400 border border-red-500/40"
+                        : "bg-primary/20 text-primary border border-primary/40"
+                        : "bg-card border border-border text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {f} ({count})
+                  </button>
+                );
+              })}
+            </div>
+
+            {(() => {
+              const filtered = kycFilter === "all"
+                ? (kycSubmissions as any[])
+                : (kycSubmissions as any[]).filter((s: any) => s.status === kycFilter);
+              return !filtered.length ? (
               <div className="text-center py-16 bg-card border border-border rounded-2xl">
                 <ShieldCheck size={36} className="text-muted-foreground mx-auto mb-3" />
-                <p className="text-muted-foreground">No KYC submissions yet.</p>
+                <p className="text-muted-foreground">{kycFilter === "all" ? "No KYC submissions yet." : `No ${kycFilter} submissions.`}</p>
               </div>
             ) : (
               <div className="space-y-4">
-                {(kycSubmissions as any[]).map((sub: any) => (
+                {filtered.map((sub: any) => (
                   <div key={sub.id} className={`bg-card border rounded-xl p-5 ${sub.status === "pending" ? "border-amber-500/30" : sub.status === "approved" ? "border-green-500/30" : "border-red-500/30"}`}>
                     <div className="flex items-start justify-between gap-4 flex-wrap">
                       <div className="space-y-1 flex-1">
@@ -831,7 +868,8 @@ export default function Admin() {
                   </div>
                 ))}
               </div>
-            )}
+            );
+            })()}
           </div>
         )}
 
