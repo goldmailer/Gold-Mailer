@@ -1,0 +1,3 @@
+- [GitHub push divergence](github-push.md) — origin/main is shallow-cloned and diverged; fetch/force-push are both blocked in main agent; user must push manually from shell.
+- [Gold Mailer workflows](goldmailer-workflows.md) — only `API Server` and `artifacts/gold-mailer: web` reliably run; `Gold Mailer` (port 26040) always fails due to port conflict with the artifacts workflow.
+- [Notification system](notifications.md) — frontend-only polling via useNotifications.ts hook + NotificationBell.tsx; polls /api/me + /api/transactions every 20s; stores state in localStorage; no backend table needed.

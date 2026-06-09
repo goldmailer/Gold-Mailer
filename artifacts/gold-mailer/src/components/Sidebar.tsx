@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SupportChat } from "@/components/SupportChat";
+import { NotificationBell } from "@/components/NotificationBell";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 export function Sidebar() {
@@ -67,13 +68,16 @@ export function Sidebar() {
       >
         <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
           <span className="text-primary font-bold text-lg tracking-widest">GOLDMAILER</span>
-          <button
-            data-testid="button-menu-close"
-            onClick={() => setOpen(false)}
-            className="p-1 rounded text-muted-foreground hover:text-foreground"
-          >
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-1">
+            <NotificationBell />
+            <button
+              data-testid="button-menu-close"
+              onClick={() => setOpen(false)}
+              className="p-1 rounded text-muted-foreground hover:text-foreground"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         <Link href="/settings" onClick={() => setOpen(false)}>

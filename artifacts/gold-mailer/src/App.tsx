@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { useNotificationPoller } from "@/hooks/useNotifications";
 
 import Landing from "@/pages/Landing";
 import Register from "@/pages/Register";
@@ -92,12 +93,18 @@ function Router() {
   );
 }
 
+function NotificationPollerMount() {
+  useNotificationPoller();
+  return null;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TooltipProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <NotificationPollerMount />
             <Router />
           </WouterRouter>
           <Toaster />
