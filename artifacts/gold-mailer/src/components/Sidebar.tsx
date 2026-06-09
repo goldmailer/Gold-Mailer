@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLogout, getGetMeQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   LayoutDashboard, CreditCard, TrendingUp, ArrowDownCircle,
-  ArrowUpCircle, List, Settings, LogOut, Menu, X, User, Users, ArrowLeftRight, ClipboardList, Trophy
+  ArrowUpCircle, List, Settings, LogOut, Menu, X, User, Users, ArrowLeftRight, ClipboardList, Trophy, Bell
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SupportChat } from "@/components/SupportChat";
@@ -14,6 +14,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 
 export function Sidebar() {
   const [open, setOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const { user, logout } = useAuth();
   const [location] = useLocation();
   const queryClient = useQueryClient();
@@ -21,6 +22,7 @@ export function Sidebar() {
 
   const navItems = [
     { href: "/dashboard", label: t("nav.dashboard"), icon: LayoutDashboard },
+    { href: "/inbox", label: "Inbox", icon: Bell, badge: unreadCount },
     { href: "/cards", label: t("nav.viewCards"), icon: CreditCard },
     { href: "/stake", label: t("nav.stakeNow"), icon: TrendingUp },
     { href: "/deposit", label: t("nav.deposit"), icon: ArrowDownCircle },
@@ -32,6 +34,19 @@ export function Sidebar() {
     { href: "/referrals", label: t("nav.referrals"), icon: Users },
     { href: "/settings", label: t("nav.settings"), icon: Settings },
   ];
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchUnread = () => {
+      fetch("/api/inbox/unread-count", { credentials: "include" })
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d?.count !== undefined) setUnreadCount(d.count); })
+        .catch(() => {});
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 60000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   const logoutMutation = useLogout({
     mutation: {
@@ -100,7 +115,7 @@ export function Sidebar() {
         </Link>
 
         <nav className="flex-1 overflow-y-auto py-2">
-          {navItems.map(({ href, label, icon: Icon }) => (
+          {navItems.map(({ href, label, icon: Icon, badge }: any) => (
             <Link key={href} href={href} onClick={() => setOpen(false)}>
               <div
                 data-testid={`nav-${href.replace("/", "")}`}
@@ -110,8 +125,20 @@ export function Sidebar() {
                     : "text-sidebar-foreground hover:bg-sidebar-accent/50"
                 }`}
               >
-                <Icon size={18} className={location === href ? "text-primary" : ""} />
+                <div className="relative">
+                  <Icon size={18} className={location === href ? "text-primary" : ""} />
+                  {badge > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px] rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center px-0.5 leading-none">
+                      {badge > 9 ? "9+" : badge}
+                    </span>
+                  )}
+                </div>
                 <span className="text-sm font-medium">{label}</span>
+                {badge > 0 && (
+                  <span className="ml-auto text-xs font-bold text-primary bg-primary/15 rounded-full px-1.5 py-0.5 leading-none">
+                    {badge > 99 ? "99+" : badge}
+                  </span>
+                )}
               </div>
             </Link>
           ))}

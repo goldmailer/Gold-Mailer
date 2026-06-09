@@ -6,6 +6,7 @@ import {
   sendAdminKycSubmissionEmail,
   sendUserKycApprovedEmail,
   sendUserKycDeclinedEmail,
+  sendUserKycSubmittedEmail,
 } from "../lib/email";
 
 const router = Router();
@@ -61,11 +62,12 @@ router.post("/kyc/submit", requireAuth, async (req, res) => {
   await db.insert(kycSubmissionsTable).values({ userId, idType, idImageUrl, status: "pending" });
   await db.update(usersTable).set({ kycStatus: "pending" }).where(eq(usersTable.id, userId));
 
-  // Fire-and-forget: notify admin of new KYC submission
-  const userForEmail = await db.select({ email: usersTable.email })
+  // Fire-and-forget: notify admin and user of new KYC submission
+  const userForEmail = await db.select({ email: usersTable.email, firstName: usersTable.firstName })
     .from(usersTable).where(eq(usersTable.id, userId)).limit(1);
   if (userForEmail.length > 0) {
     sendAdminKycSubmissionEmail(userForEmail[0].email, idType).catch(() => {});
+    sendUserKycSubmittedEmail(userForEmail[0].email, userForEmail[0].firstName).catch(() => {});
   }
 
   res.json({ message: "KYC submitted successfully. We will review and get back to you." });

@@ -109,7 +109,12 @@ export default function SetupProfile() {
       onSuccess: (data: any) => {
         updateUser(data);
         queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
-        setLocation("/add-card");
+        const country = form.getValues("country");
+        if (country === "NG") {
+          setLocation("/dashboard");
+        } else {
+          setLocation("/add-card");
+        }
       },
       onError: (err: any) => {
         toast({ title: "Error", description: err?.data?.error || err?.message || "Failed to save profile", variant: "destructive" });

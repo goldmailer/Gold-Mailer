@@ -167,11 +167,11 @@ export default function KycUpload() {
           </div>
 
           <div className="flex flex-col gap-3">
-            <Button onClick={() => setLocation("/add-card")} className="w-full bg-primary text-primary-foreground hover:opacity-90 py-5 font-bold">
-              Add Bank Card <ChevronRight size={16} className="ml-1" />
+            <Button onClick={() => setLocation("/dashboard")} className="w-full bg-primary text-primary-foreground hover:opacity-90 py-5 font-bold">
+              Go to Dashboard <ChevronRight size={16} className="ml-1" />
             </Button>
-            <Button variant="outline" onClick={() => setLocation("/dashboard")} className="w-full">
-              Go to Dashboard
+            <Button variant="outline" onClick={() => setLocation("/add-card")} className="w-full">
+              Add Bank Card Now
             </Button>
           </div>
         </div>

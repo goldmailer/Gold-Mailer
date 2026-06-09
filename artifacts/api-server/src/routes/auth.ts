@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { db, usersTable, otpCodesTable, transactionsTable } from "@workspace/db";
 import { eq, and, gt, count } from "drizzle-orm";
-import { sendVerificationEmail, sendPasswordResetEmail, sendAdminNewSignupEmail } from "../lib/email";
+import { sendVerificationEmail, sendPasswordResetEmail, sendAdminNewSignupEmail, sendUserAccountVerifiedEmail } from "../lib/email";
 import { requireAuth } from "../lib/auth-middleware";
 
 function buildUserResponse(user: any, hasDeposited: boolean) {
@@ -146,8 +146,11 @@ router.post("/auth/verify-email", async (req, res) => {
     req.session.isAdmin = users[0].isAdmin;
   }
 
-  // Fire-and-forget: notify admin of new signup
+  // Fire-and-forget: notify admin + welcome user
   sendAdminNewSignupEmail(email.toLowerCase()).catch(() => {});
+  if (users.length > 0) {
+    sendUserAccountVerifiedEmail(email.toLowerCase(), users[0].firstName).catch(() => {});
+  }
 
   res.json({ message: "Email verified successfully" });
 });

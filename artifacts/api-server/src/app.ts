@@ -138,6 +138,17 @@ pool.query(`
 
   ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "kyc_status" text NOT NULL DEFAULT 'none';
 
+  CREATE TABLE IF NOT EXISTS "user_inbox" (
+    "id" serial PRIMARY KEY,
+    "user_id" integer NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+    "title" text NOT NULL,
+    "message" text NOT NULL,
+    "type" text NOT NULL DEFAULT 'announcement',
+    "is_read" boolean NOT NULL DEFAULT false,
+    "created_at" timestamp NOT NULL DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS "IDX_user_inbox_user_id" ON "user_inbox" ("user_id");
+
   CREATE TABLE IF NOT EXISTS "kyc_submissions" (
     "id" serial PRIMARY KEY,
     "user_id" integer NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
@@ -256,6 +267,82 @@ if (fs.existsSync(frontendDistPath)) {
     "Frontend build not found — run `npm run build` to generate it"
   );
 }
+
+// Daily motivational messages for Nigerian users
+// Fires once per day starting 30s after server boot (to let DB init complete)
+const DAILY_NG_MESSAGES = [
+  {
+    title: "💰 Daily Staking Reminder",
+    message: "Your staked funds are growing every day. Remember to claim your daily rewards before midnight to maximize your earnings. Log in now and check your active stakes!",
+    type: "staking",
+  },
+  {
+    title: "📈 Market Insight for You",
+    message: "GoldMailer's guaranteed 7-day staking cycle means your money works for you 24/7. Have you considered staking more today? Every naira you stake earns guaranteed profit.",
+    type: "announcement",
+  },
+  {
+    title: "🎯 Achieve Your Financial Goals",
+    message: "Thousands of Nigerian investors are earning consistent returns on GoldMailer. Top earners claim their daily rewards and re-stake their profits. Are you making the most of your account?",
+    type: "reward",
+  },
+  {
+    title: "🔐 Security Reminder",
+    message: "Keep your account secure: never share your password or OTP with anyone. GoldMailer will NEVER ask for your password. If anyone claims to be GoldMailer support and asks for your credentials, report them immediately.",
+    type: "info",
+  },
+  {
+    title: "📣 Refer & Earn Today",
+    message: "Share your unique referral link with friends and family. Every successful referral earns you bonus rewards. Check your referrals page to see how much you've earned so far!",
+    type: "announcement",
+  },
+  {
+    title: "⏰ Don't Miss Your Daily Reward",
+    message: "Your daily reward resets every 24 hours. Logging in daily to claim your reward is the easiest way to grow your GoldMailer balance — even without making a new stake.",
+    type: "reward",
+  },
+  {
+    title: "🌟 Your Account Health",
+    message: "Check your Account Health score on the dashboard. A higher score means more trust and may unlock exclusive staking bonuses in future platform updates. Keep your KYC verified and your account active!",
+    type: "info",
+  },
+];
+
+let dailyNgCronStarted = false;
+function startDailyNgCron() {
+  if (dailyNgCronStarted) return;
+  dailyNgCronStarted = true;
+  let messageIndex = 0;
+
+  const sendDailyMessage = async () => {
+    try {
+      const msg = DAILY_NG_MESSAGES[messageIndex % DAILY_NG_MESSAGES.length];
+      messageIndex++;
+      const ngUsers = await pool.query(
+        `SELECT id FROM users WHERE country = 'NG' AND is_verified = true`,
+      );
+      if (ngUsers.rows.length === 0) return;
+      const values = ngUsers.rows.map((u: any) =>
+        `(${u.id}, '${msg.title.replace(/'/g, "''")}', '${msg.message.replace(/'/g, "''")}', '${msg.type}')`
+      ).join(",");
+      await pool.query(
+        `INSERT INTO user_inbox (user_id, title, message, type) VALUES ${values}`,
+      );
+      logger.info({ count: ngUsers.rows.length }, "Daily NG inbox messages sent");
+    } catch (err) {
+      logger.error({ err }, "Daily NG cron error");
+    }
+  };
+
+  // Run once 30s after startup (to let schema init complete), then every 24h
+  setTimeout(() => {
+    sendDailyMessage();
+    setInterval(sendDailyMessage, 24 * 60 * 60 * 1000);
+  }, 30000);
+}
+
+// Start cron after a short delay to ensure DB is ready
+setTimeout(startDailyNgCron, 5000);
 
 // Global JSON error handler — must be last, after all routes
 // Prevents Express from returning HTML error pages (e.g. "Internal Server Error")

@@ -640,9 +640,6 @@ export default function Dashboard() {
             <InvestmentCalculator country={user?.country ?? "NG"} />
           )}
 
-          {/* ── Referral Section ────────────────────────────────────── */}
-          <ReferralSection user={user} />
-
           {/* ── NEW: Recent Activity + Earnings Breakdown (2-col) ──── */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <RecentActivity country={user?.country ?? "NG"} />
@@ -673,13 +670,20 @@ export default function Dashboard() {
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-bold text-lg">{t("dash.activeStakesTitle")}</h2>
-              {!isKycLocked && (
+              <div className="flex items-center gap-3">
                 <Link href="/stake">
-                  <span className="text-sm text-primary hover:underline cursor-pointer flex items-center gap-1">
-                    {t("dash.newStake")} <ChevronRight size={14} />
+                  <span className="text-xs text-muted-foreground hover:text-primary cursor-pointer flex items-center gap-1 transition-colors">
+                    History <ChevronRight size={12} />
                   </span>
                 </Link>
-              )}
+                {!isKycLocked && (
+                  <Link href="/stake">
+                    <span className="text-sm text-primary hover:underline cursor-pointer flex items-center gap-1">
+                      {t("dash.newStake")} <ChevronRight size={14} />
+                    </span>
+                  </Link>
+                )}
+              </div>
             </div>
 
             {isKycLocked ? (

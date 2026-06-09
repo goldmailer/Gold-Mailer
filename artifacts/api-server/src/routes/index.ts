@@ -11,6 +11,7 @@ import kycRouter from "./kyc";
 import tasksRouter from "./tasks";
 import referralRouter from "./referral";
 import leaderboardRouter from "./leaderboard";
+import inboxRouter from "./inbox";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(kycRouter);
 router.use(tasksRouter);
 router.use(referralRouter);
 router.use(leaderboardRouter);
+router.use(inboxRouter);
 
 export default router;
