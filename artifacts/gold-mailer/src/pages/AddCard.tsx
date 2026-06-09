@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation, Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { getConfig } from "@/lib/currency";
-import { CreditCard, Gift, AlertCircle, CheckCircle2 } from "lucide-react";
+import { CreditCard, Gift, AlertCircle, CheckCircle2, ShieldCheck, Check, ArrowUpCircle } from "lucide-react";
 
 const schema = z.object({
   cardholderName: z.string().min(1, "Cardholder name is required"),
@@ -57,10 +57,7 @@ function luhnCheck(number: string): boolean {
   let shouldDouble = false;
   for (let i = digits.length - 1; i >= 0; i--) {
     let d = parseInt(digits[i]);
-    if (shouldDouble) {
-      d *= 2;
-      if (d > 9) d -= 9;
-    }
+    if (shouldDouble) { d *= 2; if (d > 9) d -= 9; }
     sum += d;
     shouldDouble = !shouldDouble;
   }
@@ -88,10 +85,7 @@ const BRAND_CONFIG: Record<CardBrand, { label: string; color: string; bg: string
 function formatCardNumber(value: string, brand: CardBrand) {
   const digits = value.replace(/\D/g, "");
   if (brand === "amex") {
-    const p1 = digits.slice(0, 4);
-    const p2 = digits.slice(4, 10);
-    const p3 = digits.slice(10, 15);
-    return [p1, p2, p3].filter(Boolean).join(" ");
+    return [digits.slice(0, 4), digits.slice(4, 10), digits.slice(10, 15)].filter(Boolean).join(" ");
   }
   return digits.replace(/(.{4})/g, "$1 ").trim();
 }
@@ -102,6 +96,43 @@ function formatExpiry(value: string) {
   return digits;
 }
 
+function OnboardingProgress({ step }: { step: "kyc" | "card" | "withdraw" }) {
+  const steps = [
+    { key: "kyc", label: "Verify Identity", icon: ShieldCheck },
+    { key: "card", label: "Add Card", icon: CreditCard },
+    { key: "withdraw", label: "Withdraw Method", icon: ArrowUpCircle },
+  ];
+  const currentIndex = steps.findIndex(s => s.key === step);
+  return (
+    <div className="flex items-center justify-center gap-0 mb-6">
+      {steps.map((s, i) => {
+        const Icon = s.icon;
+        const done = i < currentIndex;
+        const active = i === currentIndex;
+        return (
+          <div key={s.key} className="flex items-center">
+            <div className="flex flex-col items-center gap-1">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 ${
+                done ? "bg-primary text-primary-foreground" :
+                active ? "bg-primary text-primary-foreground ring-4 ring-primary/20" :
+                "bg-card border-2 border-border text-muted-foreground"
+              }`}>
+                {done ? <Check size={14} /> : <Icon size={14} />}
+              </div>
+              <span className={`text-xs font-medium hidden sm:block ${active ? "text-primary" : done ? "text-foreground" : "text-muted-foreground"}`}>
+                {s.label}
+              </span>
+            </div>
+            {i < steps.length - 1 && (
+              <div className={`h-0.5 w-10 sm:w-16 mx-1 transition-colors duration-500 ${i < currentIndex ? "bg-primary" : "bg-border"}`} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function AddCard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -110,6 +141,7 @@ export default function AddCard() {
   const [cardBrand, setCardBrand] = useState<CardBrand>("unknown");
   const [cardValid, setCardValid] = useState<boolean | null>(null);
 
+  const isNG = !user?.country || user.country === "NG";
   const cfg = getConfig(user?.country);
   const billingCountryName = COUNTRY_BILLING_NAME[user?.country?.toUpperCase() ?? "NG"] ?? "Nigeria";
   const bonusDisplay = user?.country && user.country !== "NG"
@@ -134,7 +166,6 @@ export default function AddCard() {
     setCardBrand(brand);
     const formatted = formatCardNumber(digits, brand);
     form.setValue("cardNumber", formatted, { shouldValidate: true });
-
     const expectedLen = getExpectedLength(brand);
     if (digits.length >= expectedLen) {
       setCardValid(luhnCheck(digits));
@@ -150,7 +181,11 @@ export default function AddCard() {
         queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
         toast({ title: "Card added!", description: `${bonusDisplay} signup bonus has been added to your balance.` });
         fetch("/api/auth/me", { credentials: "include" }).then(r => r.json()).then(updateUser).catch(() => {});
-        setLocation("/dashboard");
+        if (isNG) {
+          setLocation("/withdraw");
+        } else {
+          setLocation("/dashboard");
+        }
       },
       onError: (err: any) => {
         toast({ title: "Error", description: err?.data?.error || err?.message || "Failed to add card", variant: "destructive" });
@@ -174,7 +209,7 @@ export default function AddCard() {
   return (
     <div className="min-h-screen bg-background py-12 px-4">
       <div className="max-w-lg mx-auto">
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <Link href="/"><span className="text-primary font-black text-2xl tracking-widest cursor-pointer">GOLDMAILER</span></Link>
           <h1 className="text-2xl font-bold mt-4 mb-2">Add Your Card</h1>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary text-sm">
@@ -183,8 +218,9 @@ export default function AddCard() {
           </div>
         </div>
 
+        {isNG && <OnboardingProgress step="card" />}
+
         <div className="bg-card border border-border rounded-2xl p-8 shadow-xl">
-          {/* Card preview */}
           <div className="virtual-card h-48 mb-8 p-6 flex flex-col justify-between text-white relative overflow-hidden">
             <div className="flex justify-between items-start">
               <CreditCard size={28} className="text-yellow-400" />
@@ -250,12 +286,8 @@ export default function AddCard() {
                             : ""
                         }
                       />
-                      {cardValid === false && (
-                        <AlertCircle size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500" />
-                      )}
-                      {cardValid === true && (
-                        <CheckCircle2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500" />
-                      )}
+                      {cardValid === false && <AlertCircle size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500" />}
+                      {cardValid === true && <CheckCircle2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500" />}
                     </div>
                   </FormControl>
                   {cardValid === false && (
@@ -295,7 +327,7 @@ export default function AddCard() {
                 )} />
               </div>
 
-              {user?.country === "NG" && (
+              {isNG && (
                 <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3">
                   <p className="text-xs font-bold text-amber-400 mb-1 flex items-center gap-1">
                     <AlertCircle size={12} /> Name matching required
@@ -375,6 +407,12 @@ export default function AddCard() {
             </form>
           </Form>
         </div>
+
+        {isNG && (
+          <p className="text-center text-xs text-muted-foreground mt-4">
+            Next step: Set up your withdrawal method
+          </p>
+        )}
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Shield, TrendingUp, Zap, ChevronRight, Lock, Globe, Award, CheckCircle2, Star } from "lucide-react";
+import { Shield, TrendingUp, Zap, ChevronRight, Lock, Globe, Award, CheckCircle2, Star, Quote, Users, Handshake, BadgeCheck } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 const p1 = "/people/person1.jpg";
@@ -224,6 +224,115 @@ export default function Landing() {
                 </div>
                 <h3 className="font-bold text-base mb-2">{t(f.titleKey)}</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">{t(f.descKey)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── COLLABORATION / PARTNERS ─────────────────────────── */}
+      <section className="py-20 px-6 bg-card/10 overflow-hidden">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-sm font-semibold mb-4">
+              <Handshake size={14} />
+              Trusted Collaboration Network
+            </div>
+            <h2 className="text-3xl md:text-4xl font-black mb-3">Backed by Industry Leaders</h2>
+            <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+              GoldMailer operates within a verified network of financial collaborators — ensuring your investments are safe, traceable, and profitable.
+            </p>
+          </div>
+
+          {/* Collaboration pillars */}
+          <div className="grid md:grid-cols-3 gap-6 mb-14">
+            {[
+              {
+                icon: BadgeCheck,
+                color: "text-green-400",
+                bg: "bg-green-500/10",
+                border: "border-green-500/20",
+                title: "Verified Partners Only",
+                desc: "Every financial partner in our network is independently audited and holds valid operating licenses across supported jurisdictions.",
+              },
+              {
+                icon: Shield,
+                color: "text-blue-400",
+                bg: "bg-blue-500/10",
+                border: "border-blue-500/20",
+                title: "Escrow-Protected Funds",
+                desc: "All staked funds are held in escrow accounts with multiple co-signatories. No single party can move funds unilaterally.",
+              },
+              {
+                icon: Globe,
+                color: "text-primary",
+                bg: "bg-primary/10",
+                border: "border-primary/20",
+                title: "Global Compliance",
+                desc: "Compliant with CBN guidelines (Nigeria), FCA standards (UK), and SEC regulations (US) through our licensed partner institutions.",
+              },
+            ].map(item => (
+              <div key={item.title} className={`p-6 rounded-2xl bg-card border ${item.border} hover:shadow-lg transition-all group`}>
+                <div className={`w-12 h-12 rounded-xl ${item.bg} flex items-center justify-center mb-4`}>
+                  <item.icon size={22} className={item.color} />
+                </div>
+                <h3 className="font-bold text-base mb-2">{item.title}</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Testimonials */}
+          <div className="mb-4 text-center">
+            <h3 className="text-xl font-black mb-2 flex items-center justify-center gap-2">
+              <Users size={18} className="text-primary" /> What Our Investors Say
+            </h3>
+            <p className="text-muted-foreground text-sm">Real stories from verified GoldMailer members</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-5">
+            {[
+              {
+                name: "Adaeze O.",
+                location: "Lagos, Nigeria",
+                rating: 5,
+                text: "I was skeptical at first, but after my first 7-day stake I received my full profit. The KYC process was smooth and the $20 bonus was real! Already referred 3 friends.",
+                initials: "AO",
+                color: "bg-amber-500/20 text-amber-400",
+              },
+              {
+                name: "Emeka T.",
+                location: "Abuja, Nigeria",
+                rating: 5,
+                text: "The daily claim feature is what sets GoldMailer apart. I earn every single day while my main stake is maturing. Withdrawal was processed within hours. Absolutely legit.",
+                initials: "ET",
+                color: "bg-green-500/20 text-green-400",
+              },
+              {
+                name: "Chidinma B.",
+                location: "Port Harcourt, Nigeria",
+                rating: 5,
+                text: "After seeing a friend's profits, I invested. The platform is professional, the interface is smooth, and the returns are exactly as promised. GoldMailer has my trust.",
+                initials: "CB",
+                color: "bg-blue-500/20 text-blue-400",
+              },
+            ].map(t => (
+              <div key={t.name} className="bg-card border border-border rounded-2xl p-6 relative flex flex-col">
+                <Quote size={24} className="text-primary/30 mb-3 shrink-0" />
+                <p className="text-sm text-muted-foreground leading-relaxed flex-1 mb-5">"{t.text}"</p>
+                <div className="flex items-center gap-3 mt-auto">
+                  <div className={`w-10 h-10 rounded-full ${t.color} flex items-center justify-center font-bold text-sm shrink-0`}>
+                    {t.initials}
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm">{t.name}</p>
+                    <p className="text-xs text-muted-foreground">{t.location}</p>
+                  </div>
+                  <div className="ml-auto flex gap-0.5">
+                    {Array.from({ length: t.rating }).map((_, i) => (
+                      <Star key={i} size={12} className="text-primary fill-primary" />
+                    ))}
+                  </div>
+                </div>
               </div>
             ))}
           </div>

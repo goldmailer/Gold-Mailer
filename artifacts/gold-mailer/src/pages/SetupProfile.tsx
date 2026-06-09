@@ -111,7 +111,7 @@ export default function SetupProfile() {
         queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
         const country = form.getValues("country");
         if (country === "NG") {
-          setLocation("/dashboard");
+          setLocation("/kyc");
         } else {
           setLocation("/add-card");
         }

@@ -1,11 +1,11 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
   ShieldCheck, Upload, AlertTriangle, CheckCircle, ChevronRight,
-  FileImage, ArrowLeft, IdCard, Fingerprint, BookOpen, Check, Camera
+  FileImage, ArrowLeft, IdCard, Fingerprint, BookOpen, Check, Camera, CreditCard
 } from "lucide-react";
 
 const STEPS = ["Requirements", "Choose ID", "Upload Photo"];
@@ -61,13 +61,121 @@ function StepBar({ current }: { current: number }) {
             </span>
           </div>
         ))}
-        {/* connector lines */}
       </div>
       <div className="relative h-1 bg-border rounded-full mx-4">
         <div
           className="absolute inset-y-0 left-0 bg-primary rounded-full transition-all duration-500"
           style={{ width: `${(current / (STEPS.length - 1)) * 100}%` }}
         />
+      </div>
+    </div>
+  );
+}
+
+function OnboardingProgress({ step }: { step: "kyc" | "card" | "withdraw" }) {
+  const steps = [
+    { key: "kyc", label: "Verify Identity", icon: ShieldCheck },
+    { key: "card", label: "Add Card", icon: CreditCard },
+    { key: "withdraw", label: "Withdraw Method", icon: CheckCircle },
+  ];
+  const currentIndex = steps.findIndex(s => s.key === step);
+  return (
+    <div className="flex items-center justify-center gap-0 mb-6">
+      {steps.map((s, i) => {
+        const Icon = s.icon;
+        const done = i < currentIndex;
+        const active = i === currentIndex;
+        return (
+          <div key={s.key} className="flex items-center">
+            <div className="flex flex-col items-center gap-1">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 ${
+                done ? "bg-primary text-primary-foreground" :
+                active ? "bg-primary text-primary-foreground ring-4 ring-primary/20" :
+                "bg-card border-2 border-border text-muted-foreground"
+              }`}>
+                {done ? <Check size={14} /> : <Icon size={14} />}
+              </div>
+              <span className={`text-xs font-medium hidden sm:block ${active ? "text-primary" : done ? "text-foreground" : "text-muted-foreground"}`}>
+                {s.label}
+              </span>
+            </div>
+            {i < steps.length - 1 && (
+              <div className={`h-0.5 w-10 sm:w-16 mx-1 transition-colors duration-500 ${i < currentIndex ? "bg-primary" : "bg-border"}`} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function SuccessRedirect({ onRedirect }: { onRedirect: () => void }) {
+  const [countdown, setCountdown] = useState(3);
+
+  useEffect(() => {
+    if (countdown <= 0) {
+      onRedirect();
+      return;
+    }
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [countdown, onRedirect]);
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-md text-center">
+        <div className="relative w-24 h-24 mx-auto mb-6">
+          <div className="w-24 h-24 rounded-full bg-green-500/15 border-2 border-green-500/40 flex items-center justify-center">
+            <CheckCircle size={44} className="text-green-400" />
+          </div>
+          <div className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-primary flex items-center justify-center">
+            <Check size={14} className="text-primary-foreground" />
+          </div>
+        </div>
+
+        <h1 className="text-2xl font-black mb-2">KYC Submitted!</h1>
+        <p className="text-muted-foreground mb-1">Your identity document is now under review.</p>
+        <p className="text-muted-foreground text-sm mb-6">
+          We verify all submissions within <strong className="text-foreground">24–48 hours</strong>. You'll receive an email once approved.
+        </p>
+
+        <OnboardingProgress step="card" />
+
+        <div className="bg-primary/10 border border-primary/30 rounded-2xl p-5 mb-6 text-left space-y-3">
+          <p className="font-bold text-sm text-primary">What happens next?</p>
+          {[
+            "Our team reviews your document",
+            "You get an email with the result",
+            "If approved, your $20 bonus is instantly credited",
+            "Full platform access is unlocked",
+          ].map((item, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                <span className="text-xs font-bold text-primary">{i + 1}</span>
+              </div>
+              <p className="text-sm text-muted-foreground">{item}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-6 text-left">
+          <p className="text-sm font-bold text-amber-400 mb-1 flex items-center gap-2">
+            <AlertTriangle size={14} /> Next step
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Add your bank card now. The name on your card must match your ID exactly.
+          </p>
+        </div>
+
+        <Button
+          onClick={onRedirect}
+          className="w-full bg-primary text-primary-foreground hover:opacity-90 py-5 font-bold"
+        >
+          Add Card Now <ChevronRight size={16} className="ml-1" />
+        </Button>
+        <p className="text-xs text-muted-foreground mt-3">
+          Redirecting automatically in {countdown}s...
+        </p>
       </div>
     </div>
   );
@@ -125,64 +233,12 @@ export default function KycUpload() {
   };
 
   if (submitted) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="w-full max-w-md text-center">
-          <div className="relative w-24 h-24 mx-auto mb-6">
-            <div className="w-24 h-24 rounded-full bg-green-500/15 border-2 border-green-500/40 flex items-center justify-center">
-              <CheckCircle size={44} className="text-green-400" />
-            </div>
-            <div className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-primary flex items-center justify-center">
-              <Check size={14} className="text-primary-foreground" />
-            </div>
-          </div>
-          <h1 className="text-2xl font-black mb-2">KYC Submitted!</h1>
-          <p className="text-muted-foreground mb-1">Your identity document is now under review.</p>
-          <p className="text-muted-foreground text-sm mb-6">We verify all submissions within <strong className="text-foreground">24–48 hours</strong>. You'll receive an email once approved.</p>
-
-          <div className="bg-primary/10 border border-primary/30 rounded-2xl p-5 mb-6 text-left space-y-3">
-            <p className="font-bold text-sm text-primary">What happens next?</p>
-            {[
-              "Our team reviews your document",
-              "You get an email with the result",
-              "If approved, your $20 bonus is instantly credited",
-              "Full platform access is unlocked",
-            ].map((step, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                  <span className="text-xs font-bold text-primary">{i + 1}</span>
-                </div>
-                <p className="text-sm text-muted-foreground">{step}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-6 text-left">
-            <p className="text-sm font-bold text-amber-400 mb-1 flex items-center gap-2">
-              <AlertTriangle size={14} /> While you wait
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Make sure to add your bank card. The name on your card must match your ID exactly.
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            <Button onClick={() => setLocation("/dashboard")} className="w-full bg-primary text-primary-foreground hover:opacity-90 py-5 font-bold">
-              Go to Dashboard <ChevronRight size={16} className="ml-1" />
-            </Button>
-            <Button variant="outline" onClick={() => setLocation("/add-card")} className="w-full">
-              Add Bank Card Now
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
+    return <SuccessRedirect onRedirect={() => setLocation("/add-card")} />;
   }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
-        {/* Header */}
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-2 mb-3">
             <div className="w-10 h-10 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center">
@@ -194,14 +250,13 @@ export default function KycUpload() {
           <p className="text-muted-foreground text-sm">Complete KYC to unlock full access + $20 bonus</p>
         </div>
 
+        <OnboardingProgress step="kyc" />
         <StepBar current={step} />
 
-        {/* Step 0 — Requirements */}
         {step === 0 && (
           <div className="space-y-4 animate-in fade-in-0 slide-in-from-right-4 duration-300">
             <div className="bg-card border border-border rounded-2xl p-6">
               <h2 className="font-black text-lg mb-4">Before you start</h2>
-
               <div className="space-y-3 mb-6">
                 {[
                   { ok: true, text: "Have a clear, well-lit photo of your ID" },
@@ -222,7 +277,6 @@ export default function KycUpload() {
                   </div>
                 ))}
               </div>
-
               <div className="bg-primary/10 border border-primary/20 rounded-xl p-4">
                 <p className="text-xs font-bold text-primary mb-1">Accepted Documents</p>
                 <div className="flex gap-2 flex-wrap">
@@ -232,20 +286,17 @@ export default function KycUpload() {
                 </div>
               </div>
             </div>
-
             <Button onClick={() => setStep(1)} className="w-full bg-primary text-primary-foreground hover:opacity-90 py-5 font-bold">
               Continue <ChevronRight size={16} className="ml-1" />
             </Button>
           </div>
         )}
 
-        {/* Step 1 — Choose ID */}
         {step === 1 && (
           <div className="space-y-4 animate-in fade-in-0 slide-in-from-right-4 duration-300">
             <div className="bg-card border border-border rounded-2xl p-6">
               <h2 className="font-black text-lg mb-1">Choose your ID type</h2>
               <p className="text-sm text-muted-foreground mb-4">Select the document you'll be uploading</p>
-
               <div className="space-y-3">
                 {ID_TYPES.map(t => {
                   const Icon = t.icon;
@@ -281,7 +332,6 @@ export default function KycUpload() {
                 })}
               </div>
             </div>
-
             <div className="flex gap-3">
               <Button variant="outline" onClick={() => setStep(0)} className="flex-1 py-5 gap-2">
                 <ArrowLeft size={16} /> Back
@@ -297,7 +347,6 @@ export default function KycUpload() {
           </div>
         )}
 
-        {/* Step 2 — Upload Photo */}
         {step === 2 && (
           <div className="space-y-4 animate-in fade-in-0 slide-in-from-right-4 duration-300">
             <div className="bg-card border border-border rounded-2xl p-6 space-y-5">
@@ -305,8 +354,6 @@ export default function KycUpload() {
                 <h2 className="font-black text-lg mb-1">Upload your {ID_TYPES.find(t => t.value === idType)?.label} photo</h2>
                 <p className="text-sm text-muted-foreground">Make sure the photo is clear and all text is readable</p>
               </div>
-
-              {/* Upload area */}
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
@@ -347,12 +394,11 @@ export default function KycUpload() {
                   <CheckCircle size={16} className="text-green-400 shrink-0" />
                   <div>
                     <p className="text-sm font-bold text-green-400">Photo uploaded</p>
-                    <p className="text-xs text-muted-foreground">Looks good? You can tap the image above to change it.</p>
+                    <p className="text-xs text-muted-foreground">Looks good? Tap the image above to change it.</p>
                   </div>
                 </div>
               )}
 
-              {/* Summary */}
               <div className="bg-background border border-border rounded-xl p-3">
                 <p className="text-xs text-muted-foreground mb-2 font-medium">Submission summary</p>
                 <div className="flex items-center justify-between">
@@ -389,7 +435,6 @@ export default function KycUpload() {
                 )}
               </Button>
             </div>
-
             <p className="text-center text-xs text-muted-foreground">
               Your ID is encrypted and only reviewed by our admin team
             </p>

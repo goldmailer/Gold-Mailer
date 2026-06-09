@@ -28,6 +28,7 @@ import KycUpload from "@/pages/KycUpload";
 import Tasks from "@/pages/Tasks";
 import Leaderboard from "@/pages/Leaderboard";
 import Inbox from "@/pages/Inbox";
+import StakeHistory from "@/pages/StakeHistory";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -90,6 +91,9 @@ function Router() {
       </Route>
       <Route path="/inbox">
         <ProtectedRoute><Inbox /></ProtectedRoute>
+      </Route>
+      <Route path="/stake-history">
+        <ProtectedRoute><StakeHistory /></ProtectedRoute>
       </Route>
       <Route path="/admin" component={Admin} />
       <Route component={NotFound} />

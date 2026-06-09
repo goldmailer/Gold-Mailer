@@ -12,7 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { fmt as currencyFmt, getConfig } from "@/lib/currency";
 import {
   TrendingUp, Wallet, Clock, Gift, ChevronRight, AlertCircle, CheckCircle2,
-  ArrowUpCircle, ShieldCheck, ArrowRight, Lock, Users, Copy, Check,
+  ArrowUpCircle, ShieldCheck, ArrowRight, Lock, Check, Users,
   Calculator, Activity, BarChart3, Zap, Star, Trophy,
   CreditCard, Mail, Globe, Target, BadgeCheck
 } from "lucide-react";
@@ -105,64 +105,6 @@ function KycBanner({ kycStatus }: { kycStatus: string }) {
   );
 }
 
-// ── Referral section ─────────────────────────────────────────────────────────
-function ReferralSection({ user }: { user: any }) {
-  const [copied, setCopied] = useState(false);
-  const [stats, setStats] = useState<{ totalReferrals: number; approvedReferrals: number; bonusPerReferral: number; bonusSymbol: string } | null>(null);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    fetch("/api/referral/stats", { credentials: "include" })
-      .then(r => r.json()).then(d => setStats(d)).catch(() => {});
-  }, []);
-
-  const refLink = user?.referralCode ? `${window.location.origin}/register?ref=${user.referralCode}` : null;
-  const copyLink = () => {
-    if (!refLink) return;
-    navigator.clipboard.writeText(refLink).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-      toast({ title: "Copied!", description: "Referral link copied to clipboard." });
-    });
-  };
-  const bonusLabel = stats ? `${stats.bonusSymbol}${stats.bonusPerReferral.toLocaleString()}` : "...";
-
-  return (
-    <div className="bg-card border border-border rounded-2xl p-5">
-      <div className="flex items-center gap-2 mb-4">
-        <Users size={18} className="text-primary" />
-        <h2 className="font-bold text-base">Refer a Friend</h2>
-        <Link href="/referrals">
-          <span className="ml-auto text-xs text-primary flex items-center gap-0.5 hover:underline cursor-pointer">
-            View all <ChevronRight size={12} />
-          </span>
-        </Link>
-      </div>
-      <p className="text-sm text-muted-foreground mb-4">
-        Share your link. When a friend signs up and gets KYC approved, you earn <span className="font-bold text-primary">{bonusLabel}</span> automatically.
-      </p>
-      <div className="flex items-center gap-2 mb-5">
-        <div className="flex-1 bg-background border border-border rounded-xl px-3 py-2.5 text-xs text-muted-foreground font-mono truncate">
-          {refLink ?? "Loading..."}
-        </div>
-        <button onClick={copyLink} className="shrink-0 bg-primary text-primary-foreground rounded-xl px-3 py-2.5 text-xs font-bold flex items-center gap-1.5 hover:opacity-90 transition-opacity">
-          {copied ? <Check size={14} /> : <Copy size={14} />}
-          {copied ? "Copied" : "Copy"}
-        </button>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-background border border-border rounded-xl p-3 text-center">
-          <p className="text-xl font-black text-foreground">{stats?.totalReferrals ?? "—"}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Friends Invited</p>
-        </div>
-        <div className="bg-background border border-border rounded-xl p-3 text-center">
-          <p className="text-xl font-black text-primary">{stats?.approvedReferrals ?? "—"}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Verified (Bonus Paid)</p>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ── NEW: Investment Calculator ────────────────────────────────────────────────
 function InvestmentCalculator({ country }: { country: string }) {
@@ -671,9 +613,9 @@ export default function Dashboard() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-bold text-lg">{t("dash.activeStakesTitle")}</h2>
               <div className="flex items-center gap-3">
-                <Link href="/stake">
+                <Link href="/stake-history">
                   <span className="text-xs text-muted-foreground hover:text-primary cursor-pointer flex items-center gap-1 transition-colors">
-                    History <ChevronRight size={12} />
+                    View History <ChevronRight size={12} />
                   </span>
                 </Link>
                 {!isKycLocked && (

@@ -169,7 +169,7 @@ export default function Admin() {
   const [kycDeclineNote, setKycDeclineNote] = useState("");
   const [kycFilter, setKycFilter] = useState<"all" | "pending" | "approved" | "declined">("all");
 
-  const { data: kycSubmissions = [], refetch: refetchKyc } = useQuery({
+  const { data: kycSubmissions = [], refetch: refetchKyc, isLoading: kycLoading } = useQuery({
     queryKey: ["admin-kyc"],
     queryFn: async () => {
       const res = await fetch("/api/admin/kyc", { credentials: "include" });
@@ -178,7 +178,9 @@ export default function Admin() {
     },
     enabled: tab === "kyc",
     staleTime: 0,
+    gcTime: 0,
     refetchOnMount: true,
+    refetchOnWindowFocus: tab === "kyc",
     refetchInterval: tab === "kyc" ? 10000 : false,
   });
 
@@ -813,7 +815,32 @@ export default function Admin() {
               })}
             </div>
 
-            {(() => {
+            {kycLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="bg-card border border-border rounded-xl p-5 animate-pulse">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="space-y-3 flex-1">
+                        <div className="flex gap-2">
+                          <div className="h-5 w-16 rounded-full bg-border" />
+                          <div className="h-5 w-12 rounded-full bg-border" />
+                        </div>
+                        <div className="h-5 w-48 rounded bg-border" />
+                        <div className="h-4 w-36 rounded bg-border" />
+                        <div className="h-4 w-56 rounded bg-border" />
+                      </div>
+                      <div className="space-y-2 shrink-0">
+                        <div className="h-8 w-28 rounded-lg bg-border" />
+                        <div className="flex gap-2">
+                          <div className="h-8 w-24 rounded-lg bg-border" />
+                          <div className="h-8 w-20 rounded-lg bg-border" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (() => {
               const filtered = kycFilter === "all"
                 ? (kycSubmissions as any[])
                 : (kycSubmissions as any[]).filter((s: any) => s.status === kycFilter);
