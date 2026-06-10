@@ -486,6 +486,13 @@ export default function Dashboard() {
                   : <p className="text-4xl font-black text-primary" data-testid="text-balance">{fmt(dash?.balance ?? 0)}</p>
                 }
               </div>
+              {isNG && kycStatus === "approved" && (
+                <div className="mb-1">
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-bold">
+                    <BadgeCheck size={13} /> Verified
+                  </div>
+                </div>
+              )}
               {isNG && kycStatus === "none" && (
                 <div className="mb-1">
                   <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-medium">
@@ -613,11 +620,6 @@ export default function Dashboard() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-bold text-lg">{t("dash.activeStakesTitle")}</h2>
               <div className="flex items-center gap-3">
-                <Link href="/stake-history">
-                  <span className="text-xs text-muted-foreground hover:text-primary cursor-pointer flex items-center gap-1 transition-colors">
-                    View History <ChevronRight size={12} />
-                  </span>
-                </Link>
                 {!isKycLocked && (
                   <Link href="/stake">
                     <span className="text-sm text-primary hover:underline cursor-pointer flex items-center gap-1">

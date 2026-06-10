@@ -3,7 +3,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { fmt as currencyFmt } from "@/lib/currency";
-import { Trophy, TrendingUp, Medal, Crown, Star, Users } from "lucide-react";
+import { Trophy, TrendingUp, Medal, Crown, Star, Users, BadgeCheck } from "lucide-react";
 
 const COUNTRY_FLAGS: Record<string, string> = {
   NG: "🇳🇬", US: "🇺🇸", UK: "🇬🇧", CA: "🇨🇦",
@@ -145,6 +145,9 @@ export default function Leaderboard() {
                           {isMe && <span className="text-xs text-primary ml-1">(you)</span>}
                         </p>
                         <span className="text-sm">{COUNTRY_FLAGS[entry.country] ?? ""}</span>
+                        {entry.country === "NG" && entry.kycStatus === "approved" && (
+                          <BadgeCheck size={14} className="text-blue-400 shrink-0" title="KYC Verified" />
+                        )}
                       </div>
                       <p className="text-xs text-muted-foreground">
                         {entry.stakeCount} stake{entry.stakeCount !== 1 ? "s" : ""} · {entry.referralCount} referral{entry.referralCount !== 1 ? "s" : ""}

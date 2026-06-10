@@ -197,10 +197,6 @@ export default function KycUpload() {
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "File too large", description: "Upload an image under 5MB", variant: "destructive" });
-      return;
-    }
     const reader = new FileReader();
     reader.onload = (ev) => {
       const result = ev.target?.result as string;
@@ -379,7 +375,7 @@ export default function KycUpload() {
                       <FileImage size={28} className="text-primary" />
                     </div>
                     <p className="text-sm font-bold text-foreground">Click to upload photo</p>
-                    <p className="text-xs text-muted-foreground mt-1">JPG, PNG or HEIC — max 5MB</p>
+                    <p className="text-xs text-muted-foreground mt-1">JPG, PNG, HEIC or any image — any size accepted</p>
                     <div className="mt-3 flex items-center gap-2">
                       <Upload size={14} className="text-primary" />
                       <span className="text-xs text-primary font-medium">Browse files</span>

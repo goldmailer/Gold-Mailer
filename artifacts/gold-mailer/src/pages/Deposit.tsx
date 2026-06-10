@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Copy, Check } from "lucide-react";
-import { getConfig } from "@/lib/currency";
+import { getConfig, getLocalCurrency } from "@/lib/currency";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 export default function Deposit() {
@@ -23,6 +23,7 @@ export default function Deposit() {
 
   const cfg = getConfig((user as any)?.country);
   const country = (user as any)?.country ?? "NG";
+  const localCurrency = getLocalCurrency(country);
 
   const { data: accountRaw, isLoading: accountLoading } = useGetDepositAccount({
     query: { queryKey: getGetDepositAccountQueryKey() },
@@ -76,13 +77,31 @@ export default function Deposit() {
     </button>
   );
 
+  const localSymbol = localCurrency ? localCurrency.symbol : cfg.symbol;
+  const usdEquivalent = localCurrency && amount && parseFloat(amount) > 0
+    ? parseFloat(amount) / localCurrency.rate
+    : null;
+
   const AmountField = () => (
     <div className="mt-3">
-      <label className="text-sm font-medium mb-2 block">{t("deposit.amount")} ({cfg.symbol})</label>
+      <label className="text-sm font-medium mb-2 block">
+        {t("deposit.amount")} ({localSymbol})
+      </label>
       <div className="relative">
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">{cfg.symbol}</span>
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">{localSymbol}</span>
         <Input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="Enter amount" className="pl-7" />
       </div>
+      {localCurrency && usdEquivalent !== null && (
+        <div className="mt-2 px-3 py-2 bg-primary/8 border border-primary/20 rounded-lg flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">Equivalent in USD</span>
+          <span className="text-sm font-black text-primary">≈ ${usdEquivalent.toFixed(2)} USD</span>
+        </div>
+      )}
+      {localCurrency && (
+        <p className="text-xs text-muted-foreground mt-1">
+          Rate: 1 USD = {localCurrency.rate.toLocaleString()} {localCurrency.name}
+        </p>
+      )}
     </div>
   );
 
@@ -188,7 +207,12 @@ export default function Deposit() {
             <Button
               className="w-full bg-primary text-primary-foreground hover:opacity-90 font-bold"
               disabled={!txId || mutation.isPending}
-              onClick={() => mutation.mutate({ data: { amount: parseFloat(amount), transactionId: txId } })}
+              onClick={() => {
+                const submitAmount = localCurrency && amount
+                  ? parseFloat(amount) / localCurrency.rate
+                  : parseFloat(amount);
+                mutation.mutate({ data: { amount: submitAmount, transactionId: txId } });
+              }}
             >
               {mutation.isPending ? t("deposit.submitting") : t("deposit.submit")}
             </Button>
