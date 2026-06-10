@@ -293,7 +293,7 @@ export default function Landing() {
             {[
               {
                 name: "Adaeze O.",
-                location: "Lagos, Nigeria",
+                location: "Lagos",
                 rating: 5,
                 text: "I was skeptical at first, but after my first 7-day stake I received my full profit. The KYC process was smooth and the $20 bonus was real! Already referred 3 friends.",
                 initials: "AO",
@@ -301,7 +301,7 @@ export default function Landing() {
               },
               {
                 name: "Emeka T.",
-                location: "Abuja, Nigeria",
+                location: "Abuja",
                 rating: 5,
                 text: "The daily claim feature is what sets GoldMailer apart. I earn every single day while my main stake is maturing. Withdrawal was processed within hours. Absolutely legit.",
                 initials: "ET",
@@ -309,7 +309,7 @@ export default function Landing() {
               },
               {
                 name: "Chidinma B.",
-                location: "Port Harcourt, Nigeria",
+                location: "Port Harcourt",
                 rating: 5,
                 text: "After seeing a friend's profits, I invested. The platform is professional, the interface is smooth, and the returns are exactly as promised. GoldMailer has my trust.",
                 initials: "CB",
@@ -364,6 +364,120 @@ export default function Landing() {
                 <p className="text-muted-foreground text-xs leading-relaxed">{item.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── MORE WAYS TO EARN ─────────────────────────────────── */}
+      <section className="py-24 px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-sm font-semibold mb-4">
+              <Zap size={14} />
+              Multiple Income Streams
+            </div>
+            <h2 className="text-3xl md:text-4xl font-black mb-3">More Ways to Earn</h2>
+            <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+              GoldMailer isn't just staking. Stack income from multiple sources every day.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[
+              {
+                icon: TrendingUp,
+                color: "text-primary",
+                bg: "bg-primary/10",
+                border: "border-primary/20",
+                title: "7-Day Staking",
+                badge: "Core",
+                badgeColor: "bg-primary/20 text-primary",
+                desc: "Deposit funds and earn guaranteed profit after 7 days. Stake ₦2,700 and receive ₦8,000 profit — that's nearly 3× your money.",
+                highlight: "Up to 3× returns",
+              },
+              {
+                icon: Zap,
+                color: "text-yellow-400",
+                bg: "bg-yellow-500/10",
+                border: "border-yellow-500/20",
+                title: "Daily Reward Claims",
+                badge: "Every 24h",
+                badgeColor: "bg-yellow-500/20 text-yellow-400",
+                desc: "Claim ₦100 (or $0.10) on each active stake, every single day. The more stakes you run, the more you earn daily without waiting.",
+                highlight: "Claim daily",
+              },
+              {
+                icon: Award,
+                color: "text-orange-400",
+                bg: "bg-orange-500/10",
+                border: "border-orange-500/20",
+                title: "Partner Surveys & Tasks",
+                badge: "New Tasks Daily",
+                badgeColor: "bg-orange-500/20 text-orange-400",
+                desc: "Complete surveys, sign-up offers, and micro-tasks from 20+ partner platforms like Toluna, ySense, and more. Earn $0.70 per approved task.",
+                highlight: "$0.70 per task",
+              },
+              {
+                icon: Globe,
+                color: "text-blue-400",
+                bg: "bg-blue-500/10",
+                border: "border-blue-500/20",
+                title: "Referral Bonuses",
+                badge: "Unlimited",
+                badgeColor: "bg-blue-500/20 text-blue-400",
+                desc: "Share your unique referral link. Earn ₦500 automatically every time a friend signs up and completes verification. No cap on referrals.",
+                highlight: "₦500 per friend",
+              },
+              {
+                icon: Shield,
+                color: "text-green-400",
+                bg: "bg-green-500/10",
+                border: "border-green-500/20",
+                title: "KYC Verification Bonus",
+                badge: "One-Time",
+                badgeColor: "bg-green-500/20 text-green-400",
+                desc: "Complete your KYC identity check and receive a $20 cash bonus automatically credited to your account. Unlocks all platform features too.",
+                highlight: "$20 free bonus",
+              },
+              {
+                icon: CheckCircle2,
+                color: "text-purple-400",
+                bg: "bg-purple-500/10",
+                border: "border-purple-500/20",
+                title: "Card Signup Bonus",
+                badge: "Instant",
+                badgeColor: "bg-purple-500/20 text-purple-400",
+                desc: "Add your bank card and instantly receive your signup bonus — credited automatically the moment your card is verified. No deposit required.",
+                highlight: "Instant credit",
+              },
+            ].map(item => (
+              <div key={item.title} className={`p-6 rounded-2xl bg-card border ${item.border} hover:shadow-lg transition-all group flex flex-col`}>
+                <div className="flex items-start justify-between mb-4">
+                  <div className={`w-11 h-11 rounded-xl ${item.bg} flex items-center justify-center`}>
+                    <item.icon size={20} className={item.color} />
+                  </div>
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${item.badgeColor}`}>
+                    {item.badge}
+                  </span>
+                </div>
+                <h3 className="font-bold text-base mb-2">{item.title}</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed flex-1 mb-4">{item.desc}</p>
+                <div className={`text-xs font-bold px-3 py-1.5 rounded-lg ${item.bg} ${item.color} inline-flex items-center gap-1 w-fit`}>
+                  <CheckCircle2 size={11} /> {item.highlight}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-10 text-center">
+            <Button
+              size="lg"
+              onClick={() => setLocation("/register")}
+              className="bg-primary text-primary-foreground hover:opacity-90 px-10 py-6 text-base font-black gold-glow"
+            >
+              Start Earning Today <ChevronRight size={18} className="ml-1" />
+            </Button>
+            <p className="mt-3 text-xs text-muted-foreground">Free to join · No hidden fees · Withdraw anytime after maturity</p>
           </div>
         </div>
       </section>

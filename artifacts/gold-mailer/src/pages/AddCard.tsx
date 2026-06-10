@@ -276,7 +276,7 @@ export default function AddCard() {
         queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
         toast({ title: "Card added!", description: `${bonusDisplay} signup bonus has been added to your balance.` });
         fetch("/api/auth/me", { credentials: "include" }).then(r => r.json()).then(updateUser).catch(() => {});
-        setLocation(isNG ? "/withdraw" : "/dashboard");
+        setLocation("/dashboard");
       },
       onError: (err: any) => {
         toast({ title: "Error", description: err?.data?.error || err?.message || "Failed to add card", variant: "destructive" });
