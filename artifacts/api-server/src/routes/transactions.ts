@@ -13,6 +13,18 @@ router.post("/transactions/deposit", requireAuth, async (req, res) => {
     res.status(400).json({ error: "Amount and transaction ID are required" });
     return;
   }
+
+  // Enforce minimum deposit per country
+  const depositor = await db.select({ country: usersTable.country }).from(usersTable)
+    .where(eq(usersTable.id, req.session.userId!)).limit(1);
+  const depositorCfg = getCountryConfig(depositor[0]?.country);
+  if (parseFloat(amount) < depositorCfg.minDeposit) {
+    res.status(400).json({
+      error: `Minimum deposit is ${depositorCfg.symbol}${depositorCfg.minDeposit.toLocaleString()}`,
+    });
+    return;
+  }
+
   const inserted = await db.insert(transactionsTable).values({
     userId: req.session.userId!,
     type: "deposit",

@@ -24,6 +24,7 @@ export default function Deposit() {
   const cfg = getConfig((user as any)?.country);
   const country = (user as any)?.country ?? "NG";
   const localCurrency = getLocalCurrency(country);
+  const isNGN = country === "NG";
 
   const { data: accountRaw, isLoading: accountLoading } = useGetDepositAccount({
     query: { queryKey: getGetDepositAccountQueryKey() },
@@ -82,6 +83,9 @@ export default function Deposit() {
     ? parseFloat(amount) / localCurrency.rate
     : null;
 
+  const numericAmount = parseFloat(amount) || 0;
+  const belowMinDeposit = numericAmount > 0 && numericAmount < cfg.minDeposit;
+
   const AmountField = () => (
     <div className="mt-3">
       <label className="text-sm font-medium mb-2 block">
@@ -91,13 +95,23 @@ export default function Deposit() {
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">{localSymbol}</span>
         <Input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="Enter amount" className="pl-7" />
       </div>
-      {localCurrency && usdEquivalent !== null && (
+      {belowMinDeposit && (
+        <p className="text-xs text-destructive mt-1 font-medium">
+          Minimum deposit is {cfg.symbol}{cfg.minDeposit.toLocaleString()}
+        </p>
+      )}
+      {!belowMinDeposit && isNGN && (
+        <p className="text-xs text-muted-foreground mt-1">
+          Minimum deposit: {cfg.symbol}{cfg.minDeposit.toLocaleString()}
+        </p>
+      )}
+      {localCurrency && usdEquivalent !== null && !belowMinDeposit && (
         <div className="mt-2 px-3 py-2 bg-primary/8 border border-primary/20 rounded-lg flex items-center justify-between">
           <span className="text-xs text-muted-foreground">Equivalent in USD</span>
           <span className="text-sm font-black text-primary">≈ ${usdEquivalent.toFixed(2)} USD</span>
         </div>
       )}
-      {localCurrency && (
+      {localCurrency && !isNGN && (
         <p className="text-xs text-muted-foreground mt-1">
           Rate: 1 USD = {localCurrency.rate.toLocaleString()} {localCurrency.name}
         </p>
@@ -133,7 +147,7 @@ export default function Deposit() {
             <CopyBtn val={myAccount.accountNumber} k="bank-acc" />
           </div>
           <AmountField />
-          <Button className="w-full bg-primary text-primary-foreground hover:opacity-90 font-bold" onClick={() => setStep(2)} disabled={!amount || parseFloat(amount) <= 0}>
+          <Button className="w-full bg-primary text-primary-foreground hover:opacity-90 font-bold" onClick={() => setStep(2)} disabled={!amount || parseFloat(amount) <= 0 || belowMinDeposit}>
             {t("deposit.madePmt")}
           </Button>
         </div>
@@ -163,7 +177,7 @@ export default function Deposit() {
             </div>
           </div>
           <AmountField />
-          <Button className="w-full bg-primary text-primary-foreground hover:opacity-90 font-bold" onClick={() => setStep(2)} disabled={!amount || parseFloat(amount) <= 0}>
+          <Button className="w-full bg-primary text-primary-foreground hover:opacity-90 font-bold" onClick={() => setStep(2)} disabled={!amount || parseFloat(amount) <= 0 || belowMinDeposit}>
             {t("deposit.sentPmt")}
           </Button>
         </div>

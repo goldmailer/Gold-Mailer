@@ -169,26 +169,35 @@ export default function Admin() {
   const [kycDeclineNote, setKycDeclineNote] = useState("");
   const [kycFilter, setKycFilter] = useState<"all" | "pending" | "approved" | "declined">("all");
 
+  const KYC_QUERY_KEY = ["admin-kyc"];
+
   const { data: kycSubmissions = [], refetch: refetchKyc, isLoading: kycLoading } = useQuery({
-    queryKey: ["admin-kyc"],
+    queryKey: KYC_QUERY_KEY,
     queryFn: async () => {
       const res = await fetch("/api/admin/kyc", { credentials: "include" });
       if (!res.ok) return [];
       return res.json();
     },
     enabled: tab === "kyc",
-    staleTime: 0,
-    gcTime: 0,
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
     refetchOnMount: true,
-    refetchOnWindowFocus: tab === "kyc",
-    refetchInterval: tab === "kyc" ? 10000 : false,
+    refetchOnWindowFocus: false,
+    refetchInterval: tab === "kyc" ? 15000 : false,
   });
 
   const approveKyc = async (id: number) => {
     const res = await fetch(`/api/admin/kyc/${id}/approve`, { method: "POST", credentials: "include" });
     const data = await res.json();
-    if (res.ok) { toast({ title: "KYC approved! $20 credited." }); refetchKyc(); }
-    else toast({ title: "Error", description: data.error, variant: "destructive" });
+    if (res.ok) {
+      toast({ title: "KYC approved! Bonus credited." });
+      queryClient.setQueryData(KYC_QUERY_KEY, (old: any[]) =>
+        (old ?? []).map((s: any) => s.id === id ? { ...s, status: "approved" } : s)
+      );
+      refetchKyc();
+    } else {
+      toast({ title: "Error", description: data.error, variant: "destructive" });
+    }
   };
 
   const declineKyc = async () => {
@@ -199,8 +208,19 @@ export default function Admin() {
       body: JSON.stringify({ notes: kycDeclineNote }),
     });
     const data = await res.json();
-    if (res.ok) { toast({ title: "KYC declined." }); setKycDeclineId(null); setKycDeclineNote(""); refetchKyc(); }
-    else toast({ title: "Error", description: data.error, variant: "destructive" });
+    if (res.ok) {
+      toast({ title: "KYC declined." });
+      const declinedId = kycDeclineId;
+      const declineNote = kycDeclineNote;
+      setKycDeclineId(null);
+      setKycDeclineNote("");
+      queryClient.setQueryData(KYC_QUERY_KEY, (old: any[]) =>
+        (old ?? []).map((s: any) => s.id === declinedId ? { ...s, status: "declined", notes: declineNote } : s)
+      );
+      refetchKyc();
+    } else {
+      toast({ title: "Error", description: data.error, variant: "destructive" });
+    }
   };
 
   // Tasks state
