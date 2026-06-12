@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, transactionsTable, usersTable, settingsTable } from "@workspace/db";
+import { db, transactionsTable, usersTable, settingsTable, stakesTable } from "@workspace/db";
 import { eq, and, count } from "drizzle-orm";
 import { requireAuth } from "../lib/auth-middleware";
 import { getCountryConfig } from "../lib/currency";
@@ -11,17 +11,6 @@ router.post("/transactions/deposit", requireAuth, async (req, res) => {
   const { amount, transactionId } = req.body;
   if (!amount || !transactionId) {
     res.status(400).json({ error: "Amount and transaction ID are required" });
-    return;
-  }
-
-  // Enforce minimum deposit per country
-  const depositor = await db.select({ country: usersTable.country }).from(usersTable)
-    .where(eq(usersTable.id, req.session.userId!)).limit(1);
-  const depositorCfg = getCountryConfig(depositor[0]?.country);
-  if (parseFloat(amount) < depositorCfg.minDeposit) {
-    res.status(400).json({
-      error: `Minimum deposit is ${depositorCfg.symbol}${depositorCfg.minDeposit.toLocaleString()}`,
-    });
     return;
   }
 
@@ -55,6 +44,13 @@ router.post("/transactions/withdraw", requireAuth, async (req, res) => {
     return;
   }
 
+  // Fetch user first (needed for country check)
+  const users = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!)).limit(1);
+  if (users.length === 0) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+
   // Require at least one approved deposit before withdrawing
   const depositCheck = await db
     .select({ total: count() })
@@ -67,15 +63,25 @@ router.post("/transactions/withdraw", requireAuth, async (req, res) => {
       ),
     );
   if ((depositCheck[0]?.total ?? 0) === 0) {
-    res.status(403).json({ error: "You must make a deposit first before you can withdraw." });
+    res.status(403).json({ error: "You must make a deposit of at least ₦1,000 before you can withdraw." });
     return;
   }
 
-  // Fetch user to get country config for first withdrawal minimum
-  const users = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!)).limit(1);
-  if (users.length === 0) {
-    res.status(401).json({ error: "User not found" });
-    return;
+  // Nigerian users must also have at least one completed stake before withdrawing
+  if (users[0].country === "NG") {
+    const completedStakeCheck = await db
+      .select({ total: count() })
+      .from(stakesTable)
+      .where(
+        and(
+          eq(stakesTable.userId, req.session.userId!),
+          eq(stakesTable.status, "completed"),
+        ),
+      );
+    if ((completedStakeCheck[0]?.total ?? 0) === 0) {
+      res.status(403).json({ error: "Nigerian accounts must complete at least one stake before withdrawing." });
+      return;
+    }
   }
   const cfg = getCountryConfig(users[0].country);
   const FIRST_WITHDRAWAL_MIN = cfg.firstWithdrawMin;

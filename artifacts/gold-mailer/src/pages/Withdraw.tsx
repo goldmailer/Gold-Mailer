@@ -82,6 +82,8 @@ export default function Withdraw() {
   const [customBank, setCustomBank] = useState("");
   const [paypalForm, setPaypalForm] = useState({ paypalEmail: "", fullName: "" });
 
+  const isNG = country === "NG";
+
   const { data: txData } = useQuery<any[]>({
     queryKey: ["transactions-for-withdraw-check"],
     queryFn: async () => {
@@ -92,9 +94,23 @@ export default function Withdraw() {
     enabled: !!user?.hasDeposited,
   });
 
+  const { data: stakesData } = useQuery<any[]>({
+    queryKey: ["stakes-for-withdraw-check"],
+    queryFn: async () => {
+      const res = await fetch("/api/stakes", { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: isNG,
+  });
+
   const hasApprovedWithdrawal = (txData ?? []).some(
     (tx: any) => tx.type === "withdrawal" && tx.status === "approved"
   );
+  const hasCompletedStake = (stakesData ?? []).some(
+    (s: any) => s.status === "completed"
+  );
+  const ngGatePassed = !isNG || (!!user?.hasDeposited && hasCompletedStake);
   const FIRST_MIN = cfg.firstWithdrawMin;
   const minWithdraw = hasApprovedWithdrawal ? 0.01 : FIRST_MIN;
   const enteredAmount = parseFloat(amount) || 0;
@@ -206,11 +222,31 @@ export default function Withdraw() {
             <div>
               <p className="font-semibold text-amber-300 mb-1">Deposit required before withdrawing</p>
               <p className="text-sm text-muted-foreground mb-3">
-                You must make a real deposit and have it approved before you can withdraw funds.
+                {isNG
+                  ? "Nigerian accounts must first make a deposit of at least ₦1,000 and complete one stake cycle before withdrawing."
+                  : "You must make a real deposit and have it approved before you can withdraw funds."}
               </p>
               <Link href="/deposit">
                 <Button size="sm" className="bg-amber-500 hover:bg-amber-400 text-black font-bold">
                   Make a Deposit
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Nigeria stake gate */}
+        {isNG && user?.hasDeposited && !hasCompletedStake && (
+          <div className="bg-amber-500/10 border border-amber-500/40 rounded-xl p-5 mb-6 flex gap-4 items-start">
+            <AlertTriangle size={20} className="text-amber-400 mt-0.5 shrink-0" />
+            <div>
+              <p className="font-semibold text-amber-300 mb-1">Complete a stake to unlock withdrawal</p>
+              <p className="text-sm text-muted-foreground mb-3">
+                Nigerian accounts must complete at least one 7-day stake cycle before withdrawing. Stake now and return after 7 days.
+              </p>
+              <Link href="/stake">
+                <Button size="sm" className="bg-amber-500 hover:bg-amber-400 text-black font-bold">
+                  Go to Stake
                 </Button>
               </Link>
             </div>
@@ -237,7 +273,7 @@ export default function Withdraw() {
           <span className="font-black text-primary">{fmt(user?.balance ?? 0)}</span>
         </div>
 
-        <div className={`space-y-5 ${!user?.hasDeposited ? "opacity-50 pointer-events-none" : ""}`}>
+        <div className={`space-y-5 ${!ngGatePassed ? "opacity-50 pointer-events-none" : ""}`}>
 
           {/* Withdrawal type selector */}
           <div className="bg-card border border-border rounded-2xl p-5">
@@ -375,7 +411,7 @@ export default function Withdraw() {
             onClick={handleSubmit}
             disabled={
               mutation.isPending ||
-              !user?.hasDeposited ||
+              !ngGatePassed ||
               (enteredAmount > 0 && enteredAmount < minWithdraw)
             }
           >

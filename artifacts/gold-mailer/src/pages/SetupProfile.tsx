@@ -109,7 +109,7 @@ export default function SetupProfile() {
       onSuccess: (data: any) => {
         updateUser(data);
         queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
-        setLocation("/dashboard");
+        setLocation("/add-card");
       },
       onError: (err: any) => {
         toast({ title: "Error", description: err?.data?.error || err?.message || "Failed to save profile", variant: "destructive" });
