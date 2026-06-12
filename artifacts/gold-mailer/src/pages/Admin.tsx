@@ -171,19 +171,18 @@ export default function Admin() {
 
   const KYC_QUERY_KEY = ["admin-kyc"];
 
-  const { data: kycSubmissions = [], refetch: refetchKyc, isLoading: kycLoading } = useQuery({
+  const { data: kycSubmissions = [], refetch: refetchKyc, isLoading: kycLoading, isFetching: kycFetching } = useQuery({
     queryKey: KYC_QUERY_KEY,
     queryFn: async () => {
       const res = await fetch("/api/admin/kyc", { credentials: "include" });
       if (!res.ok) return [];
       return res.json();
     },
-    enabled: tab === "kyc",
-    staleTime: 30 * 1000,
-    gcTime: 5 * 60 * 1000,
+    staleTime: 0,
+    gcTime: 10 * 60 * 1000,
     refetchOnMount: true,
-    refetchOnWindowFocus: false,
-    refetchInterval: tab === "kyc" ? 15000 : false,
+    refetchOnWindowFocus: true,
+    refetchInterval: 20000,
   });
 
   const approveKyc = async (id: number) => {
@@ -804,8 +803,8 @@ export default function Admin() {
           <div>
             <div className="flex items-start justify-between flex-wrap gap-2 mb-1">
               <h2 className="font-bold text-lg">KYC Verifications ({(kycSubmissions as any[]).length})</h2>
-              <button onClick={() => refetchKyc()} className="text-xs text-primary flex items-center gap-1 hover:underline">
-                Refresh
+              <button onClick={() => refetchKyc()} className="text-xs text-primary flex items-center gap-1 hover:underline" disabled={kycFetching}>
+                {kycFetching ? "Refreshing…" : "Refresh"}
               </button>
             </div>
             <p className="text-sm text-muted-foreground mb-4">Review and approve identity documents. Approving credits $20 to the user.</p>
