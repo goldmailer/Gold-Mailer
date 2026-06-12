@@ -84,7 +84,9 @@ export default function Deposit() {
     : null;
 
   const numericAmount = parseFloat(amount) || 0;
-  const belowMinDeposit = numericAmount > 0 && numericAmount < cfg.minDeposit;
+  const NGN_MIN_DEPOSIT = 1000;
+  const minLocalDeposit = isNGN ? NGN_MIN_DEPOSIT : 0;
+  const belowMinDeposit = minLocalDeposit > 0 && numericAmount > 0 && numericAmount < minLocalDeposit;
 
   const AmountField = () => (
     <div className="mt-3">
@@ -97,12 +99,12 @@ export default function Deposit() {
       </div>
       {belowMinDeposit && (
         <p className="text-xs text-destructive mt-1 font-medium">
-          Minimum deposit is {cfg.symbol}{cfg.minDeposit.toLocaleString()}
+          Minimum deposit is {localSymbol}{minLocalDeposit.toLocaleString()}
         </p>
       )}
       {!belowMinDeposit && isNGN && (
         <p className="text-xs text-muted-foreground mt-1">
-          Minimum deposit: {cfg.symbol}{cfg.minDeposit.toLocaleString()}
+          Minimum deposit: {localSymbol}{minLocalDeposit.toLocaleString()}
         </p>
       )}
       {localCurrency && usdEquivalent !== null && !belowMinDeposit && (
