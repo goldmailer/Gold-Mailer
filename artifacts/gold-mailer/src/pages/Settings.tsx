@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Lock, Mail, User, Globe, Shield } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, User, Globe, Phone, ShieldCheck } from "lucide-react";
 import { useLanguage, LANGUAGE_NAMES, SUPPORTED_LANGUAGES } from "@/i18n/LanguageContext";
 import { ALL_COUNTRIES } from "@/lib/countries";
 
@@ -25,23 +25,91 @@ export default function Settings() {
   const [profileForm, setProfileForm] = useState({
     firstName: "",
     lastName: "",
-    phone: "",
     country: "NG",
     gender: "",
   });
 
-  // Sync profile form when user data loads or changes
+  // Phone verification state
+  const [smsStatus, setSmsStatus] = useState<{ phoneVerified: boolean; phone: string | null } | null>(null);
+  const [phoneInput, setPhoneInput] = useState("");
+  const [phoneOtpStep, setPhoneOtpStep] = useState<"idle" | "sent" | "verified">("idle");
+  const [phoneOtp, setPhoneOtp] = useState("");
+  const [phoneSending, setPhoneSending] = useState(false);
+  const [phoneError, setPhoneError] = useState("");
+  const [phoneInfo, setPhoneInfo] = useState("");
+
   useEffect(() => {
     if (user) {
       setProfileForm({
         firstName: user.firstName ?? "",
         lastName: user.lastName ?? "",
-        phone: (user as any)?.phone ?? "",
         country: (user as any)?.country ?? "NG",
         gender: user.gender ?? "",
       });
     }
   }, [user?.id, user?.firstName, user?.lastName]);
+
+  useEffect(() => {
+    fetch("/api/sms/status", { credentials: "include" })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d) {
+          setSmsStatus(d);
+          if (d.phoneVerified) {
+            setPhoneOtpStep("verified");
+            setPhoneInput(d.phone ?? "");
+          } else if (d.phone) {
+            setPhoneInput(d.phone);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const requestPhoneOtp = async () => {
+    setPhoneError("");
+    setPhoneInfo("");
+    if (!phoneInput.trim()) {
+      setPhoneError("Enter your phone number with country code, e.g. +2348012345678");
+      return;
+    }
+    setPhoneSending(true);
+    try {
+      const res = await fetch("/api/sms/verify/request", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: phoneInput.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setPhoneError(data.error ?? "Failed to send code"); return; }
+      setPhoneOtpStep("sent");
+      setPhoneInfo("A 6-digit code was sent to your phone. Enter it below.");
+    } catch { setPhoneError("Network error. Please try again."); }
+    finally { setPhoneSending(false); }
+  };
+
+  const confirmPhoneOtp = async () => {
+    setPhoneError("");
+    if (!phoneOtp.trim()) { setPhoneError("Enter the code you received."); return; }
+    setPhoneSending(true);
+    try {
+      const res = await fetch("/api/sms/verify/confirm", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: phoneOtp.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setPhoneError(data.error ?? "Invalid code. Try again."); return; }
+      setPhoneOtpStep("verified");
+      setSmsStatus({ phoneVerified: true, phone: data.phone });
+      setPhoneInput(data.phone);
+      setPhoneInfo("");
+      toast({ title: "Phone verified!", description: "Your phone number has been verified successfully." });
+    } catch { setPhoneError("Network error. Please try again."); }
+    finally { setPhoneSending(false); }
+  };
 
   const emailMutation = useChangeEmail({
     mutation: {
@@ -94,7 +162,6 @@ export default function Settings() {
         age: user?.age ?? undefined,
         gender: profileForm.gender || undefined,
         country: profileForm.country,
-        phone: profileForm.phone || undefined,
         avatarUrl: user?.avatarUrl ?? undefined,
       },
     });
@@ -127,10 +194,13 @@ export default function Settings() {
                 <span className="font-semibold text-sm">{ALL_COUNTRIES.find(c => c.code === (user as any).country)?.name ?? (user as any).country}</span>
               </div>
             )}
-            {(user as any)?.phone && (
+            {smsStatus?.phone && (
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">Phone</span>
-                <span className="font-semibold text-sm">{(user as any).phone}</span>
+                <span className="font-semibold text-sm flex items-center gap-1.5">
+                  {smsStatus.phone}
+                  {smsStatus.phoneVerified && <ShieldCheck size={13} className="text-green-400" />}
+                </span>
               </div>
             )}
           </div>
@@ -210,15 +280,6 @@ export default function Settings() {
                 </Select>
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">{t("settings.phone")}</label>
-                <Input
-                  type="tel"
-                  value={profileForm.phone}
-                  onChange={e => setProfileForm({ ...profileForm, phone: e.target.value })}
-                  placeholder="e.g. +2348012345678"
-                />
-              </div>
-              <div>
                 <label className="text-sm font-medium mb-2 block">{t("settings.gender")}</label>
                 <Select value={profileForm.gender} onValueChange={val => setProfileForm({ ...profileForm, gender: val })}>
                   <SelectTrigger>
@@ -240,6 +301,98 @@ export default function Settings() {
                 {profileMutation.isPending ? t("settings.saving") : t("settings.saveProfile")}
               </Button>
             </div>
+          </div>
+
+          {/* Phone Number & Verification */}
+          <div className="bg-card border border-border rounded-2xl p-6">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
+                <Phone size={18} className="text-primary" />
+              </div>
+              <div>
+                <h2 className="font-bold">Phone Number</h2>
+                <p className="text-xs text-muted-foreground">Add and verify your phone for 2-way SMS messaging</p>
+              </div>
+              {phoneOtpStep === "verified" && (
+                <span className="ml-auto flex items-center gap-1 text-xs font-semibold text-green-400 bg-green-500/10 border border-green-500/20 px-2.5 py-1 rounded-full">
+                  <ShieldCheck size={12} /> Verified
+                </span>
+              )}
+            </div>
+
+            {phoneError && (
+              <div className="mb-4 px-3 py-2 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive">
+                {phoneError}
+              </div>
+            )}
+            {phoneInfo && (
+              <div className="mb-4 px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20 text-sm text-green-400">
+                {phoneInfo}
+              </div>
+            )}
+
+            {phoneOtpStep === "verified" ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 bg-green-500/5 border border-green-500/20 rounded-xl">
+                  <ShieldCheck size={18} className="text-green-400 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-green-400">{phoneInput}</p>
+                    <p className="text-xs text-muted-foreground">Phone number verified</p>
+                  </div>
+                </div>
+                <button
+                  className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                  onClick={() => { setPhoneOtpStep("idle"); setPhoneInput(""); setPhoneOtp(""); setPhoneError(""); setPhoneInfo(""); setSmsStatus(null); }}
+                >
+                  Change phone number
+                </button>
+              </div>
+            ) : phoneOtpStep === "sent" ? (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">6-Digit Code</label>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="123456"
+                    value={phoneOtp}
+                    onChange={e => setPhoneOtp(e.target.value.replace(/\D/g, ""))}
+                    onKeyDown={e => { if (e.key === "Enter") confirmPhoneOtp(); }}
+                    className="font-mono text-center text-xl tracking-widest"
+                    autoFocus
+                  />
+                </div>
+                <Button className="w-full bg-primary text-primary-foreground hover:opacity-90 font-bold" onClick={confirmPhoneOtp} disabled={phoneSending}>
+                  <ShieldCheck size={16} className="mr-2" />
+                  {phoneSending ? "Verifying..." : "Confirm Code"}
+                </Button>
+                <button
+                  className="w-full text-xs text-muted-foreground hover:text-primary transition-colors"
+                  onClick={() => { setPhoneOtpStep("idle"); setPhoneOtp(""); setPhoneInfo(""); setPhoneError(""); }}
+                >
+                  Use a different number
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">Phone Number</label>
+                  <Input
+                    type="tel"
+                    placeholder="+2348012345678"
+                    value={phoneInput}
+                    onChange={e => setPhoneInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") requestPhoneOtp(); }}
+                    className="font-mono"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Include country code, e.g. +234 (Nigeria), +1 (USA), +44 (UK)</p>
+                </div>
+                <Button className="w-full bg-primary text-primary-foreground hover:opacity-90 font-bold" onClick={requestPhoneOtp} disabled={phoneSending}>
+                  {phoneSending ? "Sending..." : "Send Verification Code"}
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Change email */}

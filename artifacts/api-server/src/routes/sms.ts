@@ -62,7 +62,7 @@ router.post("/sms/verify/request", requireAuth, async (req, res) => {
 
   const sent = await sendSms(cleaned, `Your GoldMailer verification code is: ${code}. It expires in 10 minutes.`);
   if (!sent) {
-    res.status(503).json({ error: "SMS service unavailable. Please check your Twilio credentials." });
+    res.status(503).json({ error: "SMS service unavailable. Please check your Infobip credentials." });
     return;
   }
 

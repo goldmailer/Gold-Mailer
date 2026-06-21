@@ -3,7 +3,8 @@ import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MessageSquare, Send, Phone, ShieldCheck, RefreshCw } from "lucide-react";
+import { MessageSquare, Send, Phone, RefreshCw } from "lucide-react";
+import { Link } from "wouter";
 
 type SmsMessage = {
   id: number;
@@ -21,14 +22,8 @@ export default function SmsInbox() {
   const [status, setStatus] = useState<{ phoneVerified: boolean; phone: string | null } | null>(null);
   const [messages, setMessages] = useState<SmsMessage[]>([]);
   const [loading, setLoading] = useState(true);
-  const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState("");
-  const [step, setStep] = useState<"idle" | "otp_sent" | "verified">("idle");
-  const [sending, setSending] = useState(false);
   const [replyBody, setReplyBody] = useState("");
   const [replying, setReplying] = useState(false);
-  const [error, setError] = useState("");
-  const [info, setInfo] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const fetchStatus = async () => {
@@ -37,7 +32,6 @@ export default function SmsInbox() {
       if (!res.ok) return;
       const data = await res.json();
       setStatus(data);
-      if (data.phoneVerified) setStep("verified");
     } catch {}
   };
 
@@ -55,58 +49,17 @@ export default function SmsInbox() {
   }, []);
 
   useEffect(() => {
-    if (step !== "verified") return;
+    if (!status?.phoneVerified) return;
     fetchMessages();
     const iv = setInterval(fetchMessages, 8000);
     return () => clearInterval(iv);
-  }, [step]);
+  }, [status?.phoneVerified]);
 
   useEffect(() => {
-    if (step === "verified") {
+    if (status?.phoneVerified) {
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 80);
     }
-  }, [messages.length, step]);
-
-  const requestOtp = async () => {
-    setError("");
-    setInfo("");
-    if (!phone.trim()) { setError("Enter your phone number with country code, e.g. +2348012345678"); return; }
-    setSending(true);
-    try {
-      const res = await fetch("/api/sms/verify/request", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: phone.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error ?? "Failed to send OTP"); return; }
-      setStep("otp_sent");
-      setInfo("A 6-digit code was sent to your phone. Enter it below.");
-    } catch { setError("Network error. Please try again."); }
-    finally { setSending(false); }
-  };
-
-  const confirmOtp = async () => {
-    setError("");
-    if (!otp.trim()) { setError("Enter the code you received."); return; }
-    setSending(true);
-    try {
-      const res = await fetch("/api/sms/verify/confirm", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: otp.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error ?? "Invalid code"); return; }
-      setStep("verified");
-      setStatus({ phoneVerified: true, phone: data.phone });
-      setInfo("");
-      fetchMessages();
-    } catch { setError("Network error. Please try again."); }
-    finally { setSending(false); }
-  };
+  }, [messages.length, status?.phoneVerified]);
 
   const sendReply = async () => {
     if (!replyBody.trim() || replying) return;
@@ -136,14 +89,14 @@ export default function SmsInbox() {
             <MessageSquare size={20} className="text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-black">SMS Inbox</h1>
+            <h1 className="text-2xl font-black">SMS Messages</h1>
             <p className="text-sm text-muted-foreground">
-              {step === "verified" && status?.phone
-                ? `Verified: ${status.phone}`
-                : "Verify your phone to enable 2-way messaging"}
+              {status?.phoneVerified && status.phone
+                ? `Messages for ${status.phone}`
+                : "Your GoldMailer SMS conversation"}
             </p>
           </div>
-          {step === "verified" && (
+          {status?.phoneVerified && (
             <Button variant="ghost" size="sm" className="ml-auto" onClick={fetchMessages}>
               <RefreshCw size={14} />
             </Button>
@@ -154,83 +107,25 @@ export default function SmsInbox() {
           <div className="space-y-3">
             {[1, 2, 3].map(i => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}
           </div>
-        ) : step !== "verified" ? (
-          /* Phone verification flow */
-          <div className="bg-card border border-border rounded-2xl p-6 max-w-md mx-auto">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center">
-                <Phone size={18} className="text-primary" />
-              </div>
-              <div>
-                <p className="font-bold">Verify Your Phone Number</p>
-                <p className="text-xs text-muted-foreground">We'll send a one-time code via SMS</p>
-              </div>
+        ) : !status?.phoneVerified ? (
+          /* Not verified — prompt to go to Settings */
+          <div className="bg-card border border-border rounded-2xl p-8 max-w-md mx-auto text-center">
+            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <Phone size={24} className="text-primary" />
             </div>
-
-            {error && (
-              <div className="mb-4 px-3 py-2 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive">
-                {error}
-              </div>
-            )}
-            {info && (
-              <div className="mb-4 px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20 text-sm text-green-400">
-                {info}
-              </div>
-            )}
-
-            {step === "idle" && (
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">Phone Number</label>
-                  <Input
-                    type="tel"
-                    placeholder="+2348012345678"
-                    value={phone}
-                    onChange={e => setPhone(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter") requestOtp(); }}
-                    className="font-mono"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">Include country code, e.g. +234 for Nigeria</p>
-                </div>
-                <Button className="w-full" onClick={requestOtp} disabled={sending}>
-                  {sending ? "Sending..." : "Send Verification Code"}
-                </Button>
-              </div>
-            )}
-
-            {step === "otp_sent" && (
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">6-Digit Code</label>
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={6}
-                    placeholder="123456"
-                    value={otp}
-                    onChange={e => setOtp(e.target.value.replace(/\D/g, ""))}
-                    onKeyDown={e => { if (e.key === "Enter") confirmOtp(); }}
-                    className="font-mono text-center text-xl tracking-widest"
-                    autoFocus
-                  />
-                </div>
-                <Button className="w-full" onClick={confirmOtp} disabled={sending}>
-                  <ShieldCheck size={16} className="mr-2" />
-                  {sending ? "Verifying..." : "Verify Code"}
-                </Button>
-                <button
-                  className="w-full text-xs text-muted-foreground hover:text-primary transition-colors"
-                  onClick={() => { setStep("idle"); setOtp(""); setInfo(""); setError(""); }}
-                >
-                  Use a different number
-                </button>
-              </div>
-            )}
+            <h2 className="font-bold text-lg mb-2">Phone Not Verified</h2>
+            <p className="text-sm text-muted-foreground mb-6">
+              To use SMS messaging, add and verify your phone number in your profile settings. It works for any country worldwide.
+            </p>
+            <Link href="/settings">
+              <Button className="w-full bg-primary text-primary-foreground hover:opacity-90 font-bold">
+                Go to Settings to Verify
+              </Button>
+            </Link>
           </div>
         ) : (
-          /* Verified: show SMS chat */
+          /* Verified — show SMS chat */
           <div className="flex flex-col bg-card border border-border rounded-2xl overflow-hidden" style={{ height: "calc(100vh - 220px)", minHeight: 400 }}>
-            {/* Messages area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {messages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center py-10">
@@ -262,7 +157,6 @@ export default function SmsInbox() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Reply input */}
             <div className="border-t border-border p-3 flex gap-2 shrink-0">
               <Input
                 value={replyBody}

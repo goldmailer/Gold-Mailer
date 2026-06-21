@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { User, Camera, Check, ArrowLeft, ChevronRight, Globe, Phone, UserCircle2 } from "lucide-react";
+import { User, Camera, Check, ArrowLeft, ChevronRight, Globe, Phone, UserCircle2, ShieldCheck } from "lucide-react";
 import { ALL_COUNTRIES } from "@/lib/countries";
 
 const schema = z.object({
@@ -24,10 +24,6 @@ const schema = z.object({
   avatarUrl: z.string().optional(),
   country: z.string().min(1, "Country is required"),
   phone: z.string().optional(),
-}).superRefine((data, ctx) => {
-  if (data.country === "NG" && !data.phone?.trim()) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Phone number is required for Nigerian accounts", path: ["phone"] });
-  }
 });
 type FormData = z.infer<typeof schema>;
 
@@ -96,6 +92,13 @@ export default function SetupProfile() {
   const [preview, setPreview] = useState<string>("");
   const [step, setStep] = useState(0);
 
+  // Phone verification state
+  const [phoneOtpStep, setPhoneOtpStep] = useState<"idle" | "sent" | "verified">("idle");
+  const [phoneOtp, setPhoneOtp] = useState("");
+  const [phoneSending, setPhoneSending] = useState(false);
+  const [phoneError, setPhoneError] = useState("");
+  const [phoneInfo, setPhoneInfo] = useState("");
+
   const { isLoading } = useGetMe();
 
   const form = useForm<FormData>({
@@ -125,20 +128,63 @@ export default function SetupProfile() {
     form.setValue("avatarUrl", "");
   };
 
+  const requestPhoneOtp = async () => {
+    setPhoneError("");
+    setPhoneInfo("");
+    const phone = form.getValues("phone");
+    if (!phone?.trim()) { setPhoneError("Enter your phone number with country code, e.g. +2348012345678"); return; }
+    setPhoneSending(true);
+    try {
+      const res = await fetch("/api/sms/verify/request", {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: phone.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setPhoneError(data.error ?? "Failed to send code"); return; }
+      setPhoneOtpStep("sent");
+      setPhoneInfo("A 6-digit code was sent to your phone.");
+    } catch { setPhoneError("Network error. Please try again."); }
+    finally { setPhoneSending(false); }
+  };
+
+  const confirmPhoneOtp = async () => {
+    setPhoneError("");
+    if (!phoneOtp.trim()) { setPhoneError("Enter the code you received."); return; }
+    setPhoneSending(true);
+    try {
+      const res = await fetch("/api/sms/verify/confirm", {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: phoneOtp.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setPhoneError(data.error ?? "Invalid code. Try again."); return; }
+      setPhoneOtpStep("verified");
+      setPhoneInfo("");
+    } catch { setPhoneError("Network error. Please try again."); }
+    finally { setPhoneSending(false); }
+  };
+
   const goNext = async () => {
     if (step === 0) {
       const ok = await form.trigger(["firstName", "lastName"]);
       if (!ok) return;
     }
     if (step === 1) {
-      const ok = await form.trigger(["country", "phone"]);
+      const ok = await form.trigger(["country"]);
       if (!ok) return;
+      const phone = form.getValues("phone");
+      if (phone?.trim() && phoneOtpStep !== "verified") {
+        setPhoneError("Please verify your phone number before continuing, or clear the phone field to skip.");
+        return;
+      }
     }
     setStep(s => s + 1);
   };
 
   const onSubmit = (data: FormData) => {
-    mutation.mutate({ data });
+    mutation.mutate({ data: { ...data, phone: phoneOtpStep === "verified" ? data.phone : undefined } });
   };
 
   if (isLoading) return <ProfileSkeleton />;
@@ -241,25 +287,92 @@ export default function SetupProfile() {
                   </FormItem>
                 )} />
 
-                <FormField control={form.control} name="phone" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Phone Number{" "}
-                      {country === "NG"
-                        ? <span className="text-destructive">*</span>
-                        : <span className="text-muted-foreground text-xs">(optional)</span>
-                      }
-                    </FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Phone size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                        <Input {...field} type="tel" placeholder="+234 800 000 0000" data-testid="input-phone" className="pl-9" />
+                {/* Phone + inline OTP verification */}
+                <div className="space-y-2">
+                  <FormField control={form.control} name="phone" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center justify-between">
+                        <span>Phone Number <span className="text-muted-foreground text-xs font-normal">(optional)</span></span>
+                        {phoneOtpStep === "verified" && (
+                          <span className="flex items-center gap-1 text-xs font-semibold text-green-400">
+                            <ShieldCheck size={12} /> Verified
+                          </span>
+                        )}
+                      </FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Phone size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                          <Input
+                            {...field}
+                            type="tel"
+                            placeholder="+2348012345678"
+                            data-testid="input-phone"
+                            className="pl-9"
+                            disabled={phoneOtpStep === "verified"}
+                            onChange={e => { field.onChange(e); setPhoneOtpStep("idle"); setPhoneOtp(""); setPhoneError(""); setPhoneInfo(""); }}
+                          />
+                        </div>
+                      </FormControl>
+                      <p className="text-xs text-muted-foreground">Include country code — works for all countries worldwide</p>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+
+                  {phoneError && (
+                    <div className="px-3 py-2 rounded-lg bg-destructive/10 border border-destructive/20 text-xs text-destructive">
+                      {phoneError}
+                    </div>
+                  )}
+                  {phoneInfo && (
+                    <div className="px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20 text-xs text-green-400">
+                      {phoneInfo}
+                    </div>
+                  )}
+
+                  {phoneOtpStep === "verified" ? (
+                    <div className="flex items-center gap-2 p-2.5 bg-green-500/5 border border-green-500/20 rounded-xl">
+                      <ShieldCheck size={15} className="text-green-400 shrink-0" />
+                      <p className="text-xs text-green-400 font-medium">Phone number verified</p>
+                      <button type="button" className="ml-auto text-xs text-muted-foreground hover:text-primary"
+                        onClick={() => { setPhoneOtpStep("idle"); setPhoneOtp(""); form.setValue("phone", ""); }}>
+                        Change
+                      </button>
+                    </div>
+                  ) : phoneOtpStep === "sent" ? (
+                    <div className="space-y-2">
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        placeholder="Enter 6-digit code"
+                        value={phoneOtp}
+                        onChange={e => setPhoneOtp(e.target.value.replace(/\D/g, ""))}
+                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); confirmPhoneOtp(); }}}
+                        className="font-mono text-center tracking-widest"
+                        autoFocus
+                      />
+                      <div className="flex gap-2">
+                        <Button type="button" variant="outline" size="sm" className="flex-1"
+                          onClick={() => { setPhoneOtpStep("idle"); setPhoneOtp(""); setPhoneInfo(""); setPhoneError(""); }}>
+                          Back
+                        </Button>
+                        <Button type="button" size="sm" className="flex-1 bg-primary text-primary-foreground font-bold"
+                          onClick={confirmPhoneOtp} disabled={phoneSending}>
+                          <ShieldCheck size={14} className="mr-1" />
+                          {phoneSending ? "Verifying..." : "Confirm Code"}
+                        </Button>
                       </div>
-                    </FormControl>
-                    {country === "NG" && <p className="text-xs text-amber-400">Required for Nigerian accounts</p>}
-                    <FormMessage />
-                  </FormItem>
-                )} />
+                    </div>
+                  ) : (
+                    form.watch("phone")?.trim() && (
+                      <Button type="button" variant="outline" size="sm" className="w-full"
+                        onClick={requestPhoneOtp} disabled={phoneSending}>
+                        <Phone size={14} className="mr-2" />
+                        {phoneSending ? "Sending..." : "Send Verification Code"}
+                      </Button>
+                    )
+                  )}
+                </div>
 
                 <div className="flex gap-3">
                   <Button type="button" variant="outline" onClick={() => setStep(0)} className="flex-1 py-5 gap-2">
