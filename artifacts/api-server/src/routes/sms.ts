@@ -4,29 +4,34 @@ import { requireAuth, requireAdmin } from "../lib/auth-middleware";
 
 const router = Router();
 
-function getTwilioClient() {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-  if (!accountSid || !authToken) return null;
-  const twilio = require("twilio");
-  return twilio(accountSid, authToken);
-}
-
-function getTwilioPhoneNumber() {
-  return process.env.TWILIO_PHONE_NUMBER ?? null;
-}
-
 function generateOtp(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
-async function sendSms(to: string, body: string): Promise<boolean> {
-  const client = getTwilioClient();
-  const from = getTwilioPhoneNumber();
-  if (!client || !from) return false;
+async function sendSms(to: string, text: string): Promise<boolean> {
+  const apiKey = process.env.INFOBIP_API_KEY;
+  const baseUrl = process.env.INFOBIP_BASE_URL;
+  const sender = process.env.INFOBIP_SENDER ?? "GoldMailer";
+  if (!apiKey || !baseUrl) return false;
   try {
-    await client.messages.create({ to, from, body });
-    return true;
+    const res = await fetch(`https://${baseUrl}/sms/2/text/advanced`, {
+      method: "POST",
+      headers: {
+        "Authorization": `App ${apiKey}`,
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: JSON.stringify({
+        messages: [
+          {
+            from: sender,
+            destinations: [{ to }],
+            text,
+          },
+        ],
+      }),
+    });
+    return res.ok;
   } catch {
     return false;
   }
@@ -154,10 +159,12 @@ router.post("/sms/messages/reply", requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
-// POST /sms/webhook — Twilio incoming SMS webhook (no auth required, validated by Twilio signature)
+// POST /sms/webhook — Infobip incoming SMS webhook (no auth required)
 router.post("/sms/webhook", async (req, res) => {
-  const from = req.body?.From ?? "";
-  const body = req.body?.Body ?? "";
+  const results = req.body?.results ?? [];
+  const first = results[0] ?? {};
+  const from = first.from ?? "";
+  const body = first.text ?? first.cleanText ?? "";
 
   if (from && body) {
     const userResult = await pool.query(
@@ -173,8 +180,7 @@ router.post("/sms/webhook", async (req, res) => {
     }
   }
 
-  res.set("Content-Type", "text/xml");
-  res.send(`<?xml version="1.0" encoding="UTF-8"?><Response></Response>`);
+  res.json({ success: true });
 });
 
 // GET /admin/sms/conversations — admin views all users with SMS conversations
