@@ -29,6 +29,7 @@ import Tasks from "@/pages/Tasks";
 import Leaderboard from "@/pages/Leaderboard";
 import Inbox from "@/pages/Inbox";
 import StakeHistory from "@/pages/StakeHistory";
+import SmsInbox from "@/pages/SmsInbox";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -94,6 +95,9 @@ function Router() {
       </Route>
       <Route path="/stake-history">
         <ProtectedRoute><StakeHistory /></ProtectedRoute>
+      </Route>
+      <Route path="/sms-inbox">
+        <ProtectedRoute><SmsInbox /></ProtectedRoute>
       </Route>
       <Route path="/admin" component={Admin} />
       <Route component={NotFound} />

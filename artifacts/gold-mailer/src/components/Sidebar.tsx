@@ -5,7 +5,7 @@ import { useLogout, getGetMeQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   LayoutDashboard, CreditCard, TrendingUp, ArrowDownCircle,
-  ArrowUpCircle, List, Settings, LogOut, Menu, X, User, Users, ArrowLeftRight, ClipboardList, Trophy, Bell, History
+  ArrowUpCircle, List, Settings, LogOut, Menu, X, User, Users, ArrowLeftRight, ClipboardList, Trophy, Bell, History, MessageSquare
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SupportChat } from "@/components/SupportChat";
@@ -23,6 +23,7 @@ export function Sidebar() {
   const navItems = [
     { href: "/dashboard", label: t("nav.dashboard"), icon: LayoutDashboard },
     { href: "/inbox", label: "Inbox", icon: Bell, badge: unreadCount },
+    { href: "/sms-inbox", label: "SMS Messages", icon: MessageSquare },
     { href: "/cards", label: t("nav.viewCards"), icon: CreditCard },
     { href: "/stake", label: t("nav.stakeNow"), icon: TrendingUp },
     { href: "/stake-history", label: "Stake History", icon: History },

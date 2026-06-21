@@ -169,6 +169,27 @@ pool.query(`
     "earned_amount" numeric(10,2) DEFAULT 0.70,
     "created_at" timestamp NOT NULL DEFAULT now()
   );
+
+  CREATE TABLE IF NOT EXISTS "phone_verifications" (
+    "id" serial PRIMARY KEY,
+    "user_id" integer NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+    "phone" text NOT NULL,
+    "code" text NOT NULL,
+    "used" boolean NOT NULL DEFAULT false,
+    "expires_at" timestamp NOT NULL,
+    "created_at" timestamp NOT NULL DEFAULT now()
+  );
+
+  CREATE TABLE IF NOT EXISTS "sms_messages" (
+    "id" serial PRIMARY KEY,
+    "user_id" integer NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+    "direction" text NOT NULL DEFAULT 'inbound',
+    "body" text NOT NULL,
+    "created_at" timestamp NOT NULL DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS "IDX_sms_messages_user_id" ON "sms_messages" ("user_id");
+
+  ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "phone_verified" boolean NOT NULL DEFAULT false;
 `)
   .then(() => pool.query(`
     DO $$

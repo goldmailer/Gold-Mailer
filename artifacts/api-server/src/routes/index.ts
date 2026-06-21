@@ -12,6 +12,7 @@ import tasksRouter from "./tasks";
 import referralRouter from "./referral";
 import leaderboardRouter from "./leaderboard";
 import inboxRouter from "./inbox";
+import smsRouter from "./sms";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use(tasksRouter);
 router.use(referralRouter);
 router.use(leaderboardRouter);
 router.use(inboxRouter);
+router.use(smsRouter);
 
 export default router;
