@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ALL_COUNTRIES } from "@/lib/countries";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus, Check, X, ArrowLeft, Settings, Users, List, Pencil, ToggleLeft, ToggleRight, MessageSquare, Send, ShieldCheck, ClipboardList, Eye, Clock } from "lucide-react";
+import { Trash2, Plus, Check, X, ArrowLeft, Settings, Users, List, Pencil, ToggleLeft, ToggleRight, MessageSquare, Send, ShieldCheck, ClipboardList, Eye, Clock, Phone } from "lucide-react";
 import { Link } from "wouter";
 
 function fmt(n: number) {
@@ -152,7 +152,7 @@ function EditUserModal({ user, onClose }: { user: any; onClose: () => void }) {
 export default function Admin() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState<"users" | "transactions" | "settings" | "support" | "kyc" | "tasks">("users");
+  const [tab, setTab] = useState<"users" | "transactions" | "settings" | "support" | "kyc" | "tasks" | "sms">("users");
   const [countryFilter, setCountryFilter] = useState<string>("all");
   const [topUpUserId, setTopUpUserId] = useState<number | null>(null);
   const [editUser, setEditUser] = useState<any | null>(null);
@@ -293,6 +293,56 @@ export default function Admin() {
     }
   };
 
+  // SMS state
+  const [smsUserId, setSmsUserId] = useState<number | null>(null);
+  const [smsInput, setSmsInput] = useState("");
+  const [smsSending, setSmsSending] = useState(false);
+  const smsMsgsEndRef = useRef<HTMLDivElement>(null);
+
+  const { data: smsConversations = [] } = useQuery({
+    queryKey: ["admin-sms-conversations"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/sms/conversations", { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    refetchInterval: tab === "sms" ? 6000 : false,
+    enabled: tab === "sms",
+  });
+
+  const { data: smsMessages = [], refetch: refetchSmsMessages } = useQuery({
+    queryKey: ["admin-sms-messages", smsUserId],
+    queryFn: async () => {
+      if (!smsUserId) return [];
+      const res = await fetch(`/api/admin/sms/conversations/${smsUserId}`, { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!smsUserId,
+    refetchInterval: 4000,
+  });
+
+  useEffect(() => {
+    setTimeout(() => smsMsgsEndRef.current?.scrollIntoView({ behavior: "smooth" }), 80);
+  }, [smsMessages]);
+
+  const sendSmsReply = async () => {
+    if (!smsInput.trim() || !smsUserId || smsSending) return;
+    setSmsSending(true);
+    try {
+      await fetch(`/api/admin/sms/conversations/${smsUserId}/send`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ body: smsInput.trim() }),
+      });
+      setSmsInput("");
+      refetchSmsMessages();
+    } finally {
+      setSmsSending(false);
+    }
+  };
+
   const [depositCountry, setDepositCountry] = useState("DEFAULT");
   const [depositType, setDepositType] = useState<"bank" | "paypal">("paypal");
   const [depositBankForm, setDepositBankForm] = useState({ bankName: "", accountNumber: "", accountName: "" });
@@ -398,6 +448,7 @@ export default function Admin() {
     { key: "tasks", label: "Tasks", icon: ClipboardList, badge: pendingTasksCount },
     { key: "settings", label: "Settings", icon: Settings },
     { key: "support", label: "Support", icon: MessageSquare, badge: totalUnread },
+    { key: "sms", label: "SMS", icon: Phone },
   ] as const;
 
   return (
@@ -1081,6 +1132,116 @@ export default function Admin() {
                 <div className="text-center">
                   <MessageSquare size={36} className="text-muted-foreground mx-auto mb-3" />
                   <p className="text-muted-foreground text-sm">Select a conversation to view and reply</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── SMS TAB ── */}
+        {tab === "sms" && (
+          <div className="flex flex-col lg:flex-row gap-4" style={{ minHeight: 520 }}>
+            {/* Conversation list */}
+            <div className="lg:w-72 shrink-0 bg-card border border-border rounded-2xl overflow-hidden flex flex-col">
+              <div className="px-4 py-3 border-b border-border">
+                <p className="font-bold text-sm">SMS Conversations</p>
+                <p className="text-xs text-muted-foreground">Users with verified phones</p>
+              </div>
+              <div className="overflow-y-auto flex-1">
+                {!(smsConversations as any[]).length ? (
+                  <div className="p-6 text-center">
+                    <Phone size={28} className="text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">No SMS conversations yet.</p>
+                    <p className="text-xs text-muted-foreground mt-1">Users must verify their phone first.</p>
+                  </div>
+                ) : (
+                  (smsConversations as any[]).map((conv: any) => (
+                    <button
+                      key={conv.userId}
+                      onClick={() => setSmsUserId(conv.userId)}
+                      className={`w-full text-left px-4 py-3 border-b border-border/50 hover:bg-accent transition-colors ${smsUserId === conv.userId ? "bg-primary/10 border-l-2 border-l-primary" : ""}`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-sm truncate">{conv.firstName ?? ""} {conv.lastName ?? ""}</p>
+                          <p className="text-xs text-muted-foreground truncate">{conv.phone}</p>
+                          <p className="text-xs text-muted-foreground truncate mt-0.5 italic">
+                            {conv.lastDirection === "inbound" ? "→ " : "← "}{conv.lastMessage}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Message panel */}
+            {smsUserId ? (
+              <div className="flex-1 bg-card border border-border rounded-2xl flex flex-col overflow-hidden" style={{ minHeight: 400 }}>
+                <div className="px-4 py-3 border-b border-border shrink-0">
+                  {(() => {
+                    const c = (smsConversations as any[]).find((ch: any) => ch.userId === smsUserId);
+                    return c ? (
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center">
+                          <Phone size={14} className="text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-sm">{c.firstName ?? ""} {c.lastName ?? ""}</p>
+                          <p className="text-xs text-muted-foreground">{c.phone} · {c.email}</p>
+                        </div>
+                        <span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 font-medium">Verified</span>
+                      </div>
+                    ) : null;
+                  })()}
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                  {(smsMessages as any[]).map((m: any) => (
+                    <div key={m.id} className={`flex ${m.direction === "inbound" ? "justify-start" : "justify-end"}`}>
+                      <div className={`max-w-[78%] px-3 py-2 rounded-2xl text-sm ${
+                        m.direction === "inbound"
+                          ? "bg-muted text-foreground rounded-bl-sm border border-border"
+                          : "bg-primary text-primary-foreground rounded-br-sm"
+                      }`}>
+                        <p className="text-xs font-bold mb-0.5 opacity-60">
+                          {m.direction === "inbound" ? "User (SMS)" : "You (Sent via SMS)"}
+                        </p>
+                        <p className="break-words">{m.body}</p>
+                        <p className="text-xs opacity-40 mt-1 text-right">
+                          {new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={smsMsgsEndRef} />
+                </div>
+
+                <div className="border-t border-border p-3 flex gap-2 shrink-0">
+                  <Input
+                    value={smsInput}
+                    onChange={e => setSmsInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendSmsReply(); } }}
+                    placeholder="Type SMS to send to this user..."
+                    className="flex-1 text-sm"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={sendSmsReply}
+                    disabled={!smsInput.trim() || smsSending}
+                    className="bg-primary text-primary-foreground gap-1"
+                  >
+                    <Phone size={13} />
+                    <Send size={13} />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 bg-card border border-border rounded-2xl flex items-center justify-center">
+                <div className="text-center">
+                  <Phone size={36} className="text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground text-sm">Select a conversation to view and reply via SMS</p>
                 </div>
               </div>
             )}

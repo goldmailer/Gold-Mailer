@@ -55,11 +55,10 @@ export default function SmsInbox() {
   }, []);
 
   useEffect(() => {
-    if (step === "verified") {
-      fetchMessages();
-      const iv = setInterval(fetchMessages, 8000);
-      return () => clearInterval(iv);
-    }
+    if (step !== "verified") return;
+    fetchMessages();
+    const iv = setInterval(fetchMessages, 8000);
+    return () => clearInterval(iv);
   }, [step]);
 
   useEffect(() => {
