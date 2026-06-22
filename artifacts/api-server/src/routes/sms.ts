@@ -8,11 +8,15 @@ function generateOtp(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
-async function sendSms(to: string, text: string): Promise<boolean> {
+async function sendSms(to: string, text: string): Promise<{ ok: boolean; error?: string }> {
   const apiKey = process.env.INFOBIP_API_KEY;
-  const baseUrl = process.env.INFOBIP_BASE_URL;
+  const rawBaseUrl = process.env.INFOBIP_BASE_URL;
   const sender = process.env.INFOBIP_SENDER ?? "GoldMailer";
-  if (!apiKey || !baseUrl) return false;
+  if (!apiKey || !rawBaseUrl) return { ok: false, error: "Missing INFOBIP_API_KEY or INFOBIP_BASE_URL" };
+
+  // Strip any protocol prefix the user may have included
+  const baseUrl = rawBaseUrl.replace(/^https?:\/\//i, "").replace(/\/$/, "");
+
   try {
     const res = await fetch(`https://${baseUrl}/sms/2/text/advanced`, {
       method: "POST",
@@ -22,18 +26,14 @@ async function sendSms(to: string, text: string): Promise<boolean> {
         "Accept": "application/json",
       },
       body: JSON.stringify({
-        messages: [
-          {
-            from: sender,
-            destinations: [{ to }],
-            text,
-          },
-        ],
+        messages: [{ from: sender, destinations: [{ to }], text }],
       }),
     });
-    return res.ok;
-  } catch {
-    return false;
+    if (res.ok) return { ok: true };
+    const body = await res.text().catch(() => "");
+    return { ok: false, error: `Infobip ${res.status}: ${body.slice(0, 200)}` };
+  } catch (e: any) {
+    return { ok: false, error: e?.message ?? "Network error" };
   }
 }
 
@@ -61,8 +61,8 @@ router.post("/sms/verify/request", requireAuth, async (req, res) => {
   );
 
   const sent = await sendSms(cleaned, `Your GoldMailer verification code is: ${code}. It expires in 10 minutes.`);
-  if (!sent) {
-    res.status(503).json({ error: "SMS service unavailable. Please check your Infobip credentials." });
+  if (!sent.ok) {
+    res.status(503).json({ error: `SMS delivery failed: ${sent.error ?? "Unknown error"}` });
     return;
   }
 
@@ -256,7 +256,7 @@ router.post("/admin/sms/conversations/:userId/send", requireAdmin, async (req, r
   );
 
   const sent = await sendSms(userRow.rows[0].phone, body.trim());
-  res.json({ success: true, smsSent: sent });
+  res.json({ success: true, smsSent: sent.ok });
 });
 
 export default router;
