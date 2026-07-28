@@ -23,6 +23,7 @@ import Transactions from "@/pages/Transactions";
 import Settings from "@/pages/Settings";
 import Referrals from "@/pages/Referrals";
 import Exchange from "@/pages/Exchange";
+import Crypto from "@/pages/Crypto";
 import Admin from "@/pages/Admin";
 import KycUpload from "@/pages/KycUpload";
 import Tasks from "@/pages/Tasks";
@@ -79,6 +80,9 @@ function Router() {
       </Route>
       <Route path="/exchange">
         <ProtectedRoute><Exchange /></ProtectedRoute>
+      </Route>
+      <Route path="/crypto">
+        <ProtectedRoute><Crypto /></ProtectedRoute>
       </Route>
 
       <Route path="/kyc">

@@ -6,7 +6,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, ExternalLink, Bitcoin } from "lucide-react";
 import { getConfig, getLocalCurrency } from "@/lib/currency";
 import { useLanguage } from "@/i18n/LanguageContext";
 
@@ -57,7 +57,7 @@ export default function Deposit() {
       <div className="min-h-screen bg-background">
         <Sidebar />
         <main className="pt-16 max-w-xl mx-auto px-4 sm:pl-16 py-8 flex items-center justify-center min-h-[70vh]">
-          <div className="text-center bg-card border border-border rounded-2xl p-10">
+          <div className="text-center glass-card rounded-2xl p-10">
             <div className="w-16 h-16 rounded-full bg-green-500/15 flex items-center justify-center mx-auto mb-5">
               <Check size={32} className="text-green-400" />
             </div>
@@ -112,11 +112,6 @@ export default function Deposit() {
           <span className="text-xs text-muted-foreground">Equivalent in USD</span>
           <span className="text-sm font-black text-primary">≈ ${usdEquivalent.toFixed(2)} USD</span>
         </div>
-      )}
-      {localCurrency && !isNGN && (
-        <p className="text-xs text-muted-foreground mt-1">
-          Rate: 1 USD = {localCurrency.rate.toLocaleString()} {localCurrency.name}
-        </p>
       )}
     </div>
   );
@@ -199,9 +194,46 @@ export default function Deposit() {
       <Sidebar />
       <main className="pt-16 max-w-xl mx-auto px-4 sm:pl-16 py-8">
         <h1 className="text-2xl font-black mb-1">{t("deposit.title")}</h1>
-        <p className="text-muted-foreground text-sm mb-8">{subtitle}</p>
+        <p className="text-muted-foreground text-sm mb-6">{subtitle}</p>
 
-        <div className="bg-card border border-border rounded-2xl p-6 mb-4">
+        {/* ── Paybis: Buy Bitcoin section ─────────────────────────── */}
+        <div className="glass-card rounded-2xl p-5 mb-5 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-orange-500/8 via-amber-500/5 to-yellow-500/5 rounded-2xl" />
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-orange-500/15 flex items-center justify-center shrink-0">
+                <Bitcoin size={20} className="text-orange-400" />
+              </div>
+              <div>
+                <p className="font-bold text-sm">Buy Bitcoin &amp; Crypto</p>
+                <p className="text-xs text-muted-foreground">Instant purchase via Paybis — card, bank, or Apple Pay</p>
+              </div>
+            </div>
+            <a
+              href="https://paybis.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full py-2.5 bg-orange-500 hover:bg-orange-400 text-white text-sm font-bold rounded-xl transition-colors"
+            >
+              <Bitcoin size={15} />
+              Top Up with Paybis
+              <ExternalLink size={13} />
+            </a>
+            <p className="text-[10px] text-muted-foreground text-center mt-2">
+              Secure payments via paybis.com · 250+ coins supported
+            </p>
+          </div>
+        </div>
+
+        {/* ── Divider ─────────────────────────────────────────────── */}
+        <div className="flex items-center gap-3 mb-5">
+          <div className="flex-1 h-px bg-border" />
+          <span className="text-xs text-muted-foreground">or deposit via bank / PayPal</span>
+          <div className="flex-1 h-px bg-border" />
+        </div>
+
+        {/* ── Manual deposit flow ─────────────────────────────────── */}
+        <div className="glass-card rounded-2xl p-6 mb-4">
           <div className="flex items-center gap-3 mb-5">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step >= 1 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>1</div>
             <h2 className="font-bold">{stepOneLabel}</h2>
@@ -210,7 +242,7 @@ export default function Deposit() {
         </div>
 
         {step === 2 && (
-          <div className="bg-card border border-border rounded-2xl p-6">
+          <div className="glass-card rounded-2xl p-6">
             <div className="flex items-center gap-3 mb-5">
               <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">2</div>
               <h2 className="font-bold">{t("deposit.step2")}</h2>

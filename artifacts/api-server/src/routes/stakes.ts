@@ -2,7 +2,7 @@ import { Router } from "express";
 import { db, stakesTable, usersTable, transactionsTable } from "@workspace/db";
 import { eq, sql, and, sum } from "drizzle-orm";
 import { requireAuth } from "../lib/auth-middleware";
-import { getCountryConfig } from "../lib/currency";
+import { getCountryConfig, calcProfit } from "../lib/currency";
 
 const router = Router();
 
@@ -40,7 +40,8 @@ router.post("/stakes", requireAuth, async (req, res) => {
     res.status(401).json({ error: "User not found" });
     return;
   }
-  const cfg = getCountryConfig(users[0].country);
+  const user = users[0];
+  const cfg = getCountryConfig(user.country);
 
   if (isNaN(amount) || amount < cfg.minStake) {
     res.status(400).json({ error: `Minimum stake amount is ${cfg.symbol}${cfg.minStake.toLocaleString()}` });
@@ -67,7 +68,7 @@ router.post("/stakes", requireAuth, async (req, res) => {
     return;
   }
 
-  const balance = parseFloat(users[0].balance);
+  const balance = parseFloat(user.balance);
   if (balance < amount) {
     res.status(400).json({ error: "Insufficient balance" });
     return;
@@ -75,7 +76,9 @@ router.post("/stakes", requireAuth, async (req, res) => {
 
   const endDate = new Date();
   endDate.setDate(endDate.getDate() + STAKE_DAYS);
-  const profit = Math.floor((amount / cfg.minStake) * cfg.baseProfit);
+
+  // Use plan-based profit calculation
+  const profit = calcProfit(amount, user.country);
 
   const inserted = await db.insert(stakesTable).values({
     userId: req.session.userId!,

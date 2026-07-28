@@ -5,6 +5,7 @@ import {
   getGetDashboardQueryKey, getGetStakesQueryKey, getGetMeQueryKey
 } from "@workspace/api-client-react";
 import { Sidebar } from "@/components/Sidebar";
+import { DailyDiamond } from "@/components/DailyDiamond";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -578,11 +579,16 @@ export default function Dashboard() {
             ))}
           </div>
 
-          {/* ── NEW: Account Health + Platform Stats (2-col) ─────── */}
+          {/* ── Daily Diamond ───────────────────────────────────── */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <AccountHealth user={user} hasStakes={hasActiveStakes} isNG={isNG} />
-            <PlatformStats />
+            <DailyDiamond />
+            <div className="grid grid-cols-1 gap-6">
+              <AccountHealth user={user} hasStakes={hasActiveStakes} isNG={isNG} />
+            </div>
           </div>
+
+          {/* ── Platform Stats ──────────────────────────────────── */}
+          <PlatformStats />
 
           {/* ── NEW: Investment Calculator ──────────────────────────── */}
           {!isKycLocked && (

@@ -5,3 +5,4 @@
 - [Nigeria-only account flow](ng-flow.md) — NG users skip add-card after profile setup (redirect to /dashboard); add-card prompt comes after KYC approval only. SetupProfile.tsx checks country === "NG" on success.
 - [Email system](email-system.md) — All emails in email.ts (Resend); sendUserKycSubmittedEmail + sendUserAccountVerifiedEmail added; proper anti-spam headers on all emails (List-Unsubscribe, Precedence: transactional, X-Entity-Ref-ID); RESEND_API_KEY env var required.
 - [Daily NG cron](daily-ng-cron.md) — Rotates through 7 motivational inbox messages, fires 30s after startup then every 24h, targets users WHERE country = 'NG' AND is_verified = true. Defined at bottom of app.ts.
+- [Investment plans](investment-plans.md) — 10-tier plan system (replaces freeform input); NG ₦1k–₦10k at 15.8× weekly, USD $10–$1k at 15×; plans array in currency.ts, calcProfit() in backend.
