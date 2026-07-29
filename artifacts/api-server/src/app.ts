@@ -190,6 +190,7 @@ pool.query(`
   CREATE INDEX IF NOT EXISTS "IDX_sms_messages_user_id" ON "sms_messages" ("user_id");
 
   ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "phone_verified" boolean NOT NULL DEFAULT false;
+  ALTER TABLE "stakes" ADD COLUMN IF NOT EXISTS "auto_renew" boolean NOT NULL DEFAULT false;
 `)
   .then(() => pool.query(`
     DO $$
@@ -364,6 +365,96 @@ function startDailyNgCron() {
 
 // Start cron after a short delay to ensure DB is ready
 setTimeout(startDailyNgCron, 5000);
+
+// ── Auto-Renewal Cron ────────────────────────────────────────────────────────
+// Runs every 10 minutes. Finds matured active stakes with auto_renew=true and processes them.
+let autoRenewalCronStarted = false;
+function startAutoRenewalCron() {
+  if (autoRenewalCronStarted) return;
+  autoRenewalCronStarted = true;
+
+  const processRenewals = async () => {
+    try {
+      // Find all matured active stakes with auto_renew enabled
+      const matured = await pool.query(
+        `SELECT s.id, s.user_id, s.amount, s.profit, u.balance, u.country
+         FROM stakes s
+         JOIN users u ON u.id = s.user_id
+         WHERE s.status = 'active'
+           AND s.end_date <= NOW()
+           AND s.auto_renew = true`,
+      );
+      if (matured.rows.length === 0) return;
+
+      for (const stake of matured.rows) {
+        const amount = parseFloat(stake.amount);
+        const profit = parseFloat(stake.profit);
+        const balance = parseFloat(stake.balance);
+        const total = amount + profit; // what user earns from matured stake
+
+        if (balance + total >= amount) {
+          // Credit matured stake proceeds first, then deduct for renewal
+          const netProfit = profit; // user keeps the profit
+          const endDate = new Date();
+          endDate.setDate(endDate.getDate() + 7);
+
+          await pool.query(`
+            UPDATE stakes SET status = 'completed' WHERE id = $1
+          `, [stake.id]);
+
+          // Credit profit to balance, keep principal cycling
+          await pool.query(`
+            UPDATE users SET balance = balance + $1 WHERE id = $2
+          `, [netProfit, stake.user_id]);
+
+          // Create new stake for same amount
+          await pool.query(`
+            INSERT INTO stakes (user_id, amount, profit, status, end_date, auto_renew)
+            VALUES ($1, $2, $3, 'active', $4, true)
+          `, [stake.user_id, amount, profit, endDate.toISOString()]);
+
+          // Send inbox notification
+          await pool.query(`
+            INSERT INTO user_inbox (user_id, title, message, type)
+            VALUES ($1, $2, $3, 'staking')
+          `, [
+            stake.user_id,
+            '🔄 Plan Auto-Renewed!',
+            `Your plan has been automatically renewed for another 7 days. Profit of ${profit} credited to your balance. Keep earning!`,
+          ]);
+
+          logger.info({ userId: stake.user_id, amount, profit }, "Auto-renewal processed");
+        } else {
+          // Insufficient balance — mark as matured (no renewal)
+          await pool.query(`UPDATE stakes SET status = 'completed' WHERE id = $1`, [stake.id]);
+          // Credit what they earned
+          await pool.query(`UPDATE users SET balance = balance + $1 WHERE id = $2`, [amount + profit, stake.user_id]);
+
+          await pool.query(`
+            INSERT INTO user_inbox (user_id, title, message, type)
+            VALUES ($1, $2, $3, 'announcement')
+          `, [
+            stake.user_id,
+            '⚠️ Auto-Renewal Failed',
+            `Your plan matured but could not be auto-renewed due to insufficient balance. Your funds (${amount + profit}) have been credited to your wallet. Top up and start a new plan to continue earning!`,
+          ]);
+
+          logger.info({ userId: stake.user_id, amount }, "Auto-renewal skipped — insufficient balance");
+        }
+      }
+    } catch (err) {
+      logger.error({ err }, "Auto-renewal cron error");
+    }
+  };
+
+  // Run 1 minute after startup, then every 10 minutes
+  setTimeout(() => {
+    processRenewals();
+    setInterval(processRenewals, 10 * 60 * 1000);
+  }, 60000);
+}
+
+setTimeout(startAutoRenewalCron, 8000);
 
 // Global JSON error handler — must be last, after all routes
 // Prevents Express from returning HTML error pages (e.g. "Internal Server Error")

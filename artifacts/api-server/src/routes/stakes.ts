@@ -27,6 +27,7 @@ router.get("/stakes", requireAuth, async (req, res) => {
       dailyClaimedToday,
       totalDailyClaimed: parseFloat(s.totalDailyClaimed),
       daysRemaining,
+      autoRenew: s.autoRenew,
     };
   }));
 });
@@ -76,8 +77,6 @@ router.post("/stakes", requireAuth, async (req, res) => {
 
   const endDate = new Date();
   endDate.setDate(endDate.getDate() + STAKE_DAYS);
-
-  // Use plan-based profit calculation
   const profit = calcProfit(amount, user.country);
 
   const inserted = await db.insert(stakesTable).values({
@@ -86,6 +85,7 @@ router.post("/stakes", requireAuth, async (req, res) => {
     profit: profit.toString(),
     status: "active",
     endDate,
+    autoRenew: req.body.autoRenew === true,
   }).returning();
 
   await db.update(usersTable).set({
@@ -103,7 +103,22 @@ router.post("/stakes", requireAuth, async (req, res) => {
     dailyClaimedToday: false,
     totalDailyClaimed: 0,
     daysRemaining: STAKE_DAYS,
+    autoRenew: s.autoRenew,
   });
+});
+
+// POST /stakes/:id/toggle-auto-renew
+router.post("/stakes/:id/toggle-auto-renew", requireAuth, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const stakes = await db.select().from(stakesTable).where(eq(stakesTable.id, id)).limit(1);
+  if (stakes.length === 0 || stakes[0].userId !== req.session.userId) {
+    res.status(404).json({ error: "Stake not found" });
+    return;
+  }
+  const stake = stakes[0];
+  const newValue = !stake.autoRenew;
+  await db.update(stakesTable).set({ autoRenew: newValue }).where(eq(stakesTable.id, id));
+  res.json({ autoRenew: newValue });
 });
 
 // POST /stakes/:id/claim-daily

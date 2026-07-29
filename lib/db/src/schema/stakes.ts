@@ -9,6 +9,7 @@ export const stakesTable = pgTable("stakes", {
   status: text("status").notNull().default("active"), // active | completed | withdrawn
   totalDailyClaimed: numeric("total_daily_claimed", { precision: 15, scale: 2 }).notNull().default("0"),
   lastDailyClaim: timestamp("last_daily_claim"),
+  autoRenew: boolean("auto_renew").notNull().default(false),
   startDate: timestamp("start_date").notNull().defaultNow(),
   endDate: timestamp("end_date").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),

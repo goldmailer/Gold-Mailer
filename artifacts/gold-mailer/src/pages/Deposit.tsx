@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useGetDepositAccount, useSubmitDeposit, getGetTransactionsQueryKey, getGetDepositAccountQueryKey } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, Check, ExternalLink, Bitcoin } from "lucide-react";
+import { Copy, Check, ExternalLink, Bitcoin, Wallet } from "lucide-react";
 import { getConfig, getLocalCurrency } from "@/lib/currency";
 import { useLanguage } from "@/i18n/LanguageContext";
 
@@ -20,6 +20,18 @@ export default function Deposit() {
   const [copied, setCopied] = useState<string | null>(null);
   const [step, setStep] = useState<1 | 2>(1);
   const [success, setSuccess] = useState(false);
+  const [depositMethod, setDepositMethod] = useState<"bank" | "crypto">("bank");
+  const [selectedCoin, setSelectedCoin] = useState<number | null>(null);
+
+  const { data: cryptoWalletsData } = useQuery({
+    queryKey: ["crypto-wallets-public"],
+    queryFn: async () => {
+      const res = await fetch("/api/settings/crypto-wallets", { credentials: "include" });
+      return res.ok ? res.json() : { wallets: [] };
+    },
+  });
+  const cryptoWallets: { coin: string; symbol: string; address: string; network: string }[] =
+    (cryptoWalletsData as any)?.wallets ?? [];
 
   const cfg = getConfig((user as any)?.country);
   const country = (user as any)?.country ?? "NG";
@@ -225,14 +237,86 @@ export default function Deposit() {
           </div>
         </div>
 
-        {/* ── Divider ─────────────────────────────────────────────── */}
-        <div className="flex items-center gap-3 mb-5">
-          <div className="flex-1 h-px bg-border" />
-          <span className="text-xs text-muted-foreground">or deposit via bank / PayPal</span>
-          <div className="flex-1 h-px bg-border" />
+        {/* ── Method selector ─────────────────────────────────────── */}
+        <div className="flex gap-2 mb-5">
+          <button
+            onClick={() => setDepositMethod("bank")}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition-colors ${depositMethod === "bank" ? "bg-primary/20 border-primary text-primary" : "border-border text-muted-foreground hover:text-foreground"}`}
+          >Bank / PayPal</button>
+          {cryptoWallets.length > 0 && (
+            <button
+              onClick={() => setDepositMethod("crypto")}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition-colors ${depositMethod === "crypto" ? "bg-primary/20 border-primary text-primary" : "border-border text-muted-foreground hover:text-foreground"}`}
+            >Crypto</button>
+          )}
         </div>
 
-        {/* ── Manual deposit flow ─────────────────────────────────── */}
+        {/* ── Crypto deposit ───────────────────────────────────────── */}
+        {depositMethod === "crypto" && (
+          <div className="glass-card rounded-2xl p-6 mb-4 space-y-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Wallet size={18} className="text-primary" />
+              <h2 className="font-bold">Send Crypto</h2>
+            </div>
+            <p className="text-sm text-muted-foreground">Select a coin, send to the address below, then submit your transaction ID.</p>
+
+            {/* Coin selector */}
+            <div className="space-y-2">
+              {cryptoWallets.map((w, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSelectedCoin(selectedCoin === i ? null : i)}
+                  className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all text-left ${selectedCoin === i ? "border-primary bg-primary/10" : "border-border bg-background hover:border-primary/40"}`}
+                >
+                  <div>
+                    <p className="font-bold text-sm">{w.coin}{w.symbol ? ` (${w.symbol})` : ""}</p>
+                    {w.network && <p className="text-xs text-muted-foreground">{w.network}</p>}
+                  </div>
+                  {selectedCoin === i && <Check size={16} className="text-primary shrink-0" />}
+                </button>
+              ))}
+            </div>
+
+            {selectedCoin !== null && cryptoWallets[selectedCoin] && (
+              <div className="bg-primary/8 border border-primary/30 rounded-xl p-4 space-y-2">
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                  {cryptoWallets[selectedCoin].coin} Address{cryptoWallets[selectedCoin].network ? ` — ${cryptoWallets[selectedCoin].network}` : ""}
+                </p>
+                <div className="flex items-center gap-2">
+                  <p className="font-mono text-xs text-primary break-all flex-1">{cryptoWallets[selectedCoin].address}</p>
+                  <CopyBtn val={cryptoWallets[selectedCoin].address} k={`crypto-${selectedCoin}`} />
+                </div>
+              </div>
+            )}
+
+            {selectedCoin !== null && (
+              <>
+                <AmountField />
+                <Button className="w-full bg-primary text-primary-foreground hover:opacity-90 font-bold" onClick={() => setStep(2)} disabled={!amount || parseFloat(amount) <= 0}>
+                  I've Sent the Payment
+                </Button>
+              </>
+            )}
+
+            {step === 2 && (
+              <div className="border-t border-border pt-4 space-y-3">
+                <label className="text-sm font-medium block">{t("deposit.txId")}</label>
+                <Input value={txId} onChange={e => setTxId(e.target.value)} placeholder="Paste your transaction hash / TxID" />
+                <Button
+                  className="w-full bg-primary text-primary-foreground hover:opacity-90 font-bold"
+                  disabled={!txId || mutation.isPending}
+                  onClick={() => mutation.mutate({ data: { amount: parseFloat(amount), transactionId: txId } })}
+                >
+                  {mutation.isPending ? t("deposit.submitting") : t("deposit.submit")}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Bank / PayPal deposit flow ───────────────────────────── */}
+        {depositMethod === "bank" && (
+        <>
         <div className="glass-card rounded-2xl p-6 mb-4">
           <div className="flex items-center gap-3 mb-5">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step >= 1 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>1</div>
@@ -241,7 +325,7 @@ export default function Deposit() {
           {renderDepositInfo()}
         </div>
 
-        {step === 2 && (
+        {depositMethod === "bank" && step === 2 && (
           <div className="glass-card rounded-2xl p-6">
             <div className="flex items-center gap-3 mb-5">
               <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">2</div>
@@ -265,6 +349,8 @@ export default function Deposit() {
               {mutation.isPending ? t("deposit.submitting") : t("deposit.submit")}
             </Button>
           </div>
+        )}
+        </>
         )}
       </main>
     </div>

@@ -348,6 +348,92 @@ export default function Admin() {
   const [depositBankForm, setDepositBankForm] = useState({ bankName: "", accountNumber: "", accountName: "" });
   const [depositPaypalForm, setDepositPaypalForm] = useState({ paypalEmail: "", paypalName: "" });
 
+  // Card Required setting
+  const [cardRequired, setCardRequired] = useState<boolean>(true);
+  const [cardRequiredLoading, setCardRequiredLoading] = useState(false);
+  const { data: cardRequiredData } = useQuery({
+    queryKey: ["admin-card-required"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/settings/card-required", { credentials: "include" });
+      return res.ok ? res.json() : { required: true };
+    },
+    enabled: tab === "settings",
+  });
+  useEffect(() => {
+    if (cardRequiredData !== undefined) setCardRequired((cardRequiredData as any)?.required ?? true);
+  }, [cardRequiredData]);
+
+  const toggleCardRequired = async (v: boolean) => {
+    setCardRequiredLoading(true);
+    try {
+      await fetch("/api/admin/settings/card-required", {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ required: v }),
+      });
+      setCardRequired(v);
+      queryClient.invalidateQueries({ queryKey: ["admin-card-required"] });
+      toast({ title: v ? "Card step enabled" : "Card step disabled — users can skip adding a card" });
+    } finally {
+      setCardRequiredLoading(false);
+    }
+  };
+
+  // Crypto wallets
+  const [cryptoWallets, setCryptoWallets] = useState<{ coin: string; symbol: string; address: string; network: string }[]>([]);
+  const [newWallet, setNewWallet] = useState({ coin: "", symbol: "", address: "", network: "" });
+  const [savingWallets, setSavingWallets] = useState(false);
+  const { data: cryptoWalletsData } = useQuery({
+    queryKey: ["admin-crypto-wallets"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/settings/crypto-wallets", { credentials: "include" });
+      return res.ok ? res.json() : { wallets: [] };
+    },
+    enabled: tab === "settings",
+  });
+  useEffect(() => {
+    if (cryptoWalletsData !== undefined) setCryptoWallets((cryptoWalletsData as any)?.wallets ?? []);
+  }, [cryptoWalletsData]);
+
+  const addWallet = () => {
+    if (!newWallet.coin.trim() || !newWallet.address.trim()) {
+      toast({ title: "Coin name and wallet address are required", variant: "destructive" });
+      return;
+    }
+    setCryptoWallets(prev => [...prev, { ...newWallet }]);
+    setNewWallet({ coin: "", symbol: "", address: "", network: "" });
+  };
+
+  const removeWallet = (idx: number) => setCryptoWallets(prev => prev.filter((_, i) => i !== idx));
+
+  const saveWallets = async () => {
+    setSavingWallets(true);
+    try {
+      const res = await fetch("/api/admin/settings/crypto-wallets", {
+        method: "PUT", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wallets: cryptoWallets }),
+      });
+      if (res.ok) {
+        toast({ title: `Saved ${cryptoWallets.length} crypto wallet(s)` });
+        queryClient.invalidateQueries({ queryKey: ["admin-crypto-wallets"] });
+      }
+    } finally {
+      setSavingWallets(false);
+    }
+  };
+
+  // Balance summary
+  const { data: balanceSummary } = useQuery({
+    queryKey: ["admin-balance-summary"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/users/balance-summary", { credentials: "include" });
+      return res.ok ? res.json() : { totalBalance: 0, userCount: 0 };
+    },
+    enabled: tab === "users",
+    refetchInterval: tab === "users" ? 30000 : false,
+  });
+
   const { data: usersRaw, isLoading: usersLoading } = useAdminGetUsers();
   const { data: transactionsRaw, isLoading: txLoading } = useAdminGetTransactions();
   const allUsers = Array.isArray(usersRaw) ? usersRaw : [];
@@ -568,7 +654,25 @@ export default function Admin() {
               </Select>
             </div>
 
-            {usersLoading ? (
+            {/* Balance summary */}
+          {balanceSummary && (
+            <div className="flex flex-wrap gap-3 mb-4">
+              <div className="flex items-center gap-3 bg-card border border-border rounded-xl px-4 py-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Total User Balances</p>
+                  <p className="text-lg font-black text-primary">${parseFloat((balanceSummary as any).totalBalance ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 bg-card border border-border rounded-xl px-4 py-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Registered Users</p>
+                  <p className="text-lg font-black">{(balanceSummary as any).userCount ?? 0}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {usersLoading ? (
               <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-16 rounded-xl bg-card border border-border animate-pulse" />)}</div>
             ) : !users.length ? (
               <p className="text-muted-foreground text-center py-12">No users found.</p>
@@ -716,7 +820,82 @@ export default function Admin() {
 
         {/* ── SETTINGS TAB ── */}
         {tab === "settings" && (
-          <div className="max-w-lg space-y-6">
+          <div className="max-w-lg space-y-8">
+
+            {/* ── Card Step Toggle ── */}
+            <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+              <div>
+                <h2 className="font-bold text-lg mb-1">Card Step</h2>
+                <p className="text-muted-foreground text-sm">Control whether new users are required to add a payment card during signup. When OFF, users see a "Skip" option.</p>
+              </div>
+              <Toggle
+                value={cardRequired}
+                onChange={v => !cardRequiredLoading && toggleCardRequired(v)}
+                label={cardRequired ? "Card required during signup" : "Card step is optional (users can skip)"}
+              />
+            </div>
+
+            {/* ── Crypto Wallets ── */}
+            <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+              <div>
+                <h2 className="font-bold text-lg mb-1">Crypto Wallet Addresses</h2>
+                <p className="text-muted-foreground text-sm">Add wallet addresses for each coin. Users will see these on the Deposit page under the Crypto tab.</p>
+              </div>
+
+              {/* Existing wallets list */}
+              {cryptoWallets.length > 0 && (
+                <div className="space-y-2">
+                  {cryptoWallets.map((w, i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 bg-background border border-border rounded-xl">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold">{w.coin}{w.symbol ? ` (${w.symbol})` : ""}{w.network ? ` — ${w.network}` : ""}</p>
+                        <p className="text-xs text-muted-foreground font-mono truncate">{w.address}</p>
+                      </div>
+                      <button
+                        onClick={() => removeWallet(i)}
+                        className="text-xs px-2 py-1 rounded-lg bg-destructive/15 text-destructive hover:bg-destructive/25 font-medium shrink-0"
+                      >Remove</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add new wallet form */}
+              <div className="space-y-3 border-t border-border pt-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Add Wallet</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium mb-1 block">Coin Name <span className="text-destructive">*</span></label>
+                    <Input value={newWallet.coin} onChange={e => setNewWallet(p => ({ ...p, coin: e.target.value }))} placeholder="e.g. Bitcoin" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium mb-1 block">Symbol</label>
+                    <Input value={newWallet.symbol} onChange={e => setNewWallet(p => ({ ...p, symbol: e.target.value }))} placeholder="e.g. BTC" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-medium mb-1 block">Network</label>
+                  <Input value={newWallet.network} onChange={e => setNewWallet(p => ({ ...p, network: e.target.value }))} placeholder="e.g. ERC-20, TRC-20, BEP-20" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium mb-1 block">Wallet Address <span className="text-destructive">*</span></label>
+                  <Input value={newWallet.address} onChange={e => setNewWallet(p => ({ ...p, address: e.target.value }))} placeholder="0x..." className="font-mono text-xs" />
+                </div>
+                <Button type="button" variant="outline" onClick={addWallet} className="w-full gap-2">
+                  <Plus size={14} /> Add to List
+                </Button>
+              </div>
+
+              {/* Save button */}
+              <Button
+                onClick={saveWallets}
+                disabled={savingWallets}
+                className="w-full bg-primary text-primary-foreground hover:opacity-90 font-bold py-5"
+              >
+                {savingWallets ? "Saving..." : `Save ${cryptoWallets.length} Wallet${cryptoWallets.length !== 1 ? "s" : ""}`}
+              </Button>
+            </div>
+
             <div>
               <h2 className="font-bold text-lg mb-1">Deposit Settings</h2>
               <p className="text-muted-foreground text-sm">Set payment details per country. Users see their country's account, or the default if none is set.</p>

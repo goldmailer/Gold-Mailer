@@ -269,4 +269,60 @@ router.delete("/admin/deposit-account/:countryCode", requireAdmin, async (req, r
   res.json({ accounts });
 });
 
+// GET /admin/settings/card-required
+router.get("/admin/settings/card-required", requireAdmin, async (_req, res) => {
+  const row = await db.select().from(settingsTable).where(eq(settingsTable.key, "card_required")).limit(1);
+  const required = row.length === 0 ? true : row[0].value !== "false";
+  res.json({ required });
+});
+
+// POST /admin/settings/card-required
+router.post("/admin/settings/card-required", requireAdmin, async (req, res) => {
+  const { required } = req.body;
+  const value = required === false ? "false" : "true";
+  const existing = await db.select().from(settingsTable).where(eq(settingsTable.key, "card_required")).limit(1);
+  if (existing.length > 0) {
+    await db.update(settingsTable).set({ value, updatedAt: new Date() }).where(eq(settingsTable.key, "card_required"));
+  } else {
+    await db.insert(settingsTable).values({ key: "card_required", value });
+  }
+  res.json({ required: value !== "false" });
+});
+
+// GET /admin/settings/crypto-wallets
+router.get("/admin/settings/crypto-wallets", requireAdmin, async (_req, res) => {
+  const row = await db.select().from(settingsTable).where(eq(settingsTable.key, "crypto_wallets")).limit(1);
+  const wallets = row.length === 0 ? [] : JSON.parse(row[0].value);
+  res.json({ wallets });
+});
+
+// PUT /admin/settings/crypto-wallets
+router.put("/admin/settings/crypto-wallets", requireAdmin, async (req, res) => {
+  const { wallets } = req.body;
+  if (!Array.isArray(wallets)) {
+    res.status(400).json({ error: "wallets must be an array" });
+    return;
+  }
+  const value = JSON.stringify(wallets);
+  const existing = await db.select().from(settingsTable).where(eq(settingsTable.key, "crypto_wallets")).limit(1);
+  if (existing.length > 0) {
+    await db.update(settingsTable).set({ value, updatedAt: new Date() }).where(eq(settingsTable.key, "crypto_wallets"));
+  } else {
+    await db.insert(settingsTable).values({ key: "crypto_wallets", value });
+  }
+  res.json({ wallets });
+});
+
+// GET /admin/users/balance-summary
+router.get("/admin/users/balance-summary", requireAdmin, async (_req, res) => {
+  const result = await db.select({
+    totalBalance: sql<string>`COALESCE(SUM(balance), 0)`,
+    userCount: sql<number>`COUNT(*)`,
+  }).from(usersTable).where(eq(usersTable.isAdmin, false));
+  res.json({
+    totalBalance: parseFloat(result[0]?.totalBalance ?? "0"),
+    userCount: Number(result[0]?.userCount ?? 0),
+  });
+});
+
 export default router;

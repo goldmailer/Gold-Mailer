@@ -13,6 +13,7 @@ import referralRouter from "./referral";
 import leaderboardRouter from "./leaderboard";
 import inboxRouter from "./inbox";
 import smsRouter from "./sms";
+import settingsRouter from "./settings";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(referralRouter);
 router.use(leaderboardRouter);
 router.use(inboxRouter);
 router.use(smsRouter);
+router.use(settingsRouter);
 
 export default router;

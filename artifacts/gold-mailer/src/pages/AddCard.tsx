@@ -211,6 +211,31 @@ export default function AddCard() {
   const [cardValid, setCardValid] = useState<boolean | null>(null);
   const [expiryStatus, setExpiryStatus] = useState<ExpiryStatus>(null);
   const [nameMatchStatus, setNameMatchStatus] = useState<NameMatchStatus>(null);
+  const [cardRequired, setCardRequired] = useState<boolean>(true);
+  const [skipping, setSkipping] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/settings/card-required", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => setCardRequired(d.required ?? true))
+      .catch(() => {});
+  }, []);
+
+  const handleSkip = async () => {
+    setSkipping(true);
+    try {
+      const res = await fetch("/api/user/skip-card", { method: "POST", credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        updateUser(data);
+        queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+        setLocation("/dashboard");
+      }
+    } catch (_) {
+    } finally {
+      setSkipping(false);
+    }
+  };
 
   const isNG = !user?.country || user.country === "NG";
   const cfg = getConfig(user?.country);
@@ -698,6 +723,17 @@ export default function AddCard() {
           </Form>
         </div>
 
+        {!cardRequired && (
+          <div className="text-center mt-4">
+            <button
+              onClick={handleSkip}
+              disabled={skipping}
+              className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors"
+            >
+              {skipping ? "Skipping..." : "Skip for now — I'll add a card later"}
+            </button>
+          </div>
+        )}
         {isNG && (
           <p className="text-center text-xs text-muted-foreground mt-4">
             Next step: Set up your withdrawal method

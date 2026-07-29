@@ -4,6 +4,7 @@ import {
   useGetDashboard, useGetStakes, useClaimDailyReward,
   getGetDashboardQueryKey, getGetStakesQueryKey, getGetMeQueryKey
 } from "@workspace/api-client-react";
+import { useMutation } from "@tanstack/react-query";
 import { Sidebar } from "@/components/Sidebar";
 import { DailyDiamond } from "@/components/DailyDiamond";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ import {
   TrendingUp, Wallet, Clock, Gift, ChevronRight, AlertCircle, CheckCircle2,
   ArrowUpCircle, ShieldCheck, ArrowRight, Lock, Check, Users,
   Calculator, Activity, BarChart3, Zap, Star, Trophy,
-  CreditCard, Mail, Globe, Target, BadgeCheck
+  CreditCard, Mail, Globe, Target, BadgeCheck, RefreshCw
 } from "lucide-react";
 import { Link } from "wouter";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -426,7 +427,17 @@ export default function Dashboard() {
   const fmt = (n: number) => currencyFmt(n, user?.country);
 
   const { data: dash, isLoading: dashLoading } = useGetDashboard();
-  const { data: stakes, isLoading: stakesLoading } = useGetStakes();
+  const { data: stakes, isLoading: stakesLoading, refetch: refetchStakes } = useGetStakes();
+
+  const autoRenewMutation = useMutation({
+    mutationFn: async (stakeId: number) => {
+      const res = await fetch(`/api/stakes/${stakeId}/toggle-auto-renew`, { method: "POST", credentials: "include" });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    onSuccess: () => { refetchStakes(); },
+    onError: () => toast({ title: "Failed to toggle auto-renew", variant: "destructive" }),
+  });
 
   const isNG = (user?.country ?? "NG") === "NG";
   const kycStatus = (user as any)?.kycStatus ?? "none";
@@ -712,6 +723,21 @@ export default function Dashboard() {
                             <p className="text-xs text-muted-foreground">{t("dash.ends")}</p>
                             <p className="text-xs font-medium">{new Date(stake.endDate).toLocaleDateString()}</p>
                           </div>
+                        )}
+                        {stake.status === "active" && (
+                          <button
+                            onClick={() => autoRenewMutation.mutate(stake.id)}
+                            disabled={autoRenewMutation.isPending}
+                            title={stake.autoRenew ? "Auto-Renew is ON — click to disable" : "Auto-Renew is OFF — click to enable"}
+                            className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border font-medium transition-all ${
+                              stake.autoRenew
+                                ? "bg-primary/15 border-primary/40 text-primary hover:bg-primary/25"
+                                : "bg-background border-border text-muted-foreground hover:text-foreground hover:border-border/80"
+                            }`}
+                          >
+                            <RefreshCw size={11} className={stake.autoRenew ? "text-primary" : ""} />
+                            {stake.autoRenew ? "Auto-Renew ON" : "Auto-Renew OFF"}
+                          </button>
                         )}
                       </div>
                     </div>

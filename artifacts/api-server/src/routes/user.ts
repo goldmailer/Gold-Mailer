@@ -20,6 +20,26 @@ async function checkHasDeposited(userId: number): Promise<boolean> {
 
 const router = Router();
 
+// POST /user/skip-card — marks card_added=true without actually adding a card (used when card is not required)
+router.post("/user/skip-card", requireAuth, async (req, res) => {
+  const updated = await db.update(usersTable).set({ cardAdded: true }).where(eq(usersTable.id, req.session.userId!)).returning();
+  if (updated.length === 0) { res.status(404).json({ error: "User not found" }); return; }
+  const user = updated[0];
+  const hasDeposited = await checkHasDeposited(user.id);
+  res.json({
+    id: user.id,
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    balance: parseFloat(user.balance),
+    isVerified: user.isVerified,
+    profileComplete: user.profileComplete,
+    cardAdded: user.cardAdded,
+    country: user.country,
+    hasDeposited,
+  });
+});
+
 // PUT /user/profile
 router.put("/user/profile", requireAuth, async (req, res) => {
   const { firstName, lastName, middleName, age, gender, country, phone } = req.body;
