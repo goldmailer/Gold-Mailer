@@ -15,6 +15,7 @@ import inboxRouter from "./inbox";
 import smsRouter from "./sms";
 import settingsRouter from "./settings";
 import marketplaceRouter from "./marketplace";
+import publicRouter from "./public";
 
 const router: IRouter = Router();
 
@@ -34,5 +35,6 @@ router.use(inboxRouter);
 router.use(smsRouter);
 router.use(settingsRouter);
 router.use(marketplaceRouter);
+router.use(publicRouter);
 
 export default router;

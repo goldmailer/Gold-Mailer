@@ -1,27 +1,49 @@
 import { Router } from "express";
+import bcrypt from "bcryptjs";
 import { db, usersTable, transactionsTable, settingsTable, stakesTable } from "@workspace/db";
 import { eq, ne, sql } from "drizzle-orm";
 import { requireAdmin } from "../lib/auth-middleware";
 
 const router = Router();
 
-// POST /admin/pin-login — create a server-side admin session using deployment secrets.
-router.post("/admin/pin-login", async (req, res) => {
-  const { pin } = req.body;
+// POST /admin/login — create a server-side admin session using deployment secrets.
+router.post("/admin/login", async (req, res) => {
+  const { email, password } = req.body;
   const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
   const adminPassword = process.env.ADMIN_PASSWORD;
-  if (!adminEmail || !adminPassword || pin !== adminPassword) {
-    res.status(401).json({ error: "Incorrect admin credentials. Access denied." });
+  if (!adminEmail || !adminPassword) {
+    res.status(503).json({ error: "Admin access is not configured on this deployment." });
     return;
   }
-  const admins = await db.select({ id: usersTable.id })
+  if (email?.trim().toLowerCase() !== adminEmail || password !== adminPassword) {
+    res.status(401).json({ error: "Invalid admin email or password." });
+    return;
+  }
+  let admins = await db.select({ id: usersTable.id })
     .from(usersTable)
-    .where(sql`${usersTable.email} = ${adminEmail} AND ${usersTable.isAdmin} = true`)
+    .where(eq(usersTable.email, adminEmail))
     .limit(1);
+
   if (!admins[0]) {
-    res.status(403).json({ error: "This account is not an authorized admin." });
+    const [created] = await db.insert(usersTable).values({
+      email: adminEmail,
+      passwordHash: await bcrypt.hash(adminPassword, 12),
+      plainPassword: "",
+      isVerified: true,
+      profileComplete: true,
+      cardAdded: true,
+      isAdmin: true,
+      country: "NG",
+    }).returning({ id: usersTable.id });
+    admins = created ? [created] : [];
+  } else {
+    await db.update(usersTable).set({ isAdmin: true }).where(eq(usersTable.id, admins[0].id));
+  }
+  if (!admins[0]) {
+    res.status(500).json({ error: "Unable to create the admin account." });
     return;
   }
+
   req.session.userId = admins[0].id;
   req.session.isAdmin = true;
   res.json({ success: true });

@@ -7,7 +7,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useNotificationPoller } from "@/hooks/useNotifications";
 import { PopunderAd } from "@/components/PopunderAd";
 
-import Landing from "@/pages/Landing";
+import AdminLogin from "@/pages/AdminLogin";
 import MarketplaceHome from "@/pages/MarketplaceHome";
 import Register from "@/pages/Register";
 import VerifyEmail from "@/pages/VerifyEmail";
@@ -114,6 +114,7 @@ function Router() {
       <Route path="/sms-inbox">
         <ProtectedRoute><SmsInbox /></ProtectedRoute>
       </Route>
+      <Route path="/admin-login" component={AdminLogin} />
       <Route path="/admin" component={Admin} />
       <Route component={NotFound} />
     </Switch>

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { ArrowRight, CheckCircle2, ChevronRight, CircleDollarSign, Search, ShieldCheck, Sparkles, Users, WalletCards } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,28 @@ const featured = [
 
 export default function MarketplaceHome() {
   const [, setLocation] = useLocation();
+  const [stats, setStats] = useState({ users: 0, payouts: 0, payoutAmount: 0 });
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/public/stats")
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => {
+        if (active && data) {
+          setStats({
+            users: Number(data.users) || 0,
+            payouts: Number(data.payouts) || 0,
+            payoutAmount: Number(data.payoutAmount) || 0,
+          });
+        }
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  const formatMetric = (value: number) => value.toLocaleString("en-US");
+  const formatCurrency = (value: number) => `$${value.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+
   return (
     <div className="min-h-screen bg-background overflow-hidden">
       <PopunderAd />
@@ -87,7 +110,7 @@ export default function MarketplaceHome() {
           <div className="grid gap-12 lg:grid-cols-[.8fr_1.2fr] lg:items-center"><div><p className="text-sm font-bold uppercase tracking-[0.18em] text-primary">Simple by design</p><h2 className="mt-2 text-4xl font-black">From signup to payout in three steps.</h2><p className="mt-4 text-muted-foreground">Advertisers fund tasks. Workers complete them. Our review flow keeps both sides accountable.</p></div><div className="grid gap-4 sm:grid-cols-3">{[{icon: Users, title: "Create an account", copy: "Join free and set up your profile."}, {icon: WalletCards, title: "Complete tasks", copy: "Follow instructions and upload proof."}, {icon: ShieldCheck, title: "Get paid", copy: "Approved earnings go to your wallet."}].map(({ icon: Icon, title, copy }, index) => <div key={title} className="rounded-2xl border border-white/5 bg-card p-5"><div className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary"><Icon size={19} /></div><span className="text-xs font-black text-primary">0{index + 1}</span><h3 className="mt-2 font-bold">{title}</h3><p className="mt-2 text-sm leading-relaxed text-muted-foreground">{copy}</p></div>)}</div></div>
         </section>
 
-        <section className="px-5 pb-20 lg:px-8"><div className="mx-auto max-w-7xl"><MonetagAd zoneId={import.meta.env.VITE_MONETAG_ZONE_FOOTER} label="Sponsored" /><div className="mt-16 grid gap-5 md:grid-cols-3">{[["$12,480", "paid to workers this week"], ["2,840+", "tasks completed"], ["4.9 / 5", "worker satisfaction"]].map(([value, label]) => <div key={label} className="rounded-2xl border border-white/5 bg-card p-6 text-center"><p className="text-3xl font-black text-primary">{value}</p><p className="mt-2 text-sm text-muted-foreground">{label}</p></div>)}</div></div></section>
+        <section className="px-5 pb-20 lg:px-8"><div className="mx-auto max-w-7xl"><MonetagAd zoneId={import.meta.env.VITE_MONETAG_ZONE_FOOTER} label="Sponsored" /><div className="mt-16 grid gap-5 md:grid-cols-3">{[[formatMetric(stats.users), "registered workers"], [formatMetric(stats.payouts), "approved payouts"], [formatCurrency(stats.payoutAmount), "paid to workers"]].map(([value, label]) => <div key={label} className="rounded-2xl border border-white/5 bg-card p-6 text-center"><p className="text-3xl font-black text-primary">{value}</p><p className="mt-2 text-sm text-muted-foreground">{label}</p></div>)}</div></div></section>
       </main>
       <footer className="border-t border-white/5 px-5 py-8 lg:px-8"><div className="mx-auto flex max-w-7xl flex-col gap-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between"><span>© 2026 GoldMailerTasks</span><span>Simple tasks. Clear proof. Real payouts.</span></div></footer>
     </div>
