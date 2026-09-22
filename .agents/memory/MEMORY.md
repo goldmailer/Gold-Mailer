@@ -10,3 +10,4 @@
 - [Card-required setting](card-required-setting.md) — settings table key `card_required` ("true"/"false"); /api/settings/card-required (public GET); /api/admin/settings/card-required (admin GET/POST); AddCard.tsx shows skip button when OFF; /api/user/skip-card sets card_added=true.
 - [Crypto wallets setting](crypto-wallets-setting.md) — settings table key `crypto_wallets` (JSON array of {coin,symbol,address,network}); admin manages via /api/admin/settings/crypto-wallets; shown on Deposit page as "Crypto" tab alongside Bank/PayPal.
 - [Signup flow simplification](signup-flow.md) — Phone/OTP step removed from SetupProfile.tsx; now 2 steps: Name → Country+Age/Gender. No calls to /api/sms/verify/* anymore.
+- [Drizzle workspace versions](drizzle-workspace-versions.md) — root, API, and database packages must resolve the same catalog Drizzle version or typed table queries diverge.

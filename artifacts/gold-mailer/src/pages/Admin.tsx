@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ALL_COUNTRIES } from "@/lib/countries";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus, Check, X, ArrowLeft, Settings, Users, List, Pencil, ToggleLeft, ToggleRight, MessageSquare, Send, ShieldCheck, ClipboardList, Eye, Clock, Phone } from "lucide-react";
+  import { Trash2, Plus, Check, X, ArrowLeft, Settings, Users, List, Pencil, ToggleLeft, ToggleRight, MessageSquare, Send, ShieldCheck, ClipboardList, Eye, Clock, Phone, DollarSign } from "lucide-react";
 import { Link } from "wouter";
 
 function fmt(n: number) {
@@ -152,7 +152,7 @@ function EditUserModal({ user, onClose }: { user: any; onClose: () => void }) {
 export default function Admin() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState<"users" | "transactions" | "settings" | "support" | "kyc" | "tasks" | "sms">("users");
+  const [tab, setTab] = useState<"users" | "transactions" | "settings" | "support" | "kyc" | "tasks" | "marketplace" | "sms">("users");
   const [countryFilter, setCountryFilter] = useState<string>("all");
   const [topUpUserId, setTopUpUserId] = useState<number | null>(null);
   const [editUser, setEditUser] = useState<any | null>(null);
@@ -527,11 +527,38 @@ export default function Admin() {
   const pendingKycCount = Array.isArray(kycSubmissions) ? kycSubmissions.filter((k: any) => k.status === "pending").length : 0;
   const pendingTasksCount = Array.isArray(taskSubmissions) ? taskSubmissions.filter((t: any) => t.status === "pending").length : 0;
 
+  const { data: marketplaceAdminData = { summary: {}, tasks: [], submissions: [], payouts: [] }, refetch: refetchMarketplace } = useQuery({
+    queryKey: ["admin-marketplace"],
+    queryFn: async () => {
+      const [summary, tasks, submissions, payouts] = await Promise.all([
+        fetch("/api/admin/marketplace/summary", { credentials: "include" }).then(r => r.ok ? r.json() : {}),
+        fetch("/api/admin/marketplace/tasks", { credentials: "include" }).then(r => r.ok ? r.json() : []),
+        fetch("/api/admin/marketplace/submissions", { credentials: "include" }).then(r => r.ok ? r.json() : []),
+        fetch("/api/admin/marketplace/payouts", { credentials: "include" }).then(r => r.ok ? r.json() : []),
+      ]);
+      return { summary, tasks, submissions, payouts };
+    },
+    enabled: tab === "marketplace",
+    refetchInterval: tab === "marketplace" ? 15000 : false,
+  });
+
+  const marketplaceDecision = async (path: string, successMessage: string) => {
+    const response = await fetch(path, { method: "POST", credentials: "include" });
+    const data = await response.json();
+    if (!response.ok) {
+      toast({ title: "Action failed", description: data.error || "Please try again", variant: "destructive" });
+      return;
+    }
+    toast({ title: successMessage });
+    refetchMarketplace();
+  };
+
   const tabs = [
     { key: "users", label: "Users", icon: Users },
     { key: "transactions", label: "Transactions", icon: List },
     { key: "kyc", label: "KYC", icon: ShieldCheck, badge: pendingKycCount },
     { key: "tasks", label: "Tasks", icon: ClipboardList, badge: pendingTasksCount },
+    { key: "marketplace", label: "Marketplace", icon: DollarSign },
     { key: "settings", label: "Settings", icon: Settings },
     { key: "support", label: "Support", icon: MessageSquare, badge: totalUnread },
     { key: "sms", label: "SMS", icon: Phone },
@@ -1209,6 +1236,69 @@ export default function Admin() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── MARKETPLACE TAB ── */}
+        {tab === "marketplace" && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="font-bold text-lg">Marketplace controls</h2>
+              <p className="text-sm text-muted-foreground">Approve advertiser tasks, worker proof, and crypto payouts.</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              {[
+                ["Users", (marketplaceAdminData.summary as any).users ?? 0],
+                ["Pending tasks", (marketplaceAdminData.summary as any).pending_tasks ?? 0],
+                ["Pending proof", (marketplaceAdminData.summary as any).pending_submissions ?? 0],
+                ["Volume", `$${Number((marketplaceAdminData.summary as any).total_volume ?? 0).toFixed(2)}`],
+                ["Commission", `$${Number((marketplaceAdminData.summary as any).total_commission ?? 0).toFixed(2)}`],
+              ].map(([label, value]) => (
+                <div key={String(label)} className="rounded-xl border border-border bg-card p-4">
+                  <p className="text-xs text-muted-foreground">{label}</p>
+                  <p className="mt-1 text-xl font-black text-primary">{value}</p>
+                </div>
+              ))}
+            </div>
+            <section className="rounded-2xl border border-border bg-card p-5">
+              <h3 className="font-bold">Advertiser tasks</h3>
+              <div className="mt-4 space-y-3">
+                {(marketplaceAdminData.tasks as any[]).length === 0 && <p className="text-sm text-muted-foreground">No marketplace tasks yet.</p>}
+                {(marketplaceAdminData.tasks as any[]).map((task: any) => (
+                  <div key={task.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-background p-4">
+                    <div className="min-w-0 flex-1"><p className="font-bold">{task.title}</p><p className="text-xs text-muted-foreground">{task.creatorEmail} · {task.taskType} · ${Number(task.payPerTask).toFixed(2)} each</p></div>
+                    <StatusBadge status={task.status} />
+                    {task.status === "pending" && <div className="flex gap-2"><Button size="sm" className="bg-green-600 text-white" onClick={() => marketplaceDecision(`/api/admin/marketplace/tasks/${task.id}/approve`, "Task approved")}><Check size={13} /> Approve</Button><Button size="sm" variant="outline" onClick={() => marketplaceDecision(`/api/admin/marketplace/tasks/${task.id}/reject`, "Task rejected")}><X size={13} /> Reject</Button></div>}
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section className="rounded-2xl border border-border bg-card p-5">
+              <h3 className="font-bold">Worker proof submissions</h3>
+              <div className="mt-4 space-y-3">
+                {(marketplaceAdminData.submissions as any[]).length === 0 && <p className="text-sm text-muted-foreground">No marketplace submissions yet.</p>}
+                {(marketplaceAdminData.submissions as any[]).map((submission: any) => (
+                  <div key={submission.id} className="rounded-xl border border-border bg-background p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-bold">{submission.title}</p><p className="text-xs text-muted-foreground">{submission.workerEmail} · ${Number(submission.amount).toFixed(2)}</p></div><StatusBadge status={submission.status} /></div>
+                    <p className="mt-3 whitespace-pre-wrap text-sm text-muted-foreground">{submission.proofText}</p>
+                    {submission.proofUrl && <a href={submission.proofUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-xs text-primary hover:underline">Open proof link ↗</a>}
+                    {submission.status === "pending" && <div className="mt-3 flex gap-2"><Button size="sm" className="bg-green-600 text-white" onClick={() => marketplaceDecision(`/api/admin/marketplace/submissions/${submission.id}/approve`, "Submission approved")}><Check size={13} /> Approve</Button><Button size="sm" variant="outline" onClick={() => marketplaceDecision(`/api/admin/marketplace/submissions/${submission.id}/reject`, "Submission rejected")}><X size={13} /> Reject</Button></div>}
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section className="rounded-2xl border border-border bg-card p-5">
+              <h3 className="font-bold">Crypto payouts</h3>
+              <div className="mt-4 space-y-3">
+                {(marketplaceAdminData.payouts as any[]).length === 0 && <p className="text-sm text-muted-foreground">No payout requests yet.</p>}
+                {(marketplaceAdminData.payouts as any[]).map((payout: any) => (
+                  <div key={payout.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-background p-4">
+                    <div><p className="font-bold">${Number(payout.amount).toFixed(2)} · {payout.pay_currency}</p><p className="max-w-md break-all text-xs text-muted-foreground">{payout.email} · {payout.payout_address}</p></div>
+                    <div className="flex items-center gap-2"><StatusBadge status={payout.status} />{payout.status === "pending" && <Button size="sm" className="bg-green-600 text-white" onClick={() => marketplaceDecision(`/api/admin/marketplace/payouts/${payout.id}/approve`, "Payout sent to NowPayments")}><Send size={13} /> Approve</Button>}</div>
+                  </div>
+                ))}
+              </div>
+            </section>
           </div>
         )}
 

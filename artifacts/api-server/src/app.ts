@@ -137,6 +137,9 @@ pool.query(`
   ALTER TABLE "transactions" ADD COLUMN IF NOT EXISTS "notes" text;
 
   ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "kyc_status" text NOT NULL DEFAULT 'none';
+   ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "advertising_wallet" numeric(15,2) NOT NULL DEFAULT 0;
+   ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "payout_address" text;
+   ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "is_banned" boolean NOT NULL DEFAULT false;
 
   CREATE TABLE IF NOT EXISTS "user_inbox" (
     "id" serial PRIMARY KEY,
@@ -191,6 +194,87 @@ pool.query(`
 
   ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "phone_verified" boolean NOT NULL DEFAULT false;
   ALTER TABLE "stakes" ADD COLUMN IF NOT EXISTS "auto_renew" boolean NOT NULL DEFAULT false;
+
+   CREATE TABLE IF NOT EXISTS "marketplace_tasks" (
+     "id" serial PRIMARY KEY,
+     "creator_id" integer NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+     "title" text NOT NULL,
+     "task_type" text NOT NULL,
+     "description" text NOT NULL,
+     "proof_type" text NOT NULL DEFAULT 'text',
+     "workers_needed" integer NOT NULL,
+     "workers_completed" integer NOT NULL DEFAULT 0,
+     "pay_per_task" numeric(15,2) NOT NULL,
+     "total_cost" numeric(15,2) NOT NULL,
+     "status" text NOT NULL DEFAULT 'pending',
+     "created_at" timestamp NOT NULL DEFAULT now()
+   );
+   CREATE INDEX IF NOT EXISTS "IDX_marketplace_tasks_status" ON "marketplace_tasks" ("status");
+
+   CREATE TABLE IF NOT EXISTS "marketplace_submissions" (
+     "id" serial PRIMARY KEY,
+     "task_id" integer NOT NULL REFERENCES "marketplace_tasks"("id") ON DELETE CASCADE,
+     "worker_id" integer NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+     "proof_text" text NOT NULL,
+     "proof_url" text,
+     "status" text NOT NULL DEFAULT 'pending',
+     "amount" numeric(15,2) NOT NULL,
+     "created_at" timestamp NOT NULL DEFAULT now(),
+     "reviewed_at" timestamp
+   );
+   CREATE UNIQUE INDEX IF NOT EXISTS "UQ_marketplace_submission_worker_task"
+     ON "marketplace_submissions" ("task_id", "worker_id");
+
+   CREATE TABLE IF NOT EXISTS "marketplace_deposits" (
+     "id" serial PRIMARY KEY,
+     "user_id" integer NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+     "invoice_id" text NOT NULL UNIQUE,
+     "payment_id" text,
+     "amount" numeric(15,2) NOT NULL,
+     "currency" text NOT NULL DEFAULT 'usd',
+     "status" text NOT NULL DEFAULT 'pending',
+     "created_at" timestamp NOT NULL DEFAULT now(),
+     "confirmed_at" timestamp
+   );
+
+   CREATE TABLE IF NOT EXISTS "marketplace_payouts" (
+     "id" serial PRIMARY KEY,
+     "user_id" integer NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+     "amount" numeric(15,2) NOT NULL,
+     "user_amount" numeric(15,2) NOT NULL,
+     "admin_cut" numeric(15,2) NOT NULL,
+     "pay_currency" text NOT NULL,
+     "payout_address" text NOT NULL,
+     "status" text NOT NULL DEFAULT 'pending',
+     "payout_id" text,
+     "created_at" timestamp NOT NULL DEFAULT now(),
+     "processed_at" timestamp
+   );
+
+   CREATE TABLE IF NOT EXISTS "admin_earnings" (
+     "id" serial PRIMARY KEY,
+     "user_id" integer REFERENCES "users"("id") ON DELETE SET NULL,
+     "type" text NOT NULL,
+     "total_amount" numeric(15,2) NOT NULL,
+     "admin_cut" numeric(15,2) NOT NULL,
+     "user_gets" numeric(15,2) NOT NULL,
+     "created_at" timestamp NOT NULL DEFAULT now()
+   );
+
+   CREATE TABLE IF NOT EXISTS "admin_balances" (
+     "id" integer PRIMARY KEY DEFAULT 1,
+     "balance" numeric(15,2) NOT NULL DEFAULT 0,
+     "updated_at" timestamp NOT NULL DEFAULT now()
+   );
+   INSERT INTO "admin_balances" ("id", "balance") VALUES (1, 0)
+     ON CONFLICT ("id") DO NOTHING;
+
+   CREATE TABLE IF NOT EXISTS "email_preferences" (
+     "user_id" integer PRIMARY KEY REFERENCES "users"("id") ON DELETE CASCADE,
+     "daily_update" boolean NOT NULL DEFAULT true,
+     "new_task_alert" boolean NOT NULL DEFAULT true,
+     "updated_at" timestamp NOT NULL DEFAULT now()
+   );
 `)
   .then(() => pool.query(`
     DO $$

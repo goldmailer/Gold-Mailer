@@ -22,6 +22,9 @@ export default function Deposit() {
   const [success, setSuccess] = useState(false);
   const [depositMethod, setDepositMethod] = useState<"bank" | "crypto">("bank");
   const [selectedCoin, setSelectedCoin] = useState<number | null>(null);
+  const [advertisingAmount, setAdvertisingAmount] = useState("");
+  const [advertisingCurrency, setAdvertisingCurrency] = useState("usd");
+  const [advertisingLoading, setAdvertisingLoading] = useState(false);
 
   const { data: cryptoWalletsData } = useQuery({
     queryKey: ["crypto-wallets-public"],
@@ -62,6 +65,31 @@ export default function Deposit() {
     setCopied(key);
     toast({ title: "Copied to clipboard" });
     setTimeout(() => setCopied(null), 2000);
+  };
+
+  const createAdvertisingInvoice = async () => {
+    const numericAmount = Number(advertisingAmount);
+    if (!Number.isFinite(numericAmount) || numericAmount < 1) {
+      toast({ title: "Minimum advertising deposit is $1", variant: "destructive" });
+      return;
+    }
+    setAdvertisingLoading(true);
+    try {
+      const response = await fetch("/api/payments/nowpayments/deposit", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: numericAmount, currency: advertisingCurrency }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not create invoice");
+      window.open(data.invoiceUrl, "_blank", "noopener,noreferrer");
+      toast({ title: "Invoice ready", description: "Complete the crypto payment in the new tab. Your Advertising Wallet updates after confirmation." });
+    } catch (error: any) {
+      toast({ title: "Payment unavailable", description: error.message, variant: "destructive" });
+    } finally {
+      setAdvertisingLoading(false);
+    }
   };
 
   if (success) {
@@ -207,6 +235,21 @@ export default function Deposit() {
       <main className="pt-16 max-w-xl mx-auto px-4 sm:pl-16 py-8">
         <h1 className="text-2xl font-black mb-1">{t("deposit.title")}</h1>
         <p className="text-muted-foreground text-sm mb-6">{subtitle}</p>
+
+        <div className="mb-5 rounded-2xl border border-blue-400/25 bg-blue-400/5 p-5">
+          <div className="flex items-start gap-3">
+            <div className="rounded-xl bg-blue-400/15 p-2 text-blue-300"><Wallet size={18} /></div>
+            <div className="min-w-0 flex-1">
+              <p className="font-bold">Fund your Advertising Wallet</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Use NowPayments crypto checkout to fund task campaigns. Deposits are credited at 80% after the payment webhook confirms them; 20% is the platform commission.</p>
+              <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_150px_auto]">
+                <Input type="number" min="1" step="0.01" value={advertisingAmount} onChange={(event) => setAdvertisingAmount(event.target.value)} placeholder="Amount in USD" />
+                <select value={advertisingCurrency} onChange={(event) => setAdvertisingCurrency(event.target.value)} className="rounded-lg border border-border bg-background px-3 text-sm outline-none"><option value="usd">Pay in crypto</option><option value="btc">Bitcoin</option><option value="eth">Ethereum</option><option value="usdttrc20">USDT TRC20</option><option value="ltc">Litecoin</option></select>
+                <Button onClick={createAdvertisingInvoice} disabled={advertisingLoading} className="bg-blue-500 text-white hover:bg-blue-400">{advertisingLoading ? "Creating..." : "Deposit"}</Button>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* ── Paybis: Buy Bitcoin section ─────────────────────────── */}
         <div className="glass-card rounded-2xl p-5 mb-5 relative overflow-hidden">

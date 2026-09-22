@@ -146,7 +146,7 @@ export default function Leaderboard() {
                         </p>
                         <span className="text-sm">{COUNTRY_FLAGS[entry.country] ?? ""}</span>
                         {entry.country === "NG" && entry.kycStatus === "approved" && (
-                          <BadgeCheck size={14} className="text-blue-400 shrink-0" title="KYC Verified" />
+                          <span title="KYC Verified"><BadgeCheck size={14} className="text-blue-400 shrink-0" /></span>
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground">

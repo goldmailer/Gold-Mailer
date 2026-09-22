@@ -5,13 +5,24 @@ import { requireAdmin } from "../lib/auth-middleware";
 
 const router = Router();
 
-// POST /admin/pin-login — create a server-side admin session via PIN
-router.post("/admin/pin-login", (req, res) => {
+// POST /admin/pin-login — create a server-side admin session using deployment secrets.
+router.post("/admin/pin-login", async (req, res) => {
   const { pin } = req.body;
-  if (!pin || pin !== "2006") {
-    res.status(401).json({ error: "Incorrect PIN. Access denied." });
+  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminEmail || !adminPassword || pin !== adminPassword) {
+    res.status(401).json({ error: "Incorrect admin credentials. Access denied." });
     return;
   }
+  const admins = await db.select({ id: usersTable.id })
+    .from(usersTable)
+    .where(sql`${usersTable.email} = ${adminEmail} AND ${usersTable.isAdmin} = true`)
+    .limit(1);
+  if (!admins[0]) {
+    res.status(403).json({ error: "This account is not an authorized admin." });
+    return;
+  }
+  req.session.userId = admins[0].id;
   req.session.isAdmin = true;
   res.json({ success: true });
 });

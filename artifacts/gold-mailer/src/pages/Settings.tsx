@@ -161,7 +161,7 @@ export default function Settings() {
         middleName: (user as any)?.middleName ?? undefined,
         age: user?.age ?? undefined,
         gender: profileForm.gender || undefined,
-        country: profileForm.country,
+        ...( { country: profileForm.country } as any),
         avatarUrl: user?.avatarUrl ?? undefined,
       },
     });

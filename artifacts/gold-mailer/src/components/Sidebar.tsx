@@ -5,7 +5,7 @@ import { useLogout, getGetMeQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   LayoutDashboard, CreditCard, TrendingUp, ArrowDownCircle,
-  ArrowUpCircle, List, Settings, LogOut, Menu, X, User, Users, ArrowLeftRight, ClipboardList, Trophy, Bell, History, MessageSquare, BarChart2
+  ArrowUpCircle, List, Settings, LogOut, Menu, X, User, Users, ArrowLeftRight, ClipboardList, Trophy, Bell, History, MessageSquare, BarChart2, BriefcaseBusiness, PlusCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SupportChat } from "@/components/SupportChat";
@@ -32,7 +32,9 @@ export function Sidebar() {
     { href: "/transactions", label: t("nav.transactions"), icon: List },
     { href: "/exchange", label: "Exchange", icon: ArrowLeftRight },
     { href: "/crypto", label: "Crypto Prices", icon: BarChart2 },
-    { href: "/tasks", label: "Earn Tasks", icon: ClipboardList },
+    { href: "/tasks", label: "Browse Tasks", icon: ClipboardList },
+    { href: "/post-task", label: "Post a Task", icon: PlusCircle },
+    { href: "/submissions", label: "My Submissions", icon: BriefcaseBusiness },
     { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
     { href: "/referrals", label: t("nav.referrals"), icon: Users },
     { href: "/settings", label: t("nav.settings"), icon: Settings },

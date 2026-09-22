@@ -5,8 +5,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useNotificationPoller } from "@/hooks/useNotifications";
+import { PopunderAd } from "@/components/PopunderAd";
 
 import Landing from "@/pages/Landing";
+import MarketplaceHome from "@/pages/MarketplaceHome";
 import Register from "@/pages/Register";
 import VerifyEmail from "@/pages/VerifyEmail";
 import Login from "@/pages/Login";
@@ -27,6 +29,9 @@ import Crypto from "@/pages/Crypto";
 import Admin from "@/pages/Admin";
 import KycUpload from "@/pages/KycUpload";
 import Tasks from "@/pages/Tasks";
+import Marketplace from "@/pages/Marketplace";
+import PostTask from "@/pages/PostTask";
+import Submissions from "@/pages/Submissions";
 import Leaderboard from "@/pages/Leaderboard";
 import Inbox from "@/pages/Inbox";
 import StakeHistory from "@/pages/StakeHistory";
@@ -45,7 +50,7 @@ const queryClient = new QueryClient({
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Landing} />
+      <Route path="/" component={MarketplaceHome} />
       <Route path="/register" component={Register} />
       <Route path="/verify-email" component={VerifyEmail} />
       <Route path="/login" component={Login} />
@@ -89,7 +94,13 @@ function Router() {
         <ProtectedRoute><KycUpload /></ProtectedRoute>
       </Route>
       <Route path="/tasks">
-        <ProtectedRoute><Tasks /></ProtectedRoute>
+        <ProtectedRoute><Marketplace /></ProtectedRoute>
+      </Route>
+      <Route path="/post-task">
+        <ProtectedRoute><PostTask /></ProtectedRoute>
+      </Route>
+      <Route path="/submissions">
+        <ProtectedRoute><Submissions /></ProtectedRoute>
       </Route>
       <Route path="/leaderboard">
         <ProtectedRoute><Leaderboard /></ProtectedRoute>
@@ -121,6 +132,7 @@ function App() {
         <TooltipProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
             <NotificationPollerMount />
+            <PopunderAd />
             <Router />
           </WouterRouter>
           <Toaster />

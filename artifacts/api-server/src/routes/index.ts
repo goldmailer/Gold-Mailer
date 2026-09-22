@@ -14,6 +14,7 @@ import leaderboardRouter from "./leaderboard";
 import inboxRouter from "./inbox";
 import smsRouter from "./sms";
 import settingsRouter from "./settings";
+import marketplaceRouter from "./marketplace";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(leaderboardRouter);
 router.use(inboxRouter);
 router.use(smsRouter);
 router.use(settingsRouter);
+router.use(marketplaceRouter);
 
 export default router;

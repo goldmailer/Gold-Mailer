@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { useSubmitWithdrawal, getGetTransactionsQueryKey } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Sidebar } from "@/components/Sidebar";
@@ -11,6 +11,7 @@ import { getConfig, fmt as currencyFmt } from "@/lib/currency";
 import { getLocalCurrency } from "@/lib/countries";
 import { Check, AlertTriangle, Info, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
+import type { Wallets } from "@/lib/marketplace";
 
 // ── Bank lists by country ─────────────────────────────────────
 const BANKS_BY_COUNTRY: Record<string, string[]> = {
@@ -81,6 +82,9 @@ export default function Withdraw() {
   const [bankForm, setBankForm] = useState({ bankName: "", accountNumber: "", accountName: "" });
   const [customBank, setCustomBank] = useState("");
   const [paypalForm, setPaypalForm] = useState({ paypalEmail: "", fullName: "" });
+  const [cryptoAmount, setCryptoAmount] = useState("");
+  const [cryptoAddress, setCryptoAddress] = useState("");
+  const [cryptoCurrency, setCryptoCurrency] = useState("usdttrc20");
 
   const isNG = country === "NG";
 
@@ -102,6 +106,36 @@ export default function Withdraw() {
       return res.json();
     },
     enabled: isNG,
+  });
+
+  const { data: marketplaceWallets } = useQuery<Wallets>({
+    queryKey: ["marketplace-wallets"],
+    queryFn: async () => {
+      const res = await fetch("/api/marketplace/wallets", { credentials: "include" });
+      if (!res.ok) throw new Error("Unable to load wallet");
+      return res.json();
+    },
+  });
+
+  const cryptoPayoutMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/marketplace/payouts", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: Number(cryptoAmount), payoutAddress: cryptoAddress, payCurrency: cryptoCurrency }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not request payout");
+      return data;
+    },
+    onSuccess: (data) => {
+      toast({ title: "Crypto payout requested", description: `$${Number(data.userGets).toFixed(2)} will be sent after admin approval.` });
+      setCryptoAmount("");
+      setCryptoAddress("");
+      queryClient.invalidateQueries({ queryKey: ["marketplace-wallets"] });
+    },
+    onError: (error: Error) => toast({ title: "Payout failed", description: error.message, variant: "destructive" }),
   });
 
   const hasApprovedWithdrawal = (txData ?? []).some(
@@ -271,6 +305,20 @@ export default function Withdraw() {
         <div className="bg-card border border-border rounded-xl p-4 mb-6 flex justify-between">
           <span className="text-sm text-muted-foreground">Available Balance</span>
           <span className="font-black text-primary">{fmt(user?.balance ?? 0)}</span>
+        </div>
+
+        <div className="mb-6 rounded-2xl border border-primary/25 bg-primary/5 p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div><p className="font-bold">Crypto payout</p><p className="mt-1 text-xs text-muted-foreground">Minimum $10 · 20% commission · NowPayments</p></div>
+            <span className="text-sm font-black text-primary">${(marketplaceWallets?.earningWallet ?? user?.balance ?? 0).toFixed(2)}</span>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <Input type="number" min="10" step="0.01" value={cryptoAmount} onChange={(event) => setCryptoAmount(event.target.value)} placeholder="Total to withdraw" />
+            <select value={cryptoCurrency} onChange={(event) => setCryptoCurrency(event.target.value)} className="rounded-lg border border-border bg-background px-3 text-sm outline-none"><option value="usdttrc20">USDT TRC20</option><option value="btc">Bitcoin</option><option value="eth">Ethereum</option><option value="ltc">Litecoin</option></select>
+            <Input value={cryptoAddress} onChange={(event) => setCryptoAddress(event.target.value)} placeholder="Wallet address" />
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">You request the total amount. The platform deducts the full amount from Earning Wallet and sends you 80% after approval.</p>
+          <Button className="mt-4 w-full bg-primary text-primary-foreground font-bold" disabled={cryptoPayoutMutation.isPending || Number(cryptoAmount) < 10 || !cryptoAddress.trim()} onClick={() => cryptoPayoutMutation.mutate()}>{cryptoPayoutMutation.isPending ? "Requesting..." : "Request crypto payout"}</Button>
         </div>
 
         <div className={`space-y-5 ${!ngGatePassed ? "opacity-50 pointer-events-none" : ""}`}>

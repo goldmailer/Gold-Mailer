@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { WalletSummary } from "@/components/WalletSummary";
 
 // ── Countdown timer ──────────────────────────────────────────────────────────
 function Countdown({ endDate }: { endDate: string }) {
@@ -524,6 +525,7 @@ export default function Dashboard() {
         </div>
 
         <div className="max-w-5xl mx-auto px-4 sm:pl-16 py-8 space-y-8">
+          <WalletSummary />
 
           {/* ── Stats grid ─────────────────────────────────────────── */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
