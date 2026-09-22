@@ -39,8 +39,6 @@ export default function Login() {
           setLocation("/verify-email");
         } else if (!data.user.profileComplete) {
           setLocation("/setup-profile");
-        } else if (!data.user.cardAdded) {
-          setLocation("/add-card");
         } else {
           setLocation("/dashboard");
         }

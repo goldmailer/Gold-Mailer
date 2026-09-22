@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
   ShieldCheck, Upload, AlertTriangle, CheckCircle, ChevronRight,
-  FileImage, ArrowLeft, IdCard, Fingerprint, BookOpen, Check, Camera, CreditCard
+  FileImage, ArrowLeft, IdCard, Fingerprint, BookOpen, Check, Camera
 } from "lucide-react";
 
 const STEPS = ["Requirements", "Choose ID", "Upload Photo"];
@@ -72,10 +72,9 @@ function StepBar({ current }: { current: number }) {
   );
 }
 
-function OnboardingProgress({ step }: { step: "kyc" | "card" | "withdraw" }) {
+function OnboardingProgress({ step }: { step: "kyc" | "withdraw" }) {
   const steps = [
     { key: "kyc", label: "Verify Identity", icon: ShieldCheck },
-    { key: "card", label: "Add Card", icon: CreditCard },
     { key: "withdraw", label: "Withdraw Method", icon: CheckCircle },
   ];
   const currentIndex = steps.findIndex(s => s.key === step);
@@ -139,7 +138,7 @@ function SuccessRedirect({ onRedirect }: { onRedirect: () => void }) {
           We verify all submissions within <strong className="text-foreground">24–48 hours</strong>. You'll receive an email once approved.
         </p>
 
-        <OnboardingProgress step="card" />
+        <OnboardingProgress step="withdraw" />
 
         <div className="bg-primary/10 border border-primary/30 rounded-2xl p-5 mb-6 text-left space-y-3">
           <p className="font-bold text-sm text-primary">What happens next?</p>
@@ -158,20 +157,11 @@ function SuccessRedirect({ onRedirect }: { onRedirect: () => void }) {
           ))}
         </div>
 
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-6 text-left">
-          <p className="text-sm font-bold text-amber-400 mb-1 flex items-center gap-2">
-            <AlertTriangle size={14} /> Next step
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Add your bank card now. The name on your card must match your ID exactly.
-          </p>
-        </div>
-
         <Button
           onClick={onRedirect}
           className="w-full bg-primary text-primary-foreground hover:opacity-90 py-5 font-bold"
         >
-          Add Card Now <ChevronRight size={16} className="ml-1" />
+          Return to Dashboard <ChevronRight size={16} className="ml-1" />
         </Button>
         <p className="text-xs text-muted-foreground mt-3">
           Redirecting automatically in {countdown}s...
@@ -229,7 +219,7 @@ export default function KycUpload() {
   };
 
   if (submitted) {
-    return <SuccessRedirect onRedirect={() => setLocation("/add-card")} />;
+    return <SuccessRedirect onRedirect={() => setLocation("/dashboard")} />;
   }
 
   return (
@@ -257,7 +247,6 @@ export default function KycUpload() {
                 {[
                   { ok: true, text: "Have a clear, well-lit photo of your ID" },
                   { ok: true, text: "Your full name on the ID must match your account name" },
-                  { ok: true, text: "Your bank card name must also match your ID" },
                   { ok: true, text: "The entire document must be visible — no cut-off edges" },
                   { ok: false, text: "Blurry, dark, or partially covered photos will be declined" },
                   { ok: false, text: "Editing or altering the document is strictly prohibited" },

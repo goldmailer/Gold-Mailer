@@ -15,10 +15,7 @@ import Login from "@/pages/Login";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
 import SetupProfile from "@/pages/SetupProfile";
-import AddCard from "@/pages/AddCard";
 import Dashboard from "@/pages/Dashboard";
-import Cards from "@/pages/Cards";
-import Stake from "@/pages/Stake";
 import Deposit from "@/pages/Deposit";
 import Withdraw from "@/pages/Withdraw";
 import Transactions from "@/pages/Transactions";
@@ -34,8 +31,6 @@ import PostTask from "@/pages/PostTask";
 import Submissions from "@/pages/Submissions";
 import Leaderboard from "@/pages/Leaderboard";
 import Inbox from "@/pages/Inbox";
-import StakeHistory from "@/pages/StakeHistory";
-import SmsInbox from "@/pages/SmsInbox";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -57,16 +52,9 @@ function Router() {
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/setup-profile" component={SetupProfile} />
-      <Route path="/add-card" component={AddCard} />
 
       <Route path="/dashboard">
         <ProtectedRoute><Dashboard /></ProtectedRoute>
-      </Route>
-      <Route path="/cards">
-        <ProtectedRoute><Cards /></ProtectedRoute>
-      </Route>
-      <Route path="/stake">
-        <ProtectedRoute><Stake /></ProtectedRoute>
       </Route>
       <Route path="/deposit">
         <ProtectedRoute><Deposit /></ProtectedRoute>
@@ -107,12 +95,6 @@ function Router() {
       </Route>
       <Route path="/inbox">
         <ProtectedRoute><Inbox /></ProtectedRoute>
-      </Route>
-      <Route path="/stake-history">
-        <ProtectedRoute><StakeHistory /></ProtectedRoute>
-      </Route>
-      <Route path="/sms-inbox">
-        <ProtectedRoute><SmsInbox /></ProtectedRoute>
       </Route>
       <Route path="/admin-login" component={AdminLogin} />
       <Route path="/admin" component={Admin} />

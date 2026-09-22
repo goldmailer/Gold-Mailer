@@ -11,3 +11,4 @@
 - [Crypto wallets setting](crypto-wallets-setting.md) — settings table key `crypto_wallets` (JSON array of {coin,symbol,address,network}); admin manages via /api/admin/settings/crypto-wallets; shown on Deposit page as "Crypto" tab alongside Bank/PayPal.
 - [Signup flow simplification](signup-flow.md) — Phone/OTP step removed from SetupProfile.tsx; now 2 steps: Name → Country+Age/Gender. No calls to /api/sms/verify/* anymore.
 - [Drizzle workspace versions](drizzle-workspace-versions.md) — root, API, and database packages must resolve the same catalog Drizzle version or typed table queries diverge.
+- [Frontend dependency install](frontend-dependency-install.md) — full workspace install can hit Replit's firewall on orval; install the frontend and generated client workspaces selectively for UI verification.

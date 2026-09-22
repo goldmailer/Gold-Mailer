@@ -4,8 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLogout, getGetMeQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  LayoutDashboard, CreditCard, TrendingUp, ArrowDownCircle,
-  ArrowUpCircle, List, Settings, LogOut, Menu, X, User, Users, ArrowLeftRight, ClipboardList, Trophy, Bell, History, MessageSquare, BarChart2, BriefcaseBusiness, PlusCircle
+  LayoutDashboard, ArrowDownCircle,
+  ArrowUpCircle, List, Settings, LogOut, Menu, X, User, Users, ArrowLeftRight, ClipboardList, Trophy, Bell, BarChart2, BriefcaseBusiness, PlusCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SupportChat } from "@/components/SupportChat";
@@ -23,10 +23,6 @@ export function Sidebar() {
   const navItems = [
     { href: "/dashboard", label: t("nav.dashboard"), icon: LayoutDashboard },
     { href: "/inbox", label: "Inbox", icon: Bell, badge: unreadCount },
-    { href: "/sms-inbox", label: "SMS Messages", icon: MessageSquare },
-    { href: "/cards", label: t("nav.viewCards"), icon: CreditCard },
-    { href: "/stake", label: t("nav.stakeNow"), icon: TrendingUp },
-    { href: "/stake-history", label: "Stake History", icon: History },
     { href: "/deposit", label: t("nav.deposit"), icon: ArrowDownCircle },
     { href: "/withdraw", label: t("nav.withdraw"), icon: ArrowUpCircle },
     { href: "/transactions", label: t("nav.transactions"), icon: List },

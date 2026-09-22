@@ -269,24 +269,6 @@ export default function Withdraw() {
           </div>
         )}
 
-        {/* Nigeria stake gate */}
-        {isNG && user?.hasDeposited && !hasCompletedStake && (
-          <div className="bg-amber-500/10 border border-amber-500/40 rounded-xl p-5 mb-6 flex gap-4 items-start">
-            <AlertTriangle size={20} className="text-amber-400 mt-0.5 shrink-0" />
-            <div>
-              <p className="font-semibold text-amber-300 mb-1">Complete a stake to unlock withdrawal</p>
-              <p className="text-sm text-muted-foreground mb-3">
-                Nigerian accounts must complete at least one 7-day stake cycle before withdrawing. Stake now and return after 7 days.
-              </p>
-              <Link href="/stake">
-                <Button size="sm" className="bg-amber-500 hover:bg-amber-400 text-black font-bold">
-                  Go to Stake
-                </Button>
-              </Link>
-            </div>
-          </div>
-        )}
-
         {/* First-withdrawal minimum notice */}
         {user?.hasDeposited && !hasApprovedWithdrawal && (
           <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 mb-6 flex gap-3 items-start">
