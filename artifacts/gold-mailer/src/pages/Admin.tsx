@@ -14,6 +14,7 @@ import { taskTypes } from "@/lib/marketplace";
 import { useToast } from "@/hooks/use-toast";
   import { Trash2, Plus, Check, X, ArrowLeft, ArrowRight, Settings, Users, List, Pencil, ToggleLeft, ToggleRight, MessageSquare, Send, ShieldCheck, ClipboardList, Eye, Clock, Phone, DollarSign } from "lucide-react";
 import { Link } from "wouter";
+import { resetAdsSettingsCache } from "@/components/AdUnit";
 
 function fmt(n: number) {
   return `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -352,6 +353,47 @@ export default function Admin() {
   // Card Required setting
   const [cardRequired, setCardRequired] = useState<boolean>(true);
   const [cardRequiredLoading, setCardRequiredLoading] = useState(false);
+  const [adsSettings, setAdsSettings] = useState({
+    heroPageAdsEnabled: false,
+    dashboardAdsEnabled: false,
+    withdrawPageAdsEnabled: false,
+    generalAdsEnabled: false,
+    sidebarAdsEnabled: false,
+  });
+  const [adsSaving, setAdsSaving] = useState<string | null>(null);
+  const { data: adsSettingsData } = useQuery({
+    queryKey: ["admin-ads-settings"],
+    queryFn: async () => {
+      const res = await fetch("/api/settings/ads", { credentials: "include" });
+      return res.ok ? res.json() : null;
+    },
+    enabled: tab === "settings",
+  });
+  useEffect(() => {
+    if (adsSettingsData) setAdsSettings((current) => ({ ...current, ...adsSettingsData }));
+  }, [adsSettingsData]);
+  const toggleAdsSetting = async (key: keyof typeof adsSettings, value: boolean) => {
+    const next = { ...adsSettings, [key]: value };
+    setAdsSettings(next);
+    setAdsSaving(key);
+    try {
+      const response = await fetch("/api/settings/ads", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(next),
+      });
+      if (!response.ok) throw new Error("Unable to save ads settings");
+      resetAdsSettingsCache();
+      queryClient.invalidateQueries({ queryKey: ["admin-ads-settings"] });
+      toast({ title: `${key.replace("AdsEnabled", "")} ads ${value ? "enabled" : "disabled"}` });
+    } catch (error: any) {
+      setAdsSettings(adsSettings);
+      toast({ title: "Could not save ads setting", description: error.message, variant: "destructive" });
+    } finally {
+      setAdsSaving(null);
+    }
+  };
   const { data: cardRequiredData } = useQuery({
     queryKey: ["admin-card-required"],
     queryFn: async () => {
@@ -964,6 +1006,30 @@ export default function Admin() {
                   </label>
                 ))}
                 <Button onClick={saveTaskPrices} disabled={taskPriceSaving} className="w-full">{taskPriceSaving ? "Saving..." : "Save all task rates"}</Button>
+              </div>
+            </div>
+
+            {/* ── Ads Control ── */}
+            <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+              <div>
+                <h2 className="font-bold text-lg mb-1">Ads Control</h2>
+                <p className="text-muted-foreground text-sm">Choose where Monetag ads can appear. Ads are always disabled inside the admin panel.</p>
+              </div>
+              <div className="space-y-2">
+                {([
+                  ["heroPageAdsEnabled", "Hero page ads"],
+                  ["dashboardAdsEnabled", "Dashboard ads"],
+                  ["withdrawPageAdsEnabled", "Withdraw page ads"],
+                  ["generalAdsEnabled", "General page ads"],
+                  ["sidebarAdsEnabled", "Sidebar ads"],
+                ] as const).map(([key, label]) => (
+                  <Toggle
+                    key={key}
+                    value={adsSettings[key]}
+                    onChange={(value) => adsSaving === null && toggleAdsSetting(key, value)}
+                    label={adsSaving === key ? "Saving..." : label}
+                  />
+                ))}
               </div>
             </div>
 

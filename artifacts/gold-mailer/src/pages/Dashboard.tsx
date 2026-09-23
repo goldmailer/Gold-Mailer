@@ -24,6 +24,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { fmt as currencyFmt } from "@/lib/currency";
+import { AdUnit } from "@/components/AdUnit";
 
 type DashboardRecord = {
   balance?: number;
@@ -236,6 +237,7 @@ export default function Dashboard() {
             <div><p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary/80">Account overview</p><h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">{user?.firstName ? t("dash.welcomeBack", { name: user.firstName }) : "Welcome back"}</h1><p className="mt-2 max-w-xl text-sm text-muted-foreground">Your wallet, account activity, and transfer options in one clear view.</p></div>
             <div className="flex w-fit items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-2 text-xs font-semibold text-emerald-300"><CheckCircle2 size={14} /> Account active</div>
           </header>
+           <div className="mt-6 flex justify-center"><AdUnit placement="dashboard" zoneId={import.meta.env.VITE_MONETAG_ZONE_DASHBOARD || import.meta.env.VITE_MONETAG_ZONE_FEED || "284730"} label="Sponsored" /></div>
 
           <section className="mt-7 grid gap-4 lg:grid-cols-[1.2fr_.8fr]">
             <div className="relative overflow-hidden rounded-3xl border border-primary/25 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/.2),transparent_42%),linear-gradient(145deg,hsl(var(--card)),hsl(var(--background)))] p-6 shadow-lg shadow-primary/5 sm:p-8">

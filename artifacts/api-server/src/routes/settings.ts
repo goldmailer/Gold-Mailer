@@ -1,6 +1,7 @@
 import { Router } from "express";
-import { db, settingsTable } from "@workspace/db";
+import { adsSettingsTable, db, settingsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { requireAdmin } from "../lib/auth-middleware";
 
 const router = Router();
 
@@ -16,6 +17,53 @@ router.get("/settings/crypto-wallets", async (_req, res) => {
   const row = await db.select().from(settingsTable).where(eq(settingsTable.key, "crypto_wallets")).limit(1);
   const wallets = row.length === 0 ? [] : JSON.parse(row[0].value);
   res.json({ wallets });
+});
+
+const defaultAdsSettings = {
+  heroPageAdsEnabled: false,
+  dashboardAdsEnabled: false,
+  withdrawPageAdsEnabled: false,
+  generalAdsEnabled: false,
+  sidebarAdsEnabled: false,
+};
+
+function serializeAdsSettings(row: typeof adsSettingsTable.$inferSelect | undefined) {
+  return {
+    heroPageAdsEnabled: row?.heroPageAdsEnabled ?? defaultAdsSettings.heroPageAdsEnabled,
+    dashboardAdsEnabled: row?.dashboardAdsEnabled ?? defaultAdsSettings.dashboardAdsEnabled,
+    withdrawPageAdsEnabled: row?.withdrawPageAdsEnabled ?? defaultAdsSettings.withdrawPageAdsEnabled,
+    generalAdsEnabled: row?.generalAdsEnabled ?? defaultAdsSettings.generalAdsEnabled,
+    sidebarAdsEnabled: row?.sidebarAdsEnabled ?? defaultAdsSettings.sidebarAdsEnabled,
+  };
+}
+
+// GET /settings/ads — public so ad placements can decide whether to render.
+router.get("/settings/ads", async (_req, res) => {
+  const [row] = await db.select().from(adsSettingsTable).limit(1);
+  res.json(serializeAdsSettings(row));
+});
+
+// PUT /settings/ads — only an authenticated admin can change ad placements.
+router.put("/settings/ads", requireAdmin, async (req, res) => {
+  const currentRows = await db.select().from(adsSettingsTable).limit(1);
+  const current = serializeAdsSettings(currentRows[0]);
+  const body = req.body && typeof req.body === "object" ? req.body : {};
+  const next = {
+    heroPageAdsEnabled: typeof body.heroPageAdsEnabled === "boolean" ? body.heroPageAdsEnabled : current.heroPageAdsEnabled,
+    dashboardAdsEnabled: typeof body.dashboardAdsEnabled === "boolean" ? body.dashboardAdsEnabled : current.dashboardAdsEnabled,
+    withdrawPageAdsEnabled: typeof body.withdrawPageAdsEnabled === "boolean" ? body.withdrawPageAdsEnabled : current.withdrawPageAdsEnabled,
+    generalAdsEnabled: typeof body.generalAdsEnabled === "boolean" ? body.generalAdsEnabled : current.generalAdsEnabled,
+    sidebarAdsEnabled: typeof body.sidebarAdsEnabled === "boolean" ? body.sidebarAdsEnabled : current.sidebarAdsEnabled,
+  };
+
+  if (currentRows[0]) {
+    await db.update(adsSettingsTable)
+      .set({ ...next, updatedAt: new Date() })
+      .where(eq(adsSettingsTable.id, currentRows[0].id));
+  } else {
+    await db.insert(adsSettingsTable).values(next);
+  }
+  res.json(next);
 });
 
 export default router;

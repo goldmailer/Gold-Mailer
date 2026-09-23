@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { SupportChat } from "@/components/SupportChat";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { AdUnit } from "@/components/AdUnit";
 
 export function Sidebar() {
   const [open, setOpen] = useState(false);
@@ -142,6 +143,9 @@ export function Sidebar() {
               </div>
             </Link>
           ))}
+          <div className="px-3 py-4">
+            <AdUnit placement="sidebar" zoneId={import.meta.env.VITE_MONETAG_ZONE_SIDEBAR || import.meta.env.VITE_MONETAG_ZONE_FOOTER || "284209"} size="sidebar" label="Sponsored" />
+          </div>
         </nav>
 
         <div className="p-4 border-t border-sidebar-border">

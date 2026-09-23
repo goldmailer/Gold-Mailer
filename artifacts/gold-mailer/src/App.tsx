@@ -31,6 +31,7 @@ import Submissions from "@/pages/Submissions";
 import Inbox from "@/pages/Inbox";
 import NotFound from "@/pages/not-found";
 import { Privacy, Terms } from "@/pages/Legal";
+import About from "@/pages/About";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -91,6 +92,7 @@ function Router() {
       </Route>
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
+      <Route path="/about" component={About} />
       <Route path="/admin-login" component={AdminLogin} />
       <Route path="/admin">
         <AdminRoute><Admin /></AdminRoute>

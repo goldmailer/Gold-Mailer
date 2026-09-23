@@ -103,6 +103,16 @@ pool.query(`
     "updated_at" timestamp NOT NULL DEFAULT now()
   );
 
+  CREATE TABLE IF NOT EXISTS "ads_settings" (
+    "id" serial PRIMARY KEY,
+    "hero_page_ads_enabled" boolean NOT NULL DEFAULT false,
+    "dashboard_ads_enabled" boolean NOT NULL DEFAULT false,
+    "withdraw_page_ads_enabled" boolean NOT NULL DEFAULT false,
+    "general_ads_enabled" boolean NOT NULL DEFAULT false,
+    "sidebar_ads_enabled" boolean NOT NULL DEFAULT false,
+    "updated_at" timestamp NOT NULL DEFAULT now()
+  );
+
   CREATE TABLE IF NOT EXISTS "support_messages" (
     "id" serial PRIMARY KEY,
     "user_id" integer NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
