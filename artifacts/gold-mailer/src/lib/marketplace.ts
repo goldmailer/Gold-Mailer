@@ -43,6 +43,7 @@ export type MarketplaceTask = {
 export type Wallets = {
   earningWallet: number;
   advertisingWallet: number;
+  adminWallet?: number | null;
   payoutAddress: string | null;
 };
 

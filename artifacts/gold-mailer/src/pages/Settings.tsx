@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { useChangePassword, useChangeEmail, useUpdateProfile, getGetMeQueryKey } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Lock, Mail, User, Globe } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, User, Globe, FileText, ShieldCheck } from "lucide-react";
 import { useLanguage, LANGUAGE_NAMES, SUPPORTED_LANGUAGES } from "@/i18n/LanguageContext";
 import { ALL_COUNTRIES } from "@/lib/countries";
 
@@ -123,6 +124,17 @@ export default function Settings() {
                 <span className="font-semibold text-sm">{ALL_COUNTRIES.find(c => c.code === (user as any).country)?.name ?? (user as any).country}</span>
               </div>
             )}
+          </div>
+
+          <div className="bg-card border border-border rounded-2xl p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center"><ShieldCheck size={18} className="text-primary" /></div>
+              <div><h2 className="font-bold">Legal and account policies</h2><p className="text-xs text-muted-foreground">Read the policies that apply to your GoldMailer account.</p></div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Link href="/terms" className="flex items-center justify-between rounded-xl border border-border bg-background/50 p-4 text-sm font-semibold hover:border-primary/50"><span className="flex items-center gap-2"><FileText size={16} className="text-primary" /> Terms of Service</span><span>→</span></Link>
+              <Link href="/privacy" className="flex items-center justify-between rounded-xl border border-border bg-background/50 p-4 text-sm font-semibold hover:border-primary/50"><span className="flex items-center gap-2"><ShieldCheck size={16} className="text-primary" /> Privacy Policy</span><span>→</span></Link>
+            </div>
           </div>
 
           {/* Language */}

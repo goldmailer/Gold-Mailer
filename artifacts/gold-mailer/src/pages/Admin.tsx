@@ -10,8 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ALL_COUNTRIES } from "@/lib/countries";
+import { taskTypes } from "@/lib/marketplace";
 import { useToast } from "@/hooks/use-toast";
-  import { Trash2, Plus, Check, X, ArrowLeft, Settings, Users, List, Pencil, ToggleLeft, ToggleRight, MessageSquare, Send, ShieldCheck, ClipboardList, Eye, Clock, Phone, DollarSign } from "lucide-react";
+  import { Trash2, Plus, Check, X, ArrowLeft, ArrowRight, Settings, Users, List, Pencil, ToggleLeft, ToggleRight, MessageSquare, Send, ShieldCheck, ClipboardList, Eye, Clock, Phone, DollarSign } from "lucide-react";
 import { Link } from "wouter";
 
 function fmt(n: number) {
@@ -345,7 +346,7 @@ export default function Admin() {
 
   const [depositCountry, setDepositCountry] = useState("DEFAULT");
   const [depositType, setDepositType] = useState<"bank" | "paypal">("paypal");
-  const [depositBankForm, setDepositBankForm] = useState({ bankName: "", accountNumber: "", accountName: "" });
+  const [depositBankForm, setDepositBankForm] = useState({ bankName: "", accountNumber: "", routingNumber: "", accountName: "" });
   const [depositPaypalForm, setDepositPaypalForm] = useState({ paypalEmail: "", paypalName: "" });
 
   // Card Required setting
@@ -379,39 +380,43 @@ export default function Admin() {
     }
   };
 
-  const [taskPrice, setTaskPrice] = useState("0.70");
+  const [taskPrices, setTaskPrices] = useState<Record<string, string>>({});
   const [taskPriceSaving, setTaskPriceSaving] = useState(false);
-  const { data: taskPriceData } = useQuery({
-    queryKey: ["admin-task-price"],
+  const { data: taskPricesData } = useQuery({
+    queryKey: ["admin-task-prices"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/settings/task-price", { credentials: "include" });
-      return res.ok ? res.json() : { price: 0.70 };
+      const res = await fetch("/api/admin/settings/task-prices", { credentials: "include" });
+      return res.ok ? res.json() : { prices: { "__default": 0.70 } };
     },
     enabled: tab === "settings",
   });
   useEffect(() => {
-    if (taskPriceData !== undefined) setTaskPrice(Number((taskPriceData as any)?.price ?? 0.70).toFixed(2));
-  }, [taskPriceData]);
+    if (taskPricesData !== undefined) {
+      const saved = (taskPricesData as any)?.prices ?? {};
+      const fallback = Number(saved.__default ?? 0.70).toFixed(2);
+      setTaskPrices(Object.fromEntries(taskTypes.map((type) => [type, Number(saved[type] ?? fallback).toFixed(2)])));
+    }
+  }, [taskPricesData]);
 
-  const saveTaskPrice = async () => {
-    const price = Number(taskPrice);
-    if (!Number.isFinite(price) || price < 0.01 || price > 100) {
-      toast({ title: "Enter a price between $0.01 and $100", variant: "destructive" });
+  const saveTaskPrices = async () => {
+    const prices = Object.fromEntries(Object.entries(taskPrices).map(([type, raw]) => [type, Number(raw)]));
+    if (Object.values(prices).some((price) => !Number.isFinite(price) || price < 0.01 || price > 100)) {
+      toast({ title: "Each price must be between $0.01 and $100", variant: "destructive" });
       return;
     }
     setTaskPriceSaving(true);
     try {
-      const response = await fetch("/api/admin/settings/task-price", {
+      const response = await fetch("/api/admin/settings/task-prices", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ price }),
+        body: JSON.stringify({ prices }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Unable to save task price");
-      setTaskPrice(Number(data.price).toFixed(2));
-      toast({ title: "Task pricing updated", description: `Workers now earn $${Number(data.price).toFixed(2)} per approved task.` });
-      queryClient.invalidateQueries({ queryKey: ["admin-task-price"] });
+      if (!response.ok) throw new Error(data.error || "Unable to save task prices");
+      setTaskPrices(Object.fromEntries(taskTypes.map((type) => [type, Number(data.prices[type]).toFixed(2)])));
+      toast({ title: "Task pricing updated", description: "Each task type now has its own worker rate." });
+      queryClient.invalidateQueries({ queryKey: ["admin-task-prices"] });
     } catch (error: any) {
       toast({ title: "Could not save task pricing", description: error.message, variant: "destructive" });
     } finally {
@@ -581,6 +586,57 @@ export default function Admin() {
     enabled: tab === "marketplace",
     refetchInterval: tab === "marketplace" ? 15000 : false,
   });
+  const { data: adminWallet = { balance: 0, history: [] }, refetch: refetchAdminWallet } = useQuery({
+    queryKey: ["admin-wallet"],
+    queryFn: async () => {
+      const response = await fetch("/api/admin/wallet", { credentials: "include" });
+      if (!response.ok) throw new Error("Unable to load admin wallet");
+      return response.json();
+    },
+    enabled: tab === "marketplace",
+    refetchInterval: tab === "marketplace" ? 15000 : false,
+  });
+  const [adminWalletAmount, setAdminWalletAmount] = useState("");
+  const [adminWalletDescription, setAdminWalletDescription] = useState("");
+  const adjustAdminWallet = async (type: "deposit" | "withdrawal") => {
+    const amount = Number(adminWalletAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast({ title: "Enter a positive amount", variant: "destructive" });
+      return;
+    }
+    const response = await fetch(`/api/admin/wallet/${type === "deposit" ? "deposit" : "withdraw"}`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount, description: adminWalletDescription || undefined }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      toast({ title: "Wallet update failed", description: data.error, variant: "destructive" });
+      return;
+    }
+    setAdminWalletAmount("");
+    setAdminWalletDescription("");
+    toast({ title: type === "deposit" ? "Admin wallet funded" : "Admin wallet withdrawal recorded" });
+    refetchAdminWallet();
+  };
+
+  const clearFinancialHistory = async () => {
+    if (!confirm("This permanently deletes all user deposits, withdrawals, stakes, task history, and resets user balances. Continue?")) return;
+    const response = await fetch("/api/admin/maintenance/clear-financial-history", {
+      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ confirmation: "CLEAR_FINANCIAL_HISTORY" }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      toast({ title: "History was not cleared", description: data.error, variant: "destructive" });
+      return;
+    }
+    toast({ title: "User financial history cleared" });
+    queryClient.invalidateQueries({ queryKey: getAdminGetUsersQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getAdminGetTransactionsQueryKey() });
+    refetchMarketplace();
+  };
 
   const marketplaceDecision = async (path: string, successMessage: string) => {
     const response = await fetch(path, { method: "POST", credentials: "include" });
@@ -891,11 +947,23 @@ export default function Admin() {
             <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
               <div>
                 <h2 className="font-bold text-lg mb-1">Marketplace task pricing</h2>
-                <p className="text-muted-foreground text-sm">Set the single amount workers receive for each approved task. Advertisers cannot change this value when posting.</p>
+                <p className="text-muted-foreground text-sm">Set a different worker reward for every task type. Advertisers cannot change these rates when posting.</p>
               </div>
-              <div className="flex gap-3">
-                <div className="relative flex-1"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span><Input type="number" min="0.01" max="100" step="0.01" value={taskPrice} onChange={(event) => setTaskPrice(event.target.value)} className="pl-7" /></div>
-                <Button onClick={saveTaskPrice} disabled={taskPriceSaving}>{taskPriceSaving ? "Saving..." : "Save rate"}</Button>
+              <div className="space-y-3">
+                {taskTypes.map((type) => (
+                  <label key={type} className="flex items-center gap-3 text-sm">
+                    <span className="min-w-0 flex-1">{type}</span>
+                    <span className="text-muted-foreground">$</span>
+                    <select
+                      value={taskPrices[type] ?? "0.70"}
+                      onChange={(event) => setTaskPrices((current) => ({ ...current, [type]: event.target.value }))}
+                      className="w-28 rounded-lg border border-border bg-background px-2 py-2 text-sm"
+                    >
+                      {["0.10", "0.25", "0.50", "0.70", "1.00", "2.00", "5.00", "10.00"].map((price) => <option key={price} value={price}>{price}</option>)}
+                    </select>
+                  </label>
+                ))}
+                <Button onClick={saveTaskPrices} disabled={taskPriceSaving} className="w-full">{taskPriceSaving ? "Saving..." : "Save all task rates"}</Button>
               </div>
             </div>
 
@@ -1001,7 +1069,7 @@ export default function Admin() {
                           setDepositCountry(code);
                           setDepositType(acct.type);
                           if (acct.type === "bank") {
-                            setDepositBankForm({ bankName: acct.bankName ?? "", accountNumber: acct.accountNumber ?? "", accountName: acct.accountName ?? "" });
+                            setDepositBankForm({ bankName: acct.bankName ?? "", accountNumber: acct.accountNumber ?? "", routingNumber: acct.routingNumber ?? "", accountName: acct.accountName ?? "" });
                           } else {
                             setDepositPaypalForm({ paypalEmail: acct.paypalEmail ?? "", paypalName: acct.paypalName ?? "" });
                           }
@@ -1076,6 +1144,10 @@ export default function Admin() {
                   <div>
                     <label className="text-sm font-medium mb-2 block">Account Number</label>
                     <Input value={depositBankForm.accountNumber} onChange={e => setDepositBankForm(p => ({ ...p, accountNumber: e.target.value }))} placeholder="Account number or routing info" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Routing number <span className="text-muted-foreground">(optional, for supported countries)</span></label>
+                    <Input value={depositBankForm.routingNumber} onChange={e => setDepositBankForm(p => ({ ...p, routingNumber: e.target.value }))} placeholder="Routing / sort / SWIFT number" />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">Account Name</label>
@@ -1296,6 +1368,29 @@ export default function Admin() {
               <h2 className="font-bold text-lg">Marketplace controls</h2>
               <p className="text-sm text-muted-foreground">Approve advertiser tasks, worker proof, and crypto payouts.</p>
             </div>
+            <section className="grid gap-4 lg:grid-cols-2">
+              <div className="rounded-2xl border border-primary/25 bg-primary/5 p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div><p className="text-xs font-bold uppercase tracking-wider text-primary">Admin wallet</p><p className="mt-2 text-3xl font-black">{fmt(Number(adminWallet.balance ?? 0))}</p><p className="mt-1 text-xs text-muted-foreground">Includes the 20% commission from approved user deposits and withdrawals.</p></div>
+                  <DollarSign className="text-primary" />
+                </div>
+                <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                  <Input type="number" min="0.01" value={adminWalletAmount} onChange={(event) => setAdminWalletAmount(event.target.value)} placeholder="Amount" />
+                  <Input value={adminWalletDescription} onChange={(event) => setAdminWalletDescription(event.target.value)} placeholder="Description (optional)" />
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button size="sm" onClick={() => adjustAdminWallet("deposit")}><ArrowLeft size={13} /> Deposit</Button>
+                  <Button size="sm" variant="outline" onClick={() => adjustAdminWallet("withdrawal")}><ArrowRight size={13} /> Withdraw</Button>
+                  <Link href="/post-task"><Button size="sm" variant="outline"><Plus size={13} /> Post task as admin</Button></Link>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-5">
+                <p className="text-xs font-bold uppercase tracking-wider text-destructive">Destructive maintenance</p>
+                <h3 className="mt-2 font-bold">Clear user financial history</h3>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Deletes user deposit, withdrawal, stake, and task history and resets non-admin balances. Accounts remain.</p>
+                <Button variant="outline" className="mt-4 border-destructive/40 text-destructive hover:bg-destructive/10" onClick={clearFinancialHistory}><Trash2 size={14} /> Clear all history</Button>
+              </div>
+            </section>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
               {[
                 ["Users", (marketplaceAdminData.summary as any).users ?? 0],

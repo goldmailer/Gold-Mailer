@@ -269,6 +269,14 @@ pool.query(`
    INSERT INTO "admin_balances" ("id", "balance") VALUES (1, 0)
      ON CONFLICT ("id") DO NOTHING;
 
+   CREATE TABLE IF NOT EXISTS "admin_wallet_transactions" (
+     "id" serial PRIMARY KEY,
+     "type" text NOT NULL,
+     "amount" numeric(15,2) NOT NULL,
+     "description" text,
+     "created_at" timestamp NOT NULL DEFAULT now()
+   );
+
    CREATE TABLE IF NOT EXISTS "email_preferences" (
      "user_id" integer PRIMARY KEY REFERENCES "users"("id") ON DELETE CASCADE,
      "daily_update" boolean NOT NULL DEFAULT true,

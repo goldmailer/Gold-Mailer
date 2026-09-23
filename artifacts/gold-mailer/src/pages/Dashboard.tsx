@@ -1,15 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { useGetDashboard } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
   ArrowDownLeft,
   ArrowRight,
   ArrowUpRight,
   CheckCircle2,
+  ClipboardList,
   Clock3,
   LayoutGrid,
+  Megaphone,
+  PlusCircle,
   ReceiptText,
   Settings2,
+  TrendingUp,
   Users,
   WalletCards,
 } from "lucide-react";
@@ -34,6 +39,11 @@ type TransactionRecord = {
   amount: number;
   status: string;
   createdAt: string;
+};
+
+type WalletRecord = {
+  advertisingWallet?: number;
+  earningWallet?: number;
 };
 
 function MetricCard({
@@ -126,6 +136,8 @@ function QuickActions() {
   const actions = [
     { href: "/deposit", label: "Deposit", icon: ArrowDownLeft },
     { href: "/withdraw", label: "Withdraw", icon: ArrowUpRight },
+    { href: "/tasks", label: "Do tasks", icon: ClipboardList },
+    { href: "/post-task", label: "Post a task", icon: PlusCircle },
     { href: "/transactions", label: "Transactions", icon: LayoutGrid },
     { href: "/referrals", label: "Referrals", icon: Users },
     { href: "/settings", label: "Settings", icon: Settings2 },
@@ -140,10 +152,71 @@ function QuickActions() {
   );
 }
 
+function AccountAnalysis({ country }: { country: string }) {
+  const { data, isLoading } = useQuery<{ transactions: TransactionRecord[]; submissions: Array<{ status: string; amount?: number }> }>({
+    queryKey: ["dashboard-analysis"],
+    queryFn: async () => {
+      const [transactionsResponse, submissionsResponse] = await Promise.all([
+        fetch("/api/transactions", { credentials: "include" }),
+        fetch("/api/marketplace/submissions", { credentials: "include" }),
+      ]);
+      return {
+        transactions: transactionsResponse.ok ? await transactionsResponse.json() : [],
+        submissions: submissionsResponse.ok ? await submissionsResponse.json() : [],
+      };
+    },
+    staleTime: 30_000,
+  });
+  const transactions = data?.transactions ?? [];
+  const approvedDeposits = transactions.filter((item) => item.type === "deposit" && item.status === "approved").reduce((sum, item) => sum + Number(item.amount), 0);
+  const approvedWithdrawals = transactions.filter((item) => item.type === "withdrawal" && item.status === "approved").reduce((sum, item) => sum + Number(item.amount), 0);
+  const approvedTasks = (data?.submissions ?? []).filter((item) => item.status === "approved");
+  const taskIncome = approvedTasks.reduce((sum, item) => sum + Number(item.amount ?? 0), 0);
+  const activity = Array.from({ length: 6 }, (_, index) => {
+    const month = new Date();
+    month.setMonth(month.getMonth() - (5 - index), 1);
+    const value = transactions.filter((item) => {
+      const date = new Date(item.createdAt);
+      return date.getMonth() === month.getMonth() && date.getFullYear() === month.getFullYear() && item.status === "approved";
+    }).reduce((sum, item) => sum + (item.type === "deposit" ? Number(item.amount) : -Number(item.amount)), 0);
+    return { label: month.toLocaleDateString(undefined, { month: "short" }), value };
+  });
+  const maxValue = Math.max(1, ...activity.map((item) => Math.abs(item.value)));
+  return (
+    <section className="rounded-2xl border border-border/80 bg-card/80 p-5 shadow-sm shadow-black/10">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+        <div><p className="flex items-center gap-2 text-sm font-bold"><TrendingUp size={16} className="text-primary" /> Account analysis</p><p className="mt-1 text-xs text-muted-foreground">Based on your approved wallet and task activity.</p></div>
+        <span className="text-xs text-muted-foreground">{transactions.length} wallet record{transactions.length === 1 ? "" : "s"}</span>
+      </div>
+      {isLoading ? <div className="mt-6 h-32 animate-pulse rounded-xl bg-muted/40" /> : (
+        <>
+          <div className="mt-5 grid grid-cols-3 gap-3">
+            <div className="rounded-xl bg-background/60 p-3"><p className="text-xs text-muted-foreground">Deposited</p><p className="mt-1 text-sm font-black text-emerald-300">{currencyFmt(approvedDeposits, country)}</p></div>
+            <div className="rounded-xl bg-background/60 p-3"><p className="text-xs text-muted-foreground">Withdrawn</p><p className="mt-1 text-sm font-black text-orange-300">{currencyFmt(approvedWithdrawals, country)}</p></div>
+            <div className="rounded-xl bg-background/60 p-3"><p className="text-xs text-muted-foreground">Task income</p><p className="mt-1 text-sm font-black text-primary">{currencyFmt(taskIncome, country)}</p></div>
+          </div>
+          <div className="mt-6 flex h-32 items-end gap-2 border-b border-border/70 pb-1">
+            {activity.map((item) => <div key={item.label} className="flex h-full flex-1 flex-col items-center justify-end gap-2"><div className={`w-full max-w-10 rounded-t-md ${item.value >= 0 ? "bg-primary/70" : "bg-orange-400/70"}`} style={{ height: `${Math.max(8, Math.round((Math.abs(item.value) / maxValue) * 85))}%` }} title={`${item.label}: ${currencyFmt(item.value, country)}`} /><span className="text-[10px] text-muted-foreground">{item.label}</span></div>)}
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const { data: dashboardData, isLoading } = useGetDashboard();
+  const { data: walletData } = useQuery<WalletRecord>({
+    queryKey: ["marketplace-wallets"],
+    queryFn: async () => {
+      const response = await fetch("/api/marketplace/wallets", { credentials: "include" });
+      if (!response.ok) throw new Error("Unable to load wallets");
+      return response.json();
+    },
+    staleTime: 15_000,
+  });
   const dashboard = dashboardData as DashboardRecord | undefined;
   const country = user?.country ?? "NG";
   const fmt = (amount: number) => currencyFmt(amount, country);
@@ -172,8 +245,9 @@ export default function Dashboard() {
             <div className="rounded-3xl border border-border/80 bg-card/70 p-6"><p className="text-sm font-bold">Account status</p><p className="mt-1 text-xs text-muted-foreground">Your account is ready for deposits and withdrawals.</p><div className="mt-6 space-y-4"><div className="flex items-center gap-3"><CheckCircle2 className="text-emerald-300" size={18} /><span className="text-sm">Email verified</span></div><div className="flex items-center gap-3"><CheckCircle2 className="text-emerald-300" size={18} /><span className="text-sm">Profile available</span></div><div className="flex items-center gap-3"><CheckCircle2 className="text-emerald-300" size={18} /><span className="text-sm">No locked investment plans</span></div></div></div>
           </section>
 
-          <section className="mt-8"><div className="mb-3 flex items-end justify-between"><div><p className="text-sm font-bold">Wallet summary</p><p className="mt-1 text-xs text-muted-foreground">All investment and reward balances have been cleared.</p></div><p className="text-xs text-muted-foreground">{dashboard?.pendingDeposits ?? 0} pending deposit{dashboard?.pendingDeposits === 1 ? "" : "s"}</p></div><div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{breakdown.map((metric) => <MetricCard key={metric.label} {...metric} loading={isLoading} />)}</div></section>
+          <section className="mt-8"><div className="mb-3 flex items-end justify-between"><div><p className="text-sm font-bold">Wallet summary</p><p className="mt-1 text-xs text-muted-foreground">Track your available funds and advertising budget separately.</p></div><p className="text-xs text-muted-foreground">{dashboard?.pendingDeposits ?? 0} pending deposit{dashboard?.pendingDeposits === 1 ? "" : "s"}</p></div><div className="grid grid-cols-2 gap-3 lg:grid-cols-5">{breakdown.map((metric) => <MetricCard key={metric.label} {...metric} loading={isLoading} />)}<MetricCard label="Advertising wallet" value={fmt(walletData?.advertisingWallet ?? 0)} icon={Megaphone} tone="blue" loading={!walletData} /></div></section>
           <div className="mt-8"><QuickActions /></div>
+          <div className="mt-8"><AccountAnalysis country={country} /></div>
           <div className="mt-8"><RecentActivity country={country} /></div>
         </div>
       </main>

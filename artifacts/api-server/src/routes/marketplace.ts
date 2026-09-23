@@ -58,7 +58,7 @@ function getNumber(value: unknown) {
 
 router.get("/marketplace/wallets", requireAuth, async (req, res) => {
   const result = await pool.query(
-    `SELECT balance, advertising_wallet, payout_address FROM users WHERE id = $1 LIMIT 1`,
+    `SELECT balance, advertising_wallet, payout_address, is_admin FROM users WHERE id = $1 LIMIT 1`,
     [req.session.userId],
   );
   if (!result.rows[0]) {
@@ -68,6 +68,7 @@ router.get("/marketplace/wallets", requireAuth, async (req, res) => {
   res.json({
     earningWallet: Number(result.rows[0].balance),
     advertisingWallet: Number(result.rows[0].advertising_wallet),
+    adminWallet: req.session.isAdmin ? Number((await pool.query(`SELECT balance FROM admin_balances WHERE id = 1`)).rows[0]?.balance ?? 0) : null,
     payoutAddress: result.rows[0].payout_address,
   });
 });
@@ -113,8 +114,11 @@ router.get("/marketplace/tasks/:id", requireAuth, async (req, res) => {
 router.post("/marketplace/tasks", requireAuth, async (req, res) => {
   const { title, taskType, description, proofType, workersNeeded } = req.body ?? {};
   const workers = getNumber(workersNeeded);
-  const pricing = await pool.query(`SELECT value FROM settings WHERE key = 'task_price' LIMIT 1`);
-  const pay = getNumber(pricing.rows[0]?.value ?? "0.70");
+  const pricing = await pool.query(`SELECT key, value FROM settings WHERE key IN ('task_price', 'task_prices')`);
+  const pricingMap = Object.fromEntries(pricing.rows.map((row: any) => [row.key, row.value]));
+  let priceByType: Record<string, number> = {};
+  try { priceByType = JSON.parse(pricingMap.task_prices ?? "{}"); } catch { priceByType = {}; }
+  const pay = getNumber(priceByType[taskType] ?? pricingMap.task_price ?? "0.70");
   if (!title?.trim() || !description?.trim() || !taskTypeSet.has(taskType) || !["screenshot", "link", "text"].includes(proofType)) {
     res.status(400).json({ error: "Title, task type, description, and proof type are required" });
     return;
@@ -127,19 +131,20 @@ router.post("/marketplace/tasks", requireAuth, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    const wallet = await client.query(
-      `SELECT advertising_wallet FROM users WHERE id = $1 FOR UPDATE`,
-      [req.session.userId],
-    );
+    const wallet = req.session.isAdmin
+      ? await client.query(`SELECT balance AS advertising_wallet FROM admin_balances WHERE id = 1 FOR UPDATE`)
+      : await client.query(`SELECT advertising_wallet FROM users WHERE id = $1 FOR UPDATE`, [req.session.userId]);
     if (!wallet.rows[0] || Number(wallet.rows[0].advertising_wallet) < totalCost) {
       await client.query("ROLLBACK");
       res.status(402).json({ error: "Advertising Wallet balance is too low", required: totalCost });
       return;
     }
-    await client.query(
-      `UPDATE users SET advertising_wallet = advertising_wallet - $1 WHERE id = $2`,
-      [totalCost, req.session.userId],
-    );
+    if (req.session.isAdmin) {
+      await client.query(`UPDATE admin_balances SET balance = balance - $1, updated_at = now() WHERE id = 1`, [totalCost]);
+      await client.query(`INSERT INTO admin_wallet_transactions (type, amount, description) VALUES ('task_spend', $1, $2)`, [totalCost, `Funding task: ${title.trim()}`]);
+    } else {
+      await client.query(`UPDATE users SET advertising_wallet = advertising_wallet - $1 WHERE id = $2`, [totalCost, req.session.userId]);
+    }
     const created = await client.query(
       `INSERT INTO marketplace_tasks
        (creator_id, title, task_type, description, proof_type, workers_needed, pay_per_task, total_cost)

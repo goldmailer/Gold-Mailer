@@ -1,6 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db, usersTable, transactionsTable, settingsTable, stakesTable } from "@workspace/db";
+import { pool } from "@workspace/db";
 import { eq, ne, sql } from "drizzle-orm";
 import { requireAdmin } from "../lib/auth-middleware";
 
@@ -137,37 +138,67 @@ router.get("/admin/transactions", requireAdmin, async (req, res) => {
 // POST /admin/transactions/:id/approve
 router.post("/admin/transactions/:id/approve", requireAdmin, async (req, res) => {
   const id = parseInt(String(req.params.id));
-  const txs = await db.select().from(transactionsTable).where(eq(transactionsTable.id, id)).limit(1);
-  if (txs.length === 0) {
-    res.status(404).json({ error: "Transaction not found" });
-    return;
+  const client = await pool.connect();
+  let tx: any;
+  let updated: any;
+  try {
+    await client.query("BEGIN");
+    const result = await client.query(`SELECT * FROM transactions WHERE id = $1 FOR UPDATE`, [id]);
+    tx = result.rows[0];
+    if (!tx) {
+      await client.query("ROLLBACK");
+      res.status(404).json({ error: "Transaction not found" });
+      return;
+    }
+    if (tx.status !== "pending") {
+      await client.query("ROLLBACK");
+      res.status(409).json({ error: "Only pending transactions can be approved" });
+      return;
+    }
+    const amount = Number(tx.amount);
+    const commission = Number((amount * 0.2).toFixed(2));
+    const userAmount = Number((amount - commission).toFixed(2));
+    if (tx.type === "deposit") {
+      await client.query(`UPDATE users SET balance = balance + $1 WHERE id = $2`, [userAmount, tx.user_id]);
+    } else if (tx.type === "withdrawal") {
+      const user = await client.query(`SELECT balance FROM users WHERE id = $1 FOR UPDATE`, [tx.user_id]);
+      if (!user.rows[0] || Number(user.rows[0].balance) < amount) {
+        await client.query("ROLLBACK");
+        res.status(400).json({ error: "User no longer has enough balance for this withdrawal" });
+        return;
+      }
+      await client.query(`UPDATE users SET balance = balance - $1 WHERE id = $2`, [amount, tx.user_id]);
+    }
+    await client.query(`UPDATE transactions SET status = 'approved', notes = $1 WHERE id = $2`, [
+      `${tx.type === "deposit" ? "User credited" : "User payout"}: ${userAmount.toFixed(2)} after 20% platform commission.`,
+      id,
+    ]);
+    await client.query(`UPDATE admin_balances SET balance = balance + $1, updated_at = now() WHERE id = 1`, [commission]);
+    await client.query(
+      `INSERT INTO admin_earnings (user_id, type, total_amount, admin_cut, user_gets) VALUES ($1, $2, $3, $4, $5)`,
+      [tx.user_id, tx.type, amount, commission, userAmount],
+    );
+    updated = await client.query(`SELECT * FROM transactions WHERE id = $1`, [id]);
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
   }
-  const tx = txs[0];
-  const updated = await db.update(transactionsTable).set({ status: "approved" }).where(eq(transactionsTable.id, id)).returning();
 
-  // Credit balance for deposits, deduct for withdrawals
-  if (tx.type === "deposit") {
-    await db.update(usersTable).set({
-      balance: sql`${usersTable.balance} + ${parseFloat(tx.amount)}`,
-    }).where(eq(usersTable.id, tx.userId));
-  } else if (tx.type === "withdrawal") {
-    await db.update(usersTable).set({
-      balance: sql`${usersTable.balance} - ${parseFloat(tx.amount)}`,
-    }).where(eq(usersTable.id, tx.userId));
-  }
-
-  const t = updated[0];
+  const t = updated.rows[0];
   res.json({
     id: t.id,
     type: t.type,
-    amount: parseFloat(t.amount),
+    amount: Number(t.amount),
     status: t.status,
-    transactionId: t.transactionId,
-    bankName: t.bankName,
-    accountNumber: t.accountNumber,
-    accountName: t.accountName,
+    transactionId: t.transaction_id,
+    bankName: t.bank_name,
+    accountNumber: t.account_number,
+    accountName: t.account_name,
     notes: t.notes,
-    createdAt: t.createdAt.toISOString(),
+    createdAt: new Date(t.created_at).toISOString(),
   });
 });
 
@@ -192,6 +223,94 @@ router.post("/admin/transactions/:id/decline", requireAdmin, async (req, res) =>
     notes: t.notes,
     createdAt: t.createdAt.toISOString(),
   });
+});
+
+// GET /admin/wallet — admin commission balance and its manual adjustments.
+router.get("/admin/wallet", requireAdmin, async (_req, res) => {
+  const [balance, history] = await Promise.all([
+    pool.query(`SELECT balance FROM admin_balances WHERE id = 1`),
+    pool.query(`SELECT id, type, amount, description, created_at FROM admin_wallet_transactions ORDER BY created_at DESC LIMIT 50`),
+  ]);
+  res.json({
+    balance: Number(balance.rows[0]?.balance ?? 0),
+    history: history.rows.map((row: any) => ({ ...row, amount: Number(row.amount), createdAt: row.created_at })),
+  });
+});
+
+// POST /admin/wallet/deposit — add a manual admin wallet deposit.
+router.post("/admin/wallet/deposit", requireAdmin, async (req, res) => {
+  const amount = Number(req.body?.amount);
+  const description = String(req.body?.description ?? "Manual admin wallet deposit").trim();
+  if (!Number.isFinite(amount) || amount <= 0) {
+    res.status(400).json({ error: "Enter a positive amount" });
+    return;
+  }
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query(`UPDATE admin_balances SET balance = balance + $1, updated_at = now() WHERE id = 1`, [amount]);
+    await client.query(`INSERT INTO admin_wallet_transactions (type, amount, description) VALUES ('deposit', $1, $2)`, [amount, description]);
+    await client.query("COMMIT");
+    res.status(201).json({ success: true });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+});
+
+// POST /admin/wallet/withdraw — record a manual admin wallet withdrawal.
+router.post("/admin/wallet/withdraw", requireAdmin, async (req, res) => {
+  const amount = Number(req.body?.amount);
+  const description = String(req.body?.description ?? "Manual admin wallet withdrawal").trim();
+  if (!Number.isFinite(amount) || amount <= 0) {
+    res.status(400).json({ error: "Enter a positive amount" });
+    return;
+  }
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const current = await client.query(`SELECT balance FROM admin_balances WHERE id = 1 FOR UPDATE`);
+    if (!current.rows[0] || Number(current.rows[0].balance) < amount) {
+      await client.query("ROLLBACK");
+      res.status(400).json({ error: "Insufficient admin wallet balance" });
+      return;
+    }
+    await client.query(`UPDATE admin_balances SET balance = balance - $1, updated_at = now() WHERE id = 1`, [amount]);
+    await client.query(`INSERT INTO admin_wallet_transactions (type, amount, description) VALUES ('withdrawal', $1, $2)`, [amount, description]);
+    await client.query("COMMIT");
+    res.status(201).json({ success: true });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+});
+
+// Destructive maintenance action: clear financial activity without deleting accounts.
+router.post("/admin/maintenance/clear-financial-history", requireAdmin, async (req, res) => {
+  if (req.body?.confirmation !== "CLEAR_FINANCIAL_HISTORY") {
+    res.status(400).json({ error: "Type CLEAR_FINANCIAL_HISTORY to confirm this destructive action" });
+    return;
+  }
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query(`DELETE FROM transactions`);
+    await client.query(`DELETE FROM stakes`);
+    await client.query(`DELETE FROM marketplace_submissions`);
+    await client.query(`DELETE FROM marketplace_tasks`);
+    await client.query(`UPDATE users SET balance = 0, advertising_wallet = 0 WHERE is_admin = false`);
+    await client.query("COMMIT");
+    res.json({ success: true, message: "User financial history and balances were cleared." });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 });
 
 // PATCH /admin/users/:id
@@ -241,7 +360,7 @@ router.patch("/admin/users/:id", requireAdmin, async (req, res) => {
 // PUT /admin/deposit-account
 // Body: { countryCode: string, type: "bank"|"paypal", bankName?, accountNumber?, accountName?, paypalEmail?, paypalName? }
 router.put("/admin/deposit-account", requireAdmin, async (req, res) => {
-  const { countryCode, type, bankName, accountNumber, accountName, paypalEmail, paypalName } = req.body;
+  const { countryCode, type, bankName, accountNumber, routingNumber, accountName, paypalEmail, paypalName } = req.body;
   if (!countryCode || !type) {
     res.status(400).json({ error: "countryCode and type are required" });
     return;
@@ -272,7 +391,7 @@ router.put("/admin/deposit-account", requireAdmin, async (req, res) => {
 
   // Update specific country
   if (type === "bank") {
-    accounts[countryCode] = { type: "bank", bankName, accountNumber, accountName };
+    accounts[countryCode] = { type: "bank", bankName, accountNumber, routingNumber: routingNumber || null, accountName };
   } else {
     accounts[countryCode] = { type: "paypal", paypalEmail, paypalName: paypalName || null };
   }
@@ -365,6 +484,42 @@ router.post("/admin/settings/task-price", requireAdmin, async (req, res) => {
     await db.insert(settingsTable).values({ key: "task_price", value });
   }
   res.json({ price });
+});
+
+router.get("/admin/settings/task-prices", requireAdmin, async (_req, res) => {
+  const [legacy, current] = await Promise.all([
+    db.select().from(settingsTable).where(eq(settingsTable.key, "task_price")).limit(1),
+    db.select().from(settingsTable).where(eq(settingsTable.key, "task_prices")).limit(1),
+  ]);
+  let prices: Record<string, number> = {};
+  try { prices = JSON.parse(current[0]?.value ?? "{}"); } catch { prices = {}; }
+  if (Object.keys(prices).length === 0) prices = { "__default": Number(legacy[0]?.value ?? "0.70") };
+  res.json({ prices });
+});
+
+router.post("/admin/settings/task-prices", requireAdmin, async (req, res) => {
+  const prices = req.body?.prices;
+  if (!prices || typeof prices !== "object" || Array.isArray(prices)) {
+    res.status(400).json({ error: "prices must be an object" });
+    return;
+  }
+  const normalized: Record<string, number> = {};
+  for (const [taskType, raw] of Object.entries(prices)) {
+    const price = Number(raw);
+    if (!Number.isFinite(price) || price < 0.01 || price > 100) {
+      res.status(400).json({ error: `Invalid price for ${taskType}` });
+      return;
+    }
+    normalized[taskType] = Number(price.toFixed(2));
+  }
+  const value = JSON.stringify(normalized);
+  const existing = await db.select().from(settingsTable).where(eq(settingsTable.key, "task_prices")).limit(1);
+  if (existing.length > 0) {
+    await db.update(settingsTable).set({ value, updatedAt: new Date() }).where(eq(settingsTable.key, "task_prices"));
+  } else {
+    await db.insert(settingsTable).values({ key: "task_prices", value });
+  }
+  res.json({ prices: normalized });
 });
 
 // GET /admin/users/balance-summary

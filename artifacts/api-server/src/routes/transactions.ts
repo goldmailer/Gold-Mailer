@@ -136,7 +136,7 @@ router.get("/transactions", requireAuth, async (req, res) => {
 });
 
 // GET /settings/deposit-account
-// Returns { accounts: Record<countryCode, { type, bankName?, accountNumber?, accountName?, paypalEmail?, paypalName? }> }
+// Returns { accounts: Record<countryCode, { type, bankName?, accountNumber?, routingNumber?, accountName?, paypalEmail?, paypalName? }> }
 router.get("/settings/deposit-account", async (req, res) => {
   const settings = await db.select().from(settingsTable).where(eq(settingsTable.key, "deposit_account")).limit(1);
   if (settings.length === 0) {
@@ -152,13 +152,13 @@ router.get("/settings/deposit-account", async (req, res) => {
   // Legacy format: migrate on the fly
   const accounts: Record<string, any> = {};
   if (d.bankName && d.accountNumber) {
-    accounts["NG"] = { type: "bank", bankName: d.bankName, accountNumber: d.accountNumber, accountName: d.accountName };
+    accounts["NG"] = { type: "bank", bankName: d.bankName, accountNumber: d.accountNumber, routingNumber: d.routingNumber, accountName: d.accountName };
   }
   if (d.paypalEmail) {
     accounts["DEFAULT"] = { type: "paypal", paypalEmail: d.paypalEmail, paypalName: d.paypalName };
   }
   if (d.usBankName && d.usShowBank) {
-    accounts["US"] = { type: "bank", bankName: d.usBankName, accountNumber: d.usAccountNumber, accountName: d.usAccountName };
+    accounts["US"] = { type: "bank", bankName: d.usBankName, accountNumber: d.usAccountNumber, routingNumber: d.usRoutingNumber, accountName: d.usAccountName };
   } else if (d.usPaypalEmail && d.usShowPaypal) {
     accounts["US"] = { type: "paypal", paypalEmail: d.usPaypalEmail, paypalName: d.usPaypalName };
   }
