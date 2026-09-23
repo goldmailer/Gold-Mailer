@@ -245,7 +245,7 @@ paths:
     get:
       operationId: getDashboard
       tags: [user]
-      summary: Get user dashboard summary (balance, stakes, profits)
+      summary: Get user dashboard summary (referrals, stakes, profits)
       responses:
         "200":
           description: Dashboard data
@@ -483,7 +483,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/AuthMessage"
 
-  /admin/users/{id}/balance:
+  /admin/users/{id}/credits:
     post:
       operationId: adminTopUpBalance
       tags: [admin]
@@ -499,7 +499,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/BalanceTopUp"
+              $ref: "#/components/schemas/CreditTopUp"
       responses:
         "200":
           description: Balance updated
@@ -702,7 +702,7 @@ components:
           type: boolean
         cardAdded:
           type: boolean
-        balance:
+        referralCredits:
           type: number
         createdAt:
           type: string
@@ -726,9 +726,9 @@ components:
 
     DashboardData:
       type: object
-      required: [balance, totalStaked, totalProfit, activeStakes, dailyRewardAvailable, pendingDeposits, pendingWithdrawals]
+      required: [referralCredits, totalStaked, totalProfit, activeStakes, dailyRewardAvailable, pendingDeposits, pendingWithdrawals]
       properties:
-        balance:
+        referralCredits:
           type: number
         totalStaked:
           type: number
@@ -850,13 +850,13 @@ components:
 
     RewardClaim:
       type: object
-      required: [message, amount, newBalance]
+      required: [message, amount, newTotal]
       properties:
         message:
           type: string
         amount:
           type: number
-        newBalance:
+        newTotal:
           type: number
 
     Transaction:
@@ -946,7 +946,7 @@ components:
 
     AdminUser:
       type: object
-      required: [id, email, plainPassword, balance, isVerified, profileComplete, createdAt]
+      required: [id, email, plainPassword, isVerified, profileComplete, createdAt]
       properties:
         id:
           type: integer
@@ -958,8 +958,6 @@ components:
           type: ["string", "null"]
         lastName:
           type: ["string", "null"]
-        balance:
-          type: number
         isVerified:
           type: boolean
         profileComplete:
@@ -986,7 +984,7 @@ components:
           type: string
           nullable: true
 
-    BalanceTopUp:
+    CreditTopUp:
       type: object
       required: [amount]
       properties:
