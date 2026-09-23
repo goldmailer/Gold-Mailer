@@ -105,7 +105,7 @@ router.get("/admin/kyc", requireAdmin, async (req, res) => {
 
 // POST /admin/kyc/:id/approve
 router.post("/admin/kyc/:id/approve", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(String(req.params.id));
   const subs = await db.select().from(kycSubmissionsTable)
     .where(eq(kycSubmissionsTable.id, id)).limit(1);
   if (subs.length === 0) { res.status(404).json({ error: "Submission not found" }); return; }
@@ -145,7 +145,7 @@ router.post("/admin/kyc/:id/approve", requireAdmin, async (req, res) => {
 
 // POST /admin/kyc/:id/decline
 router.post("/admin/kyc/:id/decline", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(String(req.params.id));
   const { notes } = req.body;
 
   const subs = await db.select().from(kycSubmissionsTable)

@@ -39,7 +39,7 @@ router.get("/inbox/unread-count", requireAuth, async (req, res) => {
 // POST /inbox/messages/:id/read — mark a message as read
 router.post("/inbox/messages/:id/read", requireAuth, async (req, res) => {
   const userId = (req.session as any).userId;
-  const id = parseInt(req.params.id);
+  const id = parseInt(String(req.params.id));
   if (isNaN(id)) { res.status(400).json({ error: "Invalid message id" }); return; }
   await pool.query(
     `UPDATE user_inbox SET is_read = true WHERE id = $1 AND user_id = $2`,

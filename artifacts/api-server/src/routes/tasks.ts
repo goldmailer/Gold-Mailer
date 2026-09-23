@@ -115,7 +115,7 @@ router.get("/admin/tasks", requireAdmin, async (req, res) => {
 
 // POST /admin/tasks/:id/approve
 router.post("/admin/tasks/:id/approve", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(String(req.params.id));
   const subs = await db.select().from(taskSubmissionsTable)
     .where(eq(taskSubmissionsTable.id, id)).limit(1);
   if (subs.length === 0) { res.status(404).json({ error: "Not found" }); return; }
@@ -132,7 +132,7 @@ router.post("/admin/tasks/:id/approve", requireAdmin, async (req, res) => {
 
 // POST /admin/tasks/:id/decline
 router.post("/admin/tasks/:id/decline", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(String(req.params.id));
   const subs = await db.select().from(taskSubmissionsTable)
     .where(eq(taskSubmissionsTable.id, id)).limit(1);
   if (subs.length === 0) { res.status(404).json({ error: "Not found" }); return; }

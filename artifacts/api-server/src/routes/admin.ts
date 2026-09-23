@@ -83,14 +83,14 @@ router.get("/admin/users", requireAdmin, async (req, res) => {
 
 // DELETE /admin/users/:id
 router.delete("/admin/users/:id", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(String(req.params.id));
   await db.delete(usersTable).where(eq(usersTable.id, id));
   res.json({ message: "User deleted successfully" });
 });
 
 // POST /admin/users/:id/balance
 router.post("/admin/users/:id/balance", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(String(req.params.id));
   const { amount } = req.body;
   if (!amount) {
     res.status(400).json({ error: "Amount is required" });
@@ -136,7 +136,7 @@ router.get("/admin/transactions", requireAdmin, async (req, res) => {
 
 // POST /admin/transactions/:id/approve
 router.post("/admin/transactions/:id/approve", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(String(req.params.id));
   const txs = await db.select().from(transactionsTable).where(eq(transactionsTable.id, id)).limit(1);
   if (txs.length === 0) {
     res.status(404).json({ error: "Transaction not found" });
@@ -173,7 +173,7 @@ router.post("/admin/transactions/:id/approve", requireAdmin, async (req, res) =>
 
 // POST /admin/transactions/:id/decline
 router.post("/admin/transactions/:id/decline", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(String(req.params.id));
   const updated = await db.update(transactionsTable).set({ status: "declined" }).where(eq(transactionsTable.id, id)).returning();
   if (updated.length === 0) {
     res.status(404).json({ error: "Transaction not found" });
@@ -196,7 +196,7 @@ router.post("/admin/transactions/:id/decline", requireAdmin, async (req, res) =>
 
 // PATCH /admin/users/:id
 router.patch("/admin/users/:id", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(String(req.params.id));
   const { country, phone, firstName, lastName, email } = req.body;
   const updateData: Record<string, any> = {};
   if (country !== undefined) updateData.country = country || "NG";
@@ -296,7 +296,7 @@ router.delete("/admin/deposit-account/:countryCode", requireAdmin, async (req, r
   }
   const d = JSON.parse(existing[0].value);
   const accounts: Record<string, any> = (d.DEFAULT !== undefined || Object.keys(d).some(k => k.length === 2 || k === "DEFAULT")) ? d : {};
-  delete accounts[countryCode];
+  delete accounts[String(countryCode)];
   const value = JSON.stringify(accounts);
   await db.update(settingsTable).set({ value, updatedAt: new Date() }).where(eq(settingsTable.key, "deposit_account"));
   res.json({ accounts });
@@ -344,6 +344,27 @@ router.put("/admin/settings/crypto-wallets", requireAdmin, async (req, res) => {
     await db.insert(settingsTable).values({ key: "crypto_wallets", value });
   }
   res.json({ wallets });
+});
+
+router.get("/admin/settings/task-price", requireAdmin, async (_req, res) => {
+  const row = await db.select().from(settingsTable).where(eq(settingsTable.key, "task_price")).limit(1);
+  res.json({ price: Number(row[0]?.value ?? "0.70") });
+});
+
+router.post("/admin/settings/task-price", requireAdmin, async (req, res) => {
+  const price = Number(req.body?.price);
+  if (!Number.isFinite(price) || price < 0.01 || price > 100) {
+    res.status(400).json({ error: "Task price must be between $0.01 and $100" });
+    return;
+  }
+  const value = price.toFixed(2);
+  const existing = await db.select().from(settingsTable).where(eq(settingsTable.key, "task_price")).limit(1);
+  if (existing.length > 0) {
+    await db.update(settingsTable).set({ value, updatedAt: new Date() }).where(eq(settingsTable.key, "task_price"));
+  } else {
+    await db.insert(settingsTable).values({ key: "task_price", value });
+  }
+  res.json({ price });
 });
 
 // GET /admin/users/balance-summary

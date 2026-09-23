@@ -85,7 +85,7 @@ router.post("/cards", requireAuth, async (req, res) => {
 
 // GET /cards/:id - full details
 router.get("/cards/:id", requireAuth, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(String(req.params.id));
   const cards = await db.select().from(cardsTable).where(eq(cardsTable.id, id)).limit(1);
   if (cards.length === 0 || cards[0].userId !== req.session.userId) {
     res.status(404).json({ error: "Card not found" });

@@ -20,6 +20,7 @@ interface User {
   country: string | null;
   phone: string | null;
   kycStatus: string;
+  isAdmin?: boolean;
   createdAt: string;
 }
 

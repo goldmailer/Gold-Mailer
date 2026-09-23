@@ -379,6 +379,46 @@ export default function Admin() {
     }
   };
 
+  const [taskPrice, setTaskPrice] = useState("0.70");
+  const [taskPriceSaving, setTaskPriceSaving] = useState(false);
+  const { data: taskPriceData } = useQuery({
+    queryKey: ["admin-task-price"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/settings/task-price", { credentials: "include" });
+      return res.ok ? res.json() : { price: 0.70 };
+    },
+    enabled: tab === "settings",
+  });
+  useEffect(() => {
+    if (taskPriceData !== undefined) setTaskPrice(Number((taskPriceData as any)?.price ?? 0.70).toFixed(2));
+  }, [taskPriceData]);
+
+  const saveTaskPrice = async () => {
+    const price = Number(taskPrice);
+    if (!Number.isFinite(price) || price < 0.01 || price > 100) {
+      toast({ title: "Enter a price between $0.01 and $100", variant: "destructive" });
+      return;
+    }
+    setTaskPriceSaving(true);
+    try {
+      const response = await fetch("/api/admin/settings/task-price", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ price }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Unable to save task price");
+      setTaskPrice(Number(data.price).toFixed(2));
+      toast({ title: "Task pricing updated", description: `Workers now earn $${Number(data.price).toFixed(2)} per approved task.` });
+      queryClient.invalidateQueries({ queryKey: ["admin-task-price"] });
+    } catch (error: any) {
+      toast({ title: "Could not save task pricing", description: error.message, variant: "destructive" });
+    } finally {
+      setTaskPriceSaving(false);
+    }
+  };
+
   // Crypto wallets
   const [cryptoWallets, setCryptoWallets] = useState<{ coin: string; symbol: string; address: string; network: string }[]>([]);
   const [newWallet, setNewWallet] = useState({ coin: "", symbol: "", address: "", network: "" });
@@ -556,7 +596,6 @@ export default function Admin() {
   const tabs = [
     { key: "users", label: "Users", icon: Users },
     { key: "transactions", label: "Transactions", icon: List },
-    { key: "kyc", label: "KYC", icon: ShieldCheck, badge: pendingKycCount },
     { key: "tasks", label: "Tasks", icon: ClipboardList, badge: pendingTasksCount },
     { key: "marketplace", label: "Marketplace", icon: DollarSign },
     { key: "settings", label: "Settings", icon: Settings },
@@ -848,6 +887,17 @@ export default function Admin() {
         {/* ── SETTINGS TAB ── */}
         {tab === "settings" && (
           <div className="max-w-lg space-y-8">
+
+            <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+              <div>
+                <h2 className="font-bold text-lg mb-1">Marketplace task pricing</h2>
+                <p className="text-muted-foreground text-sm">Set the single amount workers receive for each approved task. Advertisers cannot change this value when posting.</p>
+              </div>
+              <div className="flex gap-3">
+                <div className="relative flex-1"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span><Input type="number" min="0.01" max="100" step="0.01" value={taskPrice} onChange={(event) => setTaskPrice(event.target.value)} className="pl-7" /></div>
+                <Button onClick={saveTaskPrice} disabled={taskPriceSaving}>{taskPriceSaving ? "Saving..." : "Save rate"}</Button>
+              </div>
+            </div>
 
             {/* ── Card Step Toggle ── */}
             <div className="bg-card border border-border rounded-2xl p-6 space-y-4">

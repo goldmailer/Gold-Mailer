@@ -25,6 +25,7 @@ function buildUserResponse(user: any, hasDeposited: boolean) {
     country: user.country ?? "NG",
     phone: user.phone ?? null,
     kycStatus: user.kycStatus ?? "none",
+    isAdmin: Boolean(user.isAdmin),
     createdAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : user.createdAt,
   };
 }

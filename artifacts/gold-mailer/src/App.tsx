@@ -3,9 +3,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { ProtectedRoute, AdminRoute } from "@/components/ProtectedRoute";
 import { useNotificationPoller } from "@/hooks/useNotifications";
 import { PopunderAd } from "@/components/PopunderAd";
+import { NavigationLoader } from "@/components/NavigationLoader";
 
 import AdminLogin from "@/pages/AdminLogin";
 import MarketplaceHome from "@/pages/MarketplaceHome";
@@ -24,14 +25,12 @@ import Referrals from "@/pages/Referrals";
 import Exchange from "@/pages/Exchange";
 import Crypto from "@/pages/Crypto";
 import Admin from "@/pages/Admin";
-import KycUpload from "@/pages/KycUpload";
-import Tasks from "@/pages/Tasks";
 import Marketplace from "@/pages/Marketplace";
 import PostTask from "@/pages/PostTask";
 import Submissions from "@/pages/Submissions";
-import Leaderboard from "@/pages/Leaderboard";
 import Inbox from "@/pages/Inbox";
 import NotFound from "@/pages/not-found";
+import { Privacy, Terms } from "@/pages/Legal";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -78,9 +77,6 @@ function Router() {
         <ProtectedRoute><Crypto /></ProtectedRoute>
       </Route>
 
-      <Route path="/kyc">
-        <ProtectedRoute><KycUpload /></ProtectedRoute>
-      </Route>
       <Route path="/tasks">
         <ProtectedRoute><Marketplace /></ProtectedRoute>
       </Route>
@@ -90,14 +86,15 @@ function Router() {
       <Route path="/submissions">
         <ProtectedRoute><Submissions /></ProtectedRoute>
       </Route>
-      <Route path="/leaderboard">
-        <ProtectedRoute><Leaderboard /></ProtectedRoute>
-      </Route>
       <Route path="/inbox">
         <ProtectedRoute><Inbox /></ProtectedRoute>
       </Route>
+      <Route path="/privacy" component={Privacy} />
+      <Route path="/terms" component={Terms} />
       <Route path="/admin-login" component={AdminLogin} />
-      <Route path="/admin" component={Admin} />
+      <Route path="/admin">
+        <AdminRoute><Admin /></AdminRoute>
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );
@@ -116,6 +113,7 @@ function App() {
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
             <NotificationPollerMount />
             <PopunderAd />
+            <NavigationLoader />
             <Router />
           </WouterRouter>
           <Toaster />

@@ -112,7 +112,7 @@ export default function MarketplaceHome() {
 
         <section className="px-5 pb-20 lg:px-8"><div className="mx-auto max-w-7xl"><MonetagAd zoneId={import.meta.env.VITE_MONETAG_ZONE_FOOTER} label="Sponsored" /><div className="mt-16 grid gap-5 md:grid-cols-3">{[[formatMetric(stats.users), "registered workers"], [formatMetric(stats.payouts), "approved payouts"], [formatCurrency(stats.payoutAmount), "paid to workers"]].map(([value, label]) => <div key={label} className="rounded-2xl border border-white/5 bg-card p-6 text-center"><p className="text-3xl font-black text-primary">{value}</p><p className="mt-2 text-sm text-muted-foreground">{label}</p></div>)}</div></div></section>
       </main>
-      <footer className="border-t border-white/5 px-5 py-8 lg:px-8"><div className="mx-auto flex max-w-7xl flex-col gap-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between"><span>© 2026 GoldMailerTasks</span><span>Simple tasks. Clear proof. Real payouts.</span></div></footer>
+       <footer className="border-t border-white/5 px-5 py-8 lg:px-8"><div className="mx-auto flex max-w-7xl flex-col gap-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between"><span>© 2026 GoldMailerTasks</span><div className="flex gap-4"><Link href="/privacy" className="hover:text-foreground">Privacy</Link><Link href="/terms" className="hover:text-foreground">Terms</Link><span>Simple tasks. Clear proof. Real payouts.</span></div></div></footer>
     </div>
   );
 }

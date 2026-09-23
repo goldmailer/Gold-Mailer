@@ -21,29 +21,13 @@ type FormData = z.infer<typeof schema>;
 
 const TERMS = `TERMS OF SERVICE
 
-By using Gold Mailer, you agree to the following terms:
+By using GoldMailer, you agree to use the service lawfully, provide accurate account information, and keep your login details secure.
 
-1. ELIGIBILITY: You must be 18 years or older to use this platform.
+Wallet deposits and withdrawals may be reviewed before approval. Do not submit false information, misuse payment callbacks, bypass access controls, or interfere with another account.
 
-2. STAKING: The minimum stake is $3 and maximum is $100. Funds are locked for 7 days.
+GoldMailer collects the information needed to provide the service, process account activity, prevent abuse, and provide support. We do not sell personal information. Read the full Terms and Privacy Policy at goldmailer.xyz/terms and goldmailer.xyz/privacy.
 
-3. PROFITS: Profit for a $3 stake is $8 after 7 days. Higher deposits earn proportionally more.
-
-4. DAILY REWARDS: Users may claim $0.10 daily reward per active stake.
-
-5. SIGNUP BONUS: A one-time bonus is credited upon adding your first card.
-
-6. WITHDRAWALS: Withdrawal requests are subject to admin approval within 24-48 hours.
-
-7. DEPOSITS: All deposits require a valid transaction ID for verification.
-
-8. PROHIBITED ACTIVITIES: Fraud, misrepresentation, or abuse of the platform will result in immediate account termination.
-
-9. CHANGES: Gold Mailer reserves the right to modify terms at any time.
-
-PRIVACY POLICY
-
-Gold Mailer collects and uses your personal data (name, email, card details) solely to provide our services. We do not sell your data to third parties. Your financial information is encrypted and stored securely. You may request deletion of your data at any time by contacting support.`;
+Questions: 1xemailsupportbox@gmail.com`;
 
 export default function Register() {
   const [, setLocation] = useLocation();

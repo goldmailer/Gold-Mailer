@@ -26,3 +26,20 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (!user) return null;
   return <>{children}</>;
 }
+
+export function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!loading && (!user || !(user as any).isAdmin)) setLocation(user ? "/dashboard" : "/admin-login");
+  }, [user, loading, setLocation]);
+
+  if (loading) return <LoadingScreen />;
+  if (!user || !(user as any).isAdmin) return null;
+  return <>{children}</>;
+}
+
+function LoadingScreen() {
+  return <div className="min-h-screen flex items-center justify-center bg-background"><div className="gmt-loader" role="status" aria-label="Loading"><span className="gmt-loader-label">GMT</span><span className="gmt-loader-orbit"><span className="gmt-loader-ball" /></span></div></div>;
+}

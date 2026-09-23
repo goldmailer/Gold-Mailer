@@ -5,7 +5,7 @@ import { requireAdmin, requireAuth } from "../lib/auth-middleware";
 
 const router = Router();
 const COMMISSION_RATE = 0.2;
-const MIN_PAYOUT = 10;
+const MIN_PAYOUT = 5;
 
 export const MARKETPLACE_TASK_TYPES = [
   "YouTube Watch & Subscribe",
@@ -111,15 +111,16 @@ router.get("/marketplace/tasks/:id", requireAuth, async (req, res) => {
 });
 
 router.post("/marketplace/tasks", requireAuth, async (req, res) => {
-  const { title, taskType, description, proofType, workersNeeded, payPerTask } = req.body ?? {};
+  const { title, taskType, description, proofType, workersNeeded } = req.body ?? {};
   const workers = getNumber(workersNeeded);
-  const pay = getNumber(payPerTask);
+  const pricing = await pool.query(`SELECT value FROM settings WHERE key = 'task_price' LIMIT 1`);
+  const pay = getNumber(pricing.rows[0]?.value ?? "0.70");
   if (!title?.trim() || !description?.trim() || !taskTypeSet.has(taskType) || !["screenshot", "link", "text"].includes(proofType)) {
     res.status(400).json({ error: "Title, task type, description, and proof type are required" });
     return;
   }
   if (!Number.isInteger(workers) || workers < 1 || workers > 100000 || !Number.isFinite(pay) || pay < 0.01) {
-    res.status(400).json({ error: "Workers and pay per task are invalid" });
+    res.status(400).json({ error: "Workers value is invalid" });
     return;
   }
   const totalCost = Number((workers * pay).toFixed(2));
@@ -226,8 +227,8 @@ router.post("/payments/nowpayments/deposit", requireAuth, async (req, res) => {
     res.status(503).json({ error: "NowPayments is not configured yet" });
     return;
   }
-  if (!Number.isFinite(amount) || amount < 1) {
-    res.status(400).json({ error: "Deposit must be at least $1" });
+  if (!Number.isFinite(amount) || amount < 5) {
+    res.status(400).json({ error: "Deposit must be at least $5" });
     return;
   }
   const invoiceResponse = await fetch("https://api.nowpayments.io/v1/invoice", {

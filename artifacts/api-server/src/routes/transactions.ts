@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, transactionsTable, usersTable, settingsTable, stakesTable } from "@workspace/db";
+import { db, transactionsTable, usersTable, settingsTable } from "@workspace/db";
 import { eq, and, count } from "drizzle-orm";
 import { requireAuth } from "../lib/auth-middleware";
 import { getCountryConfig } from "../lib/currency";
@@ -67,22 +67,6 @@ router.post("/transactions/withdraw", requireAuth, async (req, res) => {
     return;
   }
 
-  // Nigerian users must also have at least one completed stake before withdrawing
-  if (users[0].country === "NG") {
-    const completedStakeCheck = await db
-      .select({ total: count() })
-      .from(stakesTable)
-      .where(
-        and(
-          eq(stakesTable.userId, req.session.userId!),
-          eq(stakesTable.status, "completed"),
-        ),
-      );
-    if ((completedStakeCheck[0]?.total ?? 0) === 0) {
-      res.status(403).json({ error: "Nigerian accounts must complete at least one stake before withdrawing." });
-      return;
-    }
-  }
   const cfg = getCountryConfig(users[0].country);
   const FIRST_WITHDRAWAL_MIN = cfg.firstWithdrawMin;
 

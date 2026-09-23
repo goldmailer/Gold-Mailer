@@ -109,7 +109,7 @@ router.post("/stakes", requireAuth, async (req, res) => {
 
 // POST /stakes/:id/toggle-auto-renew
 router.post("/stakes/:id/toggle-auto-renew", requireAuth, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(String(req.params.id));
   const stakes = await db.select().from(stakesTable).where(eq(stakesTable.id, id)).limit(1);
   if (stakes.length === 0 || stakes[0].userId !== req.session.userId) {
     res.status(404).json({ error: "Stake not found" });
@@ -123,7 +123,7 @@ router.post("/stakes/:id/toggle-auto-renew", requireAuth, async (req, res) => {
 
 // POST /stakes/:id/claim-daily
 router.post("/stakes/:id/claim-daily", requireAuth, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(String(req.params.id));
   const stakes = await db.select().from(stakesTable).where(eq(stakesTable.id, id)).limit(1);
   if (stakes.length === 0 || stakes[0].userId !== req.session.userId) {
     res.status(404).json({ error: "Stake not found" });
@@ -165,7 +165,7 @@ router.post("/stakes/:id/claim-daily", requireAuth, async (req, res) => {
 
 // POST /stakes/:id/withdraw-to-balance
 router.post("/stakes/:id/withdraw-to-balance", requireAuth, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(String(req.params.id));
   const stakes = await db.select().from(stakesTable).where(eq(stakesTable.id, id)).limit(1);
   if (stakes.length === 0 || stakes[0].userId !== req.session.userId) {
     res.status(404).json({ error: "Stake not found" });

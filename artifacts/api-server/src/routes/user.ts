@@ -1,6 +1,6 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
-import { db, usersTable, stakesTable, transactionsTable } from "@workspace/db";
+import { db, usersTable, transactionsTable } from "@workspace/db";
 import { eq, sum, count, and, sql } from "drizzle-orm";
 import { requireAuth } from "../lib/auth-middleware";
 
@@ -137,20 +137,6 @@ router.get("/user/dashboard", requireAuth, async (req, res) => {
   }
   const user = users[0];
 
-  const allStakes = await db.select().from(stakesTable).where(eq(stakesTable.userId, userId));
-  const activeStakes = allStakes.filter(s => s.status === "active");
-  const completedStakes = allStakes.filter(s => s.status === "completed");
-
-  const activeCount = activeStakes.length;
-  const completedCount = completedStakes.length;
-
-  const totalStaked = activeStakes.reduce((sum, s) => sum + parseFloat(s.amount), 0);
-  const totalProfit = allStakes.reduce((sum, s) => sum + parseFloat(s.profit) + parseFloat(s.totalDailyClaimed), 0);
-
-  const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const dailyRewardAvailable = activeStakes.some(s => !s.lastDailyClaim || s.lastDailyClaim < todayStart);
-
   const allTxs = await db.select().from(transactionsTable).where(eq(transactionsTable.userId, userId));
   const pendingDeposits = allTxs.filter(t => t.type === "deposit" && t.status === "pending").length;
   const pendingWithdrawals = allTxs.filter(t => t.type === "withdrawal" && t.status === "pending").length;
@@ -163,11 +149,11 @@ router.get("/user/dashboard", requireAuth, async (req, res) => {
 
   res.json({
     balance: parseFloat(user.balance),
-    totalStaked,
-    totalProfit,
-    activeStakes: activeCount,
-    completedStakes: completedCount,
-    dailyRewardAvailable,
+    totalStaked: 0,
+    totalProfit: 0,
+    activeStakes: 0,
+    completedStakes: 0,
+    dailyRewardAvailable: false,
     pendingDeposits,
     pendingWithdrawals,
     totalDeposited,

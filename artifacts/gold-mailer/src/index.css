@@ -217,6 +217,59 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.gmt-loader {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 88px;
+  height: 88px;
+  color: hsl(var(--primary));
+  filter: drop-shadow(0 0 14px hsl(var(--primary) / .3));
+}
+
+.gmt-loader-label {
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: .2em;
+  margin-left: .2em;
+}
+
+.gmt-loader-orbit {
+  position: absolute;
+  inset: 7px;
+  border: 1px solid hsl(var(--primary) / .35);
+  border-radius: 999px;
+  animation: gmt-spin 1s linear infinite;
+}
+
+.gmt-loader-ball {
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: hsl(var(--primary));
+  box-shadow: 0 0 10px hsl(var(--primary));
+  transform: translateX(-50%);
+}
+
+@keyframes gmt-spin {
+  to { transform: rotate(360deg); }
+}
+
+.legal-copy {
+  color: hsl(var(--muted-foreground));
+  line-height: 1.75;
+}
+
+.legal-copy h2 {
+  margin: 2rem 0 .5rem;
+  color: hsl(var(--foreground));
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
 /* ── Daily Diamond animations ─────────────────────────── */
 @keyframes diamond-float {
   0%, 100% { transform: translateY(0px); }
