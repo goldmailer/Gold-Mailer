@@ -166,7 +166,7 @@ export default function SetupProfile() {
                   <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <FormField control={form.control} name="firstName" render={({ field }) => (
                     <FormItem>
                       <FormLabel>First Name <span className="text-destructive">*</span></FormLabel>
@@ -224,7 +224,7 @@ export default function SetupProfile() {
                   </FormItem>
                 )} />
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <FormField control={form.control} name="age" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Age</FormLabel>

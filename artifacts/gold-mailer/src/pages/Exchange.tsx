@@ -54,7 +54,7 @@ export default function Exchange() {
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
-      <main className="pt-16 max-w-xl mx-auto px-4 sm:pl-16 py-8">
+       <main className="mx-auto w-full max-w-xl px-4 py-8 pt-16 sm:pl-16">
         <div className="flex items-center gap-3 mb-1">
           <h1 className="text-2xl font-black">Currency Exchange</h1>
         </div>
@@ -72,9 +72,9 @@ export default function Exchange() {
             {/* From */}
             <div>
               <label className="text-xs text-muted-foreground uppercase tracking-wider mb-2 block">From</label>
-              <div className="flex gap-2">
+               <div className="flex flex-col gap-2 sm:flex-row">
                 <Select value={fromCurrency} onValueChange={setFromCurrency}>
-                  <SelectTrigger className="w-48 shrink-0">
+                   <SelectTrigger className="w-full shrink-0 sm:w-48">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="max-h-64">
@@ -111,9 +111,9 @@ export default function Exchange() {
             {/* To */}
             <div>
               <label className="text-xs text-muted-foreground uppercase tracking-wider mb-2 block">To</label>
-              <div className="flex gap-2">
+               <div className="flex flex-col gap-2 sm:flex-row">
                 <Select value={toCurrency} onValueChange={setToCurrency}>
-                  <SelectTrigger className="w-48 shrink-0">
+                   <SelectTrigger className="w-full shrink-0 sm:w-48">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="max-h-64">

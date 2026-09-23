@@ -15,7 +15,9 @@ export function PopunderAd() {
       localStorage.setItem("goldmailer-popunder-last", String(Date.now()));
       const script = document.createElement("script");
       script.async = true;
-      script.src = `https://fpyf8.com/88/tag.min.js?z=${encodeURIComponent(zoneId)}`;
+       script.dataset.zone = zoneId;
+       script.dataset.cfasync = "false";
+       script.src = "https://quge5.com/88/tag.min.js";
       document.body.appendChild(script);
       window.removeEventListener("click", onClick);
       if (timer) window.clearTimeout(timer);

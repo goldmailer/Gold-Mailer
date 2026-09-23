@@ -100,7 +100,7 @@ export default function Settings() {
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
-      <main className="pt-16 max-w-2xl mx-auto px-4 sm:pl-16 py-8">
+       <main className="mx-auto w-full max-w-2xl px-4 py-8 pt-16 sm:pl-16">
         <h1 className="text-2xl font-black mb-1">{t("settings.title")}</h1>
         <p className="text-muted-foreground text-sm mb-8">{t("settings.subtitle")}</p>
 
@@ -108,18 +108,18 @@ export default function Settings() {
           {/* Account info summary */}
           <div className="bg-card border border-border rounded-xl p-5 space-y-2">
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Account Info</p>
-            <div className="flex justify-between items-center">
+             <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:justify-between">
               <span className="text-sm text-muted-foreground">{t("settings.currentEmail")}</span>
               <span className="font-semibold text-sm">{user?.email}</span>
             </div>
             {user?.firstName && (
-              <div className="flex justify-between items-center">
+               <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <span className="text-sm text-muted-foreground">Name</span>
                 <span className="font-semibold text-sm">{user.firstName} {user.lastName ?? ""}</span>
               </div>
             )}
             {(user as any)?.country && (
-              <div className="flex justify-between items-center">
+               <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <span className="text-sm text-muted-foreground">Country</span>
                 <span className="font-semibold text-sm">{ALL_COUNTRIES.find(c => c.code === (user as any).country)?.name ?? (user as any).country}</span>
               </div>
@@ -180,7 +180,7 @@ export default function Settings() {
               </div>
             </div>
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label className="text-sm font-medium mb-2 block">{t("settings.firstName")}</label>
                   <Input
