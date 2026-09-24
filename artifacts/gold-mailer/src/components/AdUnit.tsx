@@ -11,6 +11,14 @@ type Props = {
 
 type AdsSettings = Record<`${AdPlacement}AdsEnabled`, boolean>;
 
+const defaultAdsSettings: AdsSettings = {
+  heroPageAdsEnabled: true,
+  dashboardAdsEnabled: true,
+  withdrawPageAdsEnabled: true,
+  generalAdsEnabled: true,
+  sidebarAdsEnabled: true,
+};
+
 const settingForPlacement: Record<AdPlacement, keyof AdsSettings> = {
   heroPage: "heroPageAdsEnabled",
   dashboard: "dashboardAdsEnabled",
@@ -36,7 +44,7 @@ function loadAdsSettings() {
     settingsPromise = fetch("/api/settings/ads", { credentials: "include" })
       .then((response) => response.ok ? response.json() : {})
       .then((data) => data as AdsSettings)
-      .catch(() => ({} as AdsSettings));
+      .catch(() => defaultAdsSettings);
   }
   return settingsPromise;
 }

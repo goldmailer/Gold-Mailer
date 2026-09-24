@@ -354,11 +354,11 @@ export default function Admin() {
   const [cardRequired, setCardRequired] = useState<boolean>(true);
   const [cardRequiredLoading, setCardRequiredLoading] = useState(false);
   const [adsSettings, setAdsSettings] = useState({
-    heroPageAdsEnabled: false,
-    dashboardAdsEnabled: false,
-    withdrawPageAdsEnabled: false,
-    generalAdsEnabled: false,
-    sidebarAdsEnabled: false,
+    heroPageAdsEnabled: true,
+    dashboardAdsEnabled: true,
+    withdrawPageAdsEnabled: true,
+    generalAdsEnabled: true,
+    sidebarAdsEnabled: true,
   });
   const [adsSaving, setAdsSaving] = useState<string | null>(null);
   const { data: adsSettingsData } = useQuery({

@@ -20,11 +20,11 @@ router.get("/settings/crypto-wallets", async (_req, res) => {
 });
 
 const defaultAdsSettings = {
-  heroPageAdsEnabled: false,
-  dashboardAdsEnabled: false,
-  withdrawPageAdsEnabled: false,
-  generalAdsEnabled: false,
-  sidebarAdsEnabled: false,
+  heroPageAdsEnabled: true,
+  dashboardAdsEnabled: true,
+  withdrawPageAdsEnabled: true,
+  generalAdsEnabled: true,
+  sidebarAdsEnabled: true,
 };
 
 function serializeAdsSettings(row: typeof adsSettingsTable.$inferSelect | undefined) {
