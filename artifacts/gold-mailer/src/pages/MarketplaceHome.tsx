@@ -4,6 +4,7 @@ import { ArrowRight, CheckCircle2, ChevronRight, CircleDollarSign, Search, Shiel
 import { Button } from "@/components/ui/button";
 import { AdUnit } from "@/components/AdUnit";
 import { PopunderAd } from "@/components/PopunderAd";
+import { EarthGlobe } from "@/components/EarthGlobe";
 import { categories } from "@/lib/marketplace";
 
 const featured = [
@@ -74,22 +75,8 @@ export default function MarketplaceHome() {
                 {["Free to join", "Proof-based approval", "Crypto withdrawals"].map((item) => <span key={item} className="flex items-center gap-1.5"><CheckCircle2 size={14} className="text-green-400" />{item}</span>)}
               </div>
             </div>
-            <div className="relative min-w-0">
-              <div className="absolute inset-8 rounded-[3rem] bg-primary/15 blur-3xl" />
-              <div className="relative rounded-[2rem] border border-white/10 bg-card/90 p-5 shadow-2xl backdrop-blur">
-                <div className="mb-5 flex items-center justify-between">
-                  <div><p className="text-xs text-muted-foreground">Your potential today</p><p className="text-3xl font-black">$24.80</p></div>
-                  <div className="rounded-xl bg-green-500/10 p-3 text-green-400"><CircleDollarSign size={24} /></div>
-                </div>
-                {[["Website Visit & Click", "Complete a 60-second visit", "$0.45"], ["Review on Google/Trustpilot", "Share an honest experience", "$1.10"], ["App Install & Review", "Try a new productivity app", "$2.40"]].map(([type, title, pay], index) => (
-                  <div key={type} className="mb-3 flex items-center gap-3 rounded-xl border border-white/5 bg-background/70 p-3">
-                    <div className={`h-10 w-10 rounded-xl bg-gradient-to-br ${["from-primary/30", "from-blue-500/30", "from-purple-500/30"][index]} to-transparent`} />
-                    <div className="min-w-0 flex-1"><p className="truncate text-[11px] font-bold text-primary">{type}</p><p className="truncate text-sm font-semibold">{title}</p></div>
-                    <span className="font-black text-green-400">{pay}</span>
-                  </div>
-                ))}
-                <Button onClick={() => setLocation("/register")} className="mt-2 w-full bg-primary text-primary-foreground font-bold">Start earning <ArrowRight size={15} /></Button>
-              </div>
+            <div className="relative min-w-0 flex items-center justify-center">
+              <EarthGlobe />
             </div>
           </div>
            <div className="relative mx-auto mt-10 flex min-w-0 justify-center"><AdUnit placement="heroPage" zoneId={import.meta.env.VITE_MONETAG_ZONE_HERO || "284203"} size="leaderboard" label="Sponsored" /></div>

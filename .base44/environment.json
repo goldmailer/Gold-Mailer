@@ -1,0 +1,43 @@
+{
+  "previewPort": 3000,
+  "healthPath": "/api/health",
+  "startCommand": "docker compose -f docker-compose.base44.yml up -d",
+  "secrets": [
+    {
+      "name": "DATABASE_URL",
+      "description": "PostgreSQL connection string. In the Base44 dev environment this is provided by the local compose Postgres service; set this only if pointing at an external/managed database.",
+      "requiredAtBoot": true,
+      "generatedForDevelopment": true
+    },
+    {
+      "name": "SESSION_SECRET",
+      "description": "Secret for signing Express sessions. A built-in dev default exists; set a real value for production.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "RESEND_API_KEY",
+      "description": "Resend API key for sending transactional emails (verification, notifications). Optional — email features are disabled without it.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "NOWPAYMENTS_API_KEY",
+      "description": "NOWPayments API key for crypto deposits/payments. Optional — marketplace payments are disabled without it.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "NOWPAYMENTS_IPN_SECRET",
+      "description": "NOWPayments IPN signing secret for verifying payment webhooks. Optional.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "ADMIN_EMAIL",
+      "description": "Admin login email. Optional — admin login returns 503 until this and ADMIN_PASSWORD are set.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "ADMIN_PASSWORD",
+      "description": "Admin login password. Optional — set together with ADMIN_EMAIL to enable admin access.",
+      "requiredAtBoot": false
+    }
+  ]
+}

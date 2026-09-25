@@ -110,6 +110,8 @@ pool.query(`
     "withdraw_page_ads_enabled" boolean NOT NULL DEFAULT false,
     "general_ads_enabled" boolean NOT NULL DEFAULT false,
     "sidebar_ads_enabled" boolean NOT NULL DEFAULT false,
+    "main_ads_enabled" boolean NOT NULL DEFAULT true,
+    "popup_ads_enabled" boolean NOT NULL DEFAULT true,
     "updated_at" timestamp NOT NULL DEFAULT now()
   );
 
@@ -150,6 +152,9 @@ pool.query(`
    ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "advertising_wallet" numeric(15,2) NOT NULL DEFAULT 0;
    ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "payout_address" text;
    ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "is_banned" boolean NOT NULL DEFAULT false;
+
+   ALTER TABLE "ads_settings" ADD COLUMN IF NOT EXISTS "main_ads_enabled" boolean NOT NULL DEFAULT true;
+   ALTER TABLE "ads_settings" ADD COLUMN IF NOT EXISTS "popup_ads_enabled" boolean NOT NULL DEFAULT true;
 
   CREATE TABLE IF NOT EXISTS "user_inbox" (
     "id" serial PRIMARY KEY,
