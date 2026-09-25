@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $pdo) {
                     WHERE tag_slot = :slot
                 ");
                 $stmt->execute([':code' => $code, ':slot' => $slot]);
-                $message = "{$slot} successfully connected and installed into website header!";
+                $message = "{$slot} successfully connected and installed into index.html!";
                 $message_type = "success";
             } elseif ($action === 'disconnect') {
                 $stmt = $pdo->prepare("
@@ -30,8 +30,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $pdo) {
                     WHERE tag_slot = :slot
                 ");
                 $stmt->execute([':slot' => $slot]);
-                $message = "{$slot} disconnected from the website header (tag code preserved).";
+                $message = "{$slot} disconnected from index.html (tag code preserved).";
                 $message_type = "info";
+            }
+
+            // Also write directly to index.html files
+            $index_files = [
+                dirname(__DIR__) . '/artifacts/gold-mailer/dist/public/index.html',
+                dirname(__DIR__) . '/artifacts/gold-mailer/index.html',
+                dirname(__DIR__) . '/index.html',
+            ];
+            $slotNum = preg_replace('/[^0-9]/', '', $slot) ?: '1';
+            $startM = "<!-- TAG_{$slotNum}_START -->";
+            $endM = "<!-- TAG_{$slotNum}_END -->";
+
+            foreach ($index_files as $f) {
+                if (file_exists($f)) {
+                    $html = file_get_contents($f);
+                    if (!str_contains($html, '<!-- ADS_TAGS_START -->')) {
+                        $html = str_replace('</head>', "    <!-- ADS_TAGS_START -->\n    <!-- ADS_TAGS_END -->\n</head>", $html);
+                    }
+                    $slotContent = ($action === 'connect' && !empty($code)) ? "{$startM}\n    {$code}\n    {$endM}" : "{$startM}{$endM}";
+                    if (str_contains($html, $startM) && str_contains($html, $endM)) {
+                        $html = preg_replace('/' . preg_quote($startM, '/') . '[\s\S]*?' . preg_quote($endM, '/') . '/', $slotContent, $html);
+                    } else {
+                        $html = str_replace('<!-- ADS_TAGS_END -->', "  {$slotContent}\n    <!-- ADS_TAGS_END -->", $html);
+                    }
+                    file_put_contents($f, $html);
+                }
             }
         } catch (Exception $e) {
             $message = "Error updating {$slot}: " . $e->getMessage();
@@ -55,15 +81,49 @@ if ($pdo) {
     }
 }
 
-// Ensure slots 1 to 5 exist in view
+// Ensure slots 1 to 5 exist in view and check index.html for connected status
+$index_files = [
+    dirname(__DIR__) . '/artifacts/gold-mailer/dist/public/index.html',
+    dirname(__DIR__) . '/artifacts/gold-mailer/index.html',
+    dirname(__DIR__) . '/index.html',
+];
+$index_html_content = '';
+foreach ($index_files as $f) {
+    if (file_exists($f)) {
+        $index_html_content = file_get_contents($f);
+        break;
+    }
+}
+
 for ($i = 1; $i <= 5; $i++) {
     $slotName = "Tag {$i}";
+    $startM = "<!-- TAG_{$i}_START -->";
+    $endM = "<!-- TAG_{$i}_END -->";
+    $htmlCode = '';
+    $isConnectedInHtml = false;
+
+    if (!empty($index_html_content) && str_contains($index_html_content, $startM) && str_contains($index_html_content, $endM)) {
+        $sIdx = strpos($index_html_content, $startM) + strlen($startM);
+        $eIdx = strpos($index_html_content, $endM);
+        $htmlCode = trim(substr($index_html_content, $sIdx, $eIdx - $sIdx));
+        if (!empty($htmlCode)) {
+            $isConnectedInHtml = true;
+        }
+    }
+
     if (!isset($tags[$slotName])) {
         $tags[$slotName] = [
             'tag_slot' => $slotName,
-            'tag_code' => '',
-            'status' => 'disconnected'
+            'tag_code' => $htmlCode,
+            'status' => $isConnectedInHtml ? 'connected' : 'disconnected'
         ];
+    } else {
+        if ($isConnectedInHtml) {
+            $tags[$slotName]['status'] = 'connected';
+            $tags[$slotName]['tag_code'] = $htmlCode;
+        } elseif (!empty($index_html_content) && str_contains($index_html_content, $startM)) {
+            $tags[$slotName]['status'] = 'disconnected';
+        }
     }
 }
 ?>

@@ -1,5 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
+import fs from "fs";
+import path from "path";
 import { db, usersTable, transactionsTable, settingsTable, stakesTable } from "@workspace/db";
 import { pool } from "@workspace/db";
 import { eq, ne, sql } from "drizzle-orm";
@@ -596,34 +598,169 @@ router.post("/admin/reject-payout/:id", async (req, res) => {
 
 // In-memory fallback for ad tags
 const memAdTags: Record<string, { tag_slot: string; tag_code: string; status: string }> = {
-  "Tag 1": { tag_slot: "Tag 1", tag_code: "", status: "disconnected" },
-  "Tag 2": { tag_slot: "Tag 2", tag_code: "", status: "disconnected" },
-  "Tag 3": { tag_slot: "Tag 3", tag_code: "", status: "disconnected" },
-  "Tag 4": { tag_slot: "Tag 4", tag_code: "", status: "disconnected" },
+  "Tag 1": { tag_slot: "Tag 1", tag_code: '<script src="https://quge5.com/88/tag.min.js" data-zone="284730" async data-cfasync="false"></script>', status: "connected" },
+  "Tag 2": { tag_slot: "Tag 2", tag_code: '<script src="https://quge5.com/88/tag.min.js" data-zone="284731" async data-cfasync="false"></script>', status: "connected" },
+  "Tag 3": { tag_slot: "Tag 3", tag_code: "<script>(function(s){s.dataset.zone='11874239',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>", status: "disconnected" },
+  "Tag 4": { tag_slot: "Tag 4", tag_code: '<script src="https://quge5.com/88/tag.min.js" data-zone="284731" async data-cfasync="false"></script>', status: "disconnected" },
   "Tag 5": { tag_slot: "Tag 5", tag_code: "", status: "disconnected" },
 };
 
-// GET /admin/ad-tags — get all 5 tag slots
-router.get("/admin/ad-tags", async (_req, res) => {
-  try {
-    const result = await pool.query(`SELECT tag_slot, tag_code, status FROM ad_tags ORDER BY id ASC`);
-    if (result.rows && result.rows.length > 0) {
-      const map: Record<string, any> = {};
-      for (const r of result.rows) map[r.tag_slot] = r;
-      for (let i = 1; i <= 5; i++) {
-        const slot = `Tag ${i}`;
-        if (!map[slot]) map[slot] = { tag_slot: slot, tag_code: "", status: "disconnected" };
-      }
-      res.json(map);
-      return;
+function getIndexHtmlPaths(): string[] {
+  const root = process.cwd();
+  return [
+    path.resolve(root, "artifacts/gold-mailer/dist/public/index.html"),
+    path.resolve(root, "artifacts/gold-mailer/index.html"),
+    path.resolve(root, "index.html"),
+    path.resolve(root, "artifacts/gold-mailer/public/index.html"),
+  ];
+}
+
+function readIndexHtml(): string {
+  for (const p of getIndexHtmlPaths()) {
+    if (fs.existsSync(p)) {
+      try {
+        const content = fs.readFileSync(p, "utf-8");
+        if (content && content.includes("<html")) {
+          return content;
+        }
+      } catch (e) {}
     }
-  } catch (err) {
-    // fallback to memory
   }
-  res.json(memAdTags);
+  return "";
+}
+
+function writeIndexHtml(content: string): void {
+  for (const p of getIndexHtmlPaths()) {
+    try {
+      const dir = path.dirname(p);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(p, content, "utf-8");
+    } catch (e) {}
+  }
+}
+
+function updateIndexHtmlSlot(slot: string, code: string, action: "connect" | "disconnect"): string {
+  let html = readIndexHtml();
+  if (!html) return "";
+
+  if (!html.includes("<!-- ADS_TAGS_START -->") || !html.includes("<!-- ADS_TAGS_END -->")) {
+    const headClose = "</head>";
+    if (html.includes(headClose)) {
+      html = html.replace(
+        headClose,
+        `    <!-- ADS_TAGS_START -->\n    <!-- ADS_TAGS_END -->\n${headClose}`
+      );
+    } else {
+      html += "\n<!-- ADS_TAGS_START -->\n<!-- ADS_TAGS_END -->\n";
+    }
+  }
+
+  const slotNum = slot.replace(/[^0-9]/g, "") || "1";
+  const startMarker = `<!-- TAG_${slotNum}_START -->`;
+  const endMarker = `<!-- TAG_${slotNum}_END -->`;
+
+  const startIdx = html.indexOf("<!-- ADS_TAGS_START -->");
+  const endIdx = html.indexOf("<!-- ADS_TAGS_END -->");
+  if (startIdx === -1 || endIdx === -1 || endIdx <= startIdx) {
+    return html;
+  }
+
+  let adsBlock = html.substring(startIdx, endIdx + "<!-- ADS_TAGS_END -->".length);
+  const slotContent = action === "connect" && code.trim() ? `\n    ${code.trim()}\n    ` : "";
+
+  if (adsBlock.includes(startMarker) && adsBlock.includes(endMarker)) {
+    const regex = new RegExp(`${startMarker}[\\s\\S]*?${endMarker}`, "g");
+    adsBlock = adsBlock.replace(regex, `${startMarker}${slotContent}${endMarker}`);
+  } else {
+    adsBlock = adsBlock.replace(
+      "<!-- ADS_TAGS_END -->",
+      `  ${startMarker}${slotContent}${endMarker}\n    <!-- ADS_TAGS_END -->`
+    );
+  }
+
+  const updatedHtml = html.substring(0, startIdx) + adsBlock + html.substring(endIdx + "<!-- ADS_TAGS_END -->".length);
+  writeIndexHtml(updatedHtml);
+  return updatedHtml;
+}
+
+function parseSlotsFromIndexHtml(): Record<string, { tag_slot: string; tag_code: string; status: string }> {
+  const html = readIndexHtml();
+  const map: Record<string, { tag_slot: string; tag_code: string; status: string }> = {};
+
+  const adsStart = html.indexOf("<!-- ADS_TAGS_START -->");
+  const adsEnd = html.indexOf("<!-- ADS_TAGS_END -->");
+  const adsBlock = (adsStart !== -1 && adsEnd !== -1 && adsEnd > adsStart)
+    ? html.substring(adsStart, adsEnd)
+    : "";
+
+  for (let i = 1; i <= 5; i++) {
+    const slot = `Tag ${i}`;
+    const startM = `<!-- TAG_${i}_START -->`;
+    const endM = `<!-- TAG_${i}_END -->`;
+    let code = "";
+    let isConnected = false;
+
+    if (adsBlock.includes(startM) && adsBlock.includes(endM)) {
+      const sIdx = adsBlock.indexOf(startM) + startM.length;
+      const eIdx = adsBlock.indexOf(endM);
+      const inner = adsBlock.substring(sIdx, eIdx).trim();
+      if (inner.length > 0) {
+        code = inner;
+        isConnected = true;
+      }
+    }
+
+    if (!code) {
+      code = memAdTags[slot]?.tag_code || "";
+    }
+
+    map[slot] = {
+      tag_slot: slot,
+      tag_code: code,
+      status: isConnected ? "connected" : "disconnected",
+    };
+  }
+
+  return map;
+}
+
+// GET /admin/index-html — read raw index.html directly
+router.get("/admin/index-html", (_req, res) => {
+  const html = readIndexHtml();
+  const slots = parseSlotsFromIndexHtml();
+  res.json({
+    success: true,
+    html,
+    slots,
+  });
 });
 
-// POST /admin/ad-tags — connect or disconnect a slot
+// POST /admin/index-html — write raw index.html or update specific tag slot
+router.post("/admin/index-html", (req, res) => {
+  const { html, slot, code, action } = req.body;
+  if (html && typeof html === "string") {
+    writeIndexHtml(html);
+    return res.json({ success: true, message: "index.html updated successfully", html });
+  }
+
+  if (slot && action) {
+    const updatedHtml = updateIndexHtmlSlot(slot, code || "", action);
+    const slots = parseSlotsFromIndexHtml();
+    return res.json({ success: true, slot, action, status: slots[slot]?.status, html: updatedHtml, slots });
+  }
+
+  res.status(400).json({ error: "Missing html or slot/action parameter" });
+});
+
+// GET /admin/ad-tags — get all 5 tag slots directly parsed from index.html
+router.get("/admin/ad-tags", async (_req, res) => {
+  const slotsFromHtml = parseSlotsFromIndexHtml();
+  res.json(slotsFromHtml);
+});
+
+// POST /admin/ad-tags — connect or disconnect a slot, directly updating index.html
 router.post("/admin/ad-tags", async (req, res) => {
   const { tag_slot, tag_code, action } = req.body;
   if (!tag_slot) {
@@ -632,12 +769,16 @@ router.post("/admin/ad-tags", async (req, res) => {
   }
   const status = action === "connect" ? "connected" : "disconnected";
   const code = tag_code !== undefined ? String(tag_code).trim() : (memAdTags[tag_slot]?.tag_code || "");
-  
+
+  // Update in-memory fallback
   memAdTags[tag_slot] = {
     tag_slot,
     tag_code: action === "connect" ? code : (memAdTags[tag_slot]?.tag_code || code),
     status,
   };
+
+  // Directly update index.html between <!-- ADS_TAGS_START --> and <!-- ADS_TAGS_END -->
+  updateIndexHtmlSlot(tag_slot, code, action === "connect" ? "connect" : "disconnect");
 
   try {
     await pool.query(`
@@ -653,7 +794,14 @@ router.post("/admin/ad-tags", async (req, res) => {
     // fallback
   }
 
-  res.json({ success: true, slot: tag_slot, status, tag_code: memAdTags[tag_slot].tag_code });
+  const updatedSlots = parseSlotsFromIndexHtml();
+  res.json({
+    success: true,
+    slot: tag_slot,
+    status: updatedSlots[tag_slot]?.status || status,
+    tag_code: updatedSlots[tag_slot]?.tag_code || code,
+    slots: updatedSlots,
+  });
 });
 
 // GET /ad-tags/active — public active tags for client injection

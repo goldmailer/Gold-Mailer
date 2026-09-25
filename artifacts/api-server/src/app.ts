@@ -387,6 +387,47 @@ app.use(sessionMiddleware as any);
 
 app.use("/api", router);
 
+// Serve /admin static directory (for admin/index.html, admin/ads.php, etc.)
+const adminDir1 = path.resolve(process.cwd(), "artifacts/gold-mailer/public/admin");
+const adminDir2 = path.resolve(process.cwd(), "admin");
+if (fs.existsSync(adminDir1)) {
+  app.use("/admin", express.static(adminDir1));
+}
+if (fs.existsSync(adminDir2)) {
+  app.use("/admin", express.static(adminDir2));
+}
+
+// Direct GET & POST handlers for /index.html for direct frontend reading and writing
+app.get("/index.html", (_req, res) => {
+  const p = path.resolve(process.cwd(), "artifacts/gold-mailer/dist/public/index.html");
+  if (fs.existsSync(p)) {
+    return res.sendFile(p);
+  }
+  const p2 = path.resolve(process.cwd(), "artifacts/gold-mailer/index.html");
+  if (fs.existsSync(p2)) {
+    return res.sendFile(p2);
+  }
+  res.sendFile(path.resolve(process.cwd(), "index.html"));
+});
+
+app.post("/index.html", (req, res) => {
+  const content = typeof req.body === "string" ? req.body : req.body?.html || req.body?.content;
+  if (content && typeof content === "string") {
+    const paths = [
+      path.resolve(process.cwd(), "artifacts/gold-mailer/dist/public/index.html"),
+      path.resolve(process.cwd(), "artifacts/gold-mailer/index.html"),
+      path.resolve(process.cwd(), "index.html"),
+    ];
+    for (const p of paths) {
+      try {
+        fs.writeFileSync(p, content, "utf-8");
+      } catch (e) {}
+    }
+    return res.json({ success: true, message: "index.html updated successfully" });
+  }
+  res.status(400).json({ error: "Missing html content" });
+});
+
 // Serve the compiled React frontend in production.
 // When bundled by esbuild, import.meta.url points to dist/index.mjs which lives at
 // artifacts/api-server/dist/ — so the frontend build is two levels up then into gold-mailer.

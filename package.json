@@ -6,8 +6,9 @@
   "scripts": {
     "build": "pnpm --filter @workspace/gold-mailer run build && pnpm --filter @workspace/api-server run build",
     "start": "node artifacts/api-server/dist/index.mjs",
+    "dev": "PORT=3000 BASE_PATH=/ pnpm --filter @workspace/gold-mailer run dev --host 0.0.0.0 --port 3000",
     "dev:api": "PORT=8080 pnpm --filter @workspace/api-server run dev",
-    "dev:web": "PORT=5173 BASE_PATH=/ pnpm --filter @workspace/gold-mailer run dev",
+    "dev:web": "PORT=3000 BASE_PATH=/ pnpm --filter @workspace/gold-mailer run dev --host 0.0.0.0 --port 3000",
     "typecheck": "tsc --build && pnpm -r --filter \"./artifacts/**\" --if-present run typecheck",
     "db:push": "pnpm --filter @workspace/db run push"
   },
@@ -15,11 +16,18 @@
     "drizzle-orm": "catalog:"
   },
   "devDependencies": {
-    "typescript": "~5.9.2",
-    "prettier": "^3.8.1"
+    "pnpm": "^12.6.0",
+    "prettier": "^3.8.1",
+    "typescript": "~5.9.2"
   },
   "engines": {
     "node": ">=20.0.0",
     "pnpm": ">=9.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "pnpm"
+    ]
   }
 }
