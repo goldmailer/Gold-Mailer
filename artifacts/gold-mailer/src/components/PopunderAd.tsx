@@ -6,16 +6,27 @@ export function PopunderAd() {
   if (isAdmin) return null;
   if (typeof window !== 'undefined' && sessionStorage.getItem('popupClosed') === 'true') return null;
 
+  const savedPopup = typeof window !== 'undefined' ? localStorage.getItem('adsEnabledPopup') : null;
+  if (savedPopup === 'false') return null;
+
+  const savedMain = typeof window !== 'undefined' ? localStorage.getItem('adsEnabledMain') : null;
+  if (savedMain === 'false') return null;
+
   const [location] = useLocation();
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.pathname.includes('/admin')) return;
+    if (typeof window !== 'undefined' && window.location.pathname.includes('/admin')) {
+      document.querySelectorAll('script[src*="quge5.com"], script[src*="n6wxm.com"], script[src*="vignette"]').forEach((script) => script.remove());
+      return;
+    }
     if (typeof window !== 'undefined' && sessionStorage.getItem('popupClosed') === 'true') return;
-    const savedMain = typeof window !== 'undefined' ? localStorage.getItem('adsEnabledMain') : null;
-    if (savedMain === 'false') return;
+    const savedPopupVal = typeof window !== 'undefined' ? localStorage.getItem('adsEnabledPopup') : null;
+    if (savedPopupVal === 'false') return;
+    const savedMainVal = typeof window !== 'undefined' ? localStorage.getItem('adsEnabledMain') : null;
+    if (savedMainVal === 'false') return;
 
     const adminPath = location.includes("/admin");
     if (adminPath) {
-      document.querySelectorAll('script[src*="quge5.com/88/tag.min.js"]').forEach((script) => script.remove());
+      document.querySelectorAll('script[src*="quge5.com"], script[src*="n6wxm.com"], script[src*="vignette"]').forEach((script) => script.remove());
       return;
     }
     // Respect the "Popup Ads" master switch and a per-session dismissal.

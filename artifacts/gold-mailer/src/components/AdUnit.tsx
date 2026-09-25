@@ -54,7 +54,8 @@ export function resetMasterAdsCache() {
 }
 
 function removeMonetagScripts() {
-  document.querySelectorAll('script[src*="quge5.com/88/tag.min.js"]').forEach((script) => script.remove());
+  document.querySelectorAll('script[src*="quge5.com"], script[src*="n6wxm.com"], script[src*="vignette"]').forEach((script) => script.remove());
+  document.querySelectorAll('[id*="monetag"], [class*="monetag"]').forEach((el) => el.remove());
 }
 
 function loadAdsSettings() {

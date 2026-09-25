@@ -97,6 +97,9 @@ function Router() {
       <Route path="/admin">
         <AdminRoute><Admin /></AdminRoute>
       </Route>
+      <Route path="/admin/:subpath*">
+        <AdminRoute><Admin /></AdminRoute>
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );

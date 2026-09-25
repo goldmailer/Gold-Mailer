@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { ALL_COUNTRIES } from "@/lib/countries";
 import { taskTypes } from "@/lib/marketplace";
 import { useToast } from "@/hooks/use-toast";
-  import { Trash2, Plus, Check, X, ArrowLeft, ArrowRight, Settings, Users, List, Pencil, ToggleLeft, ToggleRight, MessageSquare, Send, ShieldCheck, ClipboardList, Eye, Clock, Phone, DollarSign } from "lucide-react";
+import { Trash2, Plus, Check, X, ArrowLeft, ArrowRight, Settings, Users, List, Pencil, ToggleLeft, ToggleRight, MessageSquare, Send, ShieldCheck, ClipboardList, Eye, Clock, Phone, DollarSign, Tv } from "lucide-react";
 import { Link } from "wouter";
 import { resetAdsSettingsCache, resetMasterAdsCache } from "@/components/AdUnit";
 
@@ -155,9 +155,23 @@ export default function Admin() {
   const token = typeof window !== 'undefined' ? (localStorage.getItem('token') || localStorage.getItem('authToken') || localStorage.getItem('access_token') || localStorage.getItem('adminToken') || sessionStorage.getItem('token')) : null;
   console.log('Using token:', token ? 'found' : 'NOT FOUND');
 
+  const getInitialTab = (): "users" | "transactions" | "settings" | "support" | "kyc" | "tasks" | "marketplace" | "sms" | "ads" => {
+    if (typeof window === "undefined") return "users";
+    const path = window.location.pathname.toLowerCase();
+    if (path.includes("/admin/ads")) return "ads";
+    if (path.includes("/admin/payouts") || path.includes("/admin/marketplace")) return "marketplace";
+    if (path.includes("/admin/tasks")) return "tasks";
+    if (path.includes("/admin/kyc")) return "kyc";
+    if (path.includes("/admin/support")) return "support";
+    if (path.includes("/admin/transactions")) return "transactions";
+    if (path.includes("/admin/sms")) return "sms";
+    if (path.includes("/admin/settings")) return "settings";
+    return "users";
+  };
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState<"users" | "transactions" | "settings" | "support" | "kyc" | "tasks" | "marketplace" | "sms">("users");
+  const [tab, setTab] = useState<"users" | "transactions" | "settings" | "support" | "kyc" | "tasks" | "marketplace" | "sms" | "ads">(getInitialTab);
   const [countryFilter, setCountryFilter] = useState<string>("all");
   const [topUpUserId, setTopUpUserId] = useState<number | null>(null);
   const [editUser, setEditUser] = useState<any | null>(null);
@@ -379,7 +393,7 @@ export default function Admin() {
       const res = await fetch("/api/admin/ads-settings", { credentials: "include" });
       return res.ok ? res.json() : null;
     },
-    enabled: tab === "settings",
+    enabled: tab === "settings" || tab === "ads",
   });
   useEffect(() => {
     if (adsMasterData) {
@@ -389,6 +403,7 @@ export default function Admin() {
       setAdsPopup(popup);
       localStorage.setItem("adsEnabledMain", String(main));
       localStorage.setItem("adsEnabledPopup", String(popup));
+      window.dispatchEvent(new Event("storage"));
     }
   }, [adsMasterData]);
 
@@ -401,11 +416,15 @@ export default function Admin() {
       setAdsPopup(value);
       localStorage.setItem("adsEnabledPopup", String(value));
     }
+    window.dispatchEvent(new Event("storage"));
+    const adminToken = localStorage.getItem("token") || localStorage.getItem("adminToken");
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (adminToken) headers["Authorization"] = `Bearer ${adminToken}`;
     try {
       const response = await fetch("/api/admin/ads-settings", {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ main: which === "main" ? value : adsMain, popup: which === "popup" ? value : adsPopup }),
       });
       if (!response.ok) throw new Error("Unable to save ads settings");
@@ -430,7 +449,7 @@ export default function Admin() {
       const res = await fetch("/api/settings/ads", { credentials: "include" });
       return res.ok ? res.json() : null;
     },
-    enabled: tab === "settings",
+    enabled: tab === "settings" || tab === "ads",
   });
   useEffect(() => {
     if (adsSettingsData) setAdsSettings((current) => ({ ...current, ...adsSettingsData }));
@@ -439,11 +458,14 @@ export default function Admin() {
     const next = { ...adsSettings, [key]: value };
     setAdsSettings(next);
     setAdsPlacementSaving(key);
+    const adminToken = localStorage.getItem("token") || localStorage.getItem("adminToken");
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (adminToken) headers["Authorization"] = `Bearer ${adminToken}`;
     try {
       const response = await fetch("/api/settings/ads", {
         method: "PUT",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(next),
       });
       if (!response.ok) throw new Error("Unable to save ads settings");
@@ -794,6 +816,7 @@ export default function Admin() {
     { key: "transactions", label: "Transactions", icon: List },
     { key: "tasks", label: "Tasks", icon: ClipboardList, badge: pendingTasksCount },
     { key: "marketplace", label: "Marketplace", icon: DollarSign },
+    { key: "ads", label: "Ads", icon: Tv },
     { key: "settings", label: "Settings", icon: Settings },
     { key: "support", label: "Support", icon: MessageSquare, badge: totalUnread },
     { key: "sms", label: "SMS", icon: Phone },
@@ -1077,6 +1100,49 @@ export default function Admin() {
                 </table>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── ADS TAB ── */}
+        {tab === "ads" && (
+          <div className="max-w-lg space-y-8">
+            <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+              <div>
+                <h2 className="font-bold text-lg mb-1">Monetag Ads Control</h2>
+                <p className="text-muted-foreground text-sm">Choose where Monetag ads can appear. Ads are always completely blocked inside the admin panel.</p>
+              </div>
+              <div className="space-y-2">
+                <Toggle
+                  value={adsMain}
+                  onChange={(value) => !adsSaving && toggleAdsMaster("main", value)}
+                  label={adsSaving ? "Saving..." : "Main Banner Ads (master switch)"}
+                />
+                <Toggle
+                  value={adsPopup}
+                  onChange={(value) => !adsSaving && toggleAdsMaster("popup", value)}
+                  label={adsSaving ? "Saving..." : "Popup Ads (master switch)"}
+                />
+              </div>
+              <div className="border-t border-border pt-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Per-Placement Control</p>
+                <div className="space-y-2">
+                  {([
+                    ["heroPageAdsEnabled", "Hero page ads"],
+                    ["dashboardAdsEnabled", "Dashboard ads"],
+                    ["withdrawPageAdsEnabled", "Withdraw page ads"],
+                    ["generalAdsEnabled", "General page ads"],
+                    ["sidebarAdsEnabled", "Sidebar ads"],
+                  ] as const).map(([key, label]) => (
+                    <Toggle
+                      key={key}
+                      value={adsSettings[key]}
+                      onChange={(value) => adsPlacementSaving === null && toggleAdsSetting(key, value)}
+                      label={adsPlacementSaving === key ? "Saving..." : label}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
