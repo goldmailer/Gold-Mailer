@@ -360,6 +360,16 @@ export default function Admin() {
   const [adsPopup, setAdsPopup] = useState<boolean>(() => localStorage.getItem("adsEnabledPopup") !== "false");
   const [adsSaving, setAdsSaving] = useState(false);
 
+  // ── Granular per-placement ad toggles (5) ──
+  const [adsSettings, setAdsSettings] = useState({
+    heroPageAdsEnabled: true,
+    dashboardAdsEnabled: true,
+    withdrawPageAdsEnabled: true,
+    generalAdsEnabled: true,
+    sidebarAdsEnabled: true,
+  });
+  const [adsPlacementSaving, setAdsPlacementSaving] = useState<string | null>(null);
+
   const { data: adsMasterData } = useQuery({
     queryKey: ["admin-ads-master"],
     queryFn: async () => {
@@ -409,6 +419,42 @@ export default function Admin() {
       setAdsSaving(false);
     }
   };
+
+  // ── Granular per-placement ad settings (5 toggles) ──
+  const { data: adsSettingsData } = useQuery({
+    queryKey: ["admin-ads-settings"],
+    queryFn: async () => {
+      const res = await fetch("/api/settings/ads", { credentials: "include" });
+      return res.ok ? res.json() : null;
+    },
+    enabled: tab === "settings",
+  });
+  useEffect(() => {
+    if (adsSettingsData) setAdsSettings((current) => ({ ...current, ...adsSettingsData }));
+  }, [adsSettingsData]);
+  const toggleAdsSetting = async (key: keyof typeof adsSettings, value: boolean) => {
+    const next = { ...adsSettings, [key]: value };
+    setAdsSettings(next);
+    setAdsPlacementSaving(key);
+    try {
+      const response = await fetch("/api/settings/ads", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(next),
+      });
+      if (!response.ok) throw new Error("Unable to save ads settings");
+      resetAdsSettingsCache();
+      queryClient.invalidateQueries({ queryKey: ["admin-ads-settings"] });
+      toast({ title: `${key.replace("AdsEnabled", "")} ads ${value ? "enabled" : "disabled"}` });
+    } catch (error: any) {
+      setAdsSettings(adsSettings);
+      toast({ title: "Could not save ads setting", description: error.message, variant: "destructive" });
+    } finally {
+      setAdsPlacementSaving(null);
+    }
+  };
+
   const { data: cardRequiredData } = useQuery({
     queryKey: ["admin-card-required"],
     queryFn: async () => {
@@ -1070,13 +1116,32 @@ export default function Admin() {
                 <Toggle
                   value={adsMain}
                   onChange={(value) => !adsSaving && toggleAdsMaster("main", value)}
-                  label={adsSaving ? "Saving..." : "Main Banner Ads"}
+                  label={adsSaving ? "Saving..." : "Main Banner Ads (master switch)"}
                 />
                 <Toggle
                   value={adsPopup}
                   onChange={(value) => !adsSaving && toggleAdsMaster("popup", value)}
-                  label={adsSaving ? "Saving..." : "Popup Ads"}
+                  label={adsSaving ? "Saving..." : "Popup Ads (master switch)"}
                 />
+              </div>
+              <div className="border-t border-border pt-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Per-Placement Control</p>
+                <div className="space-y-2">
+                  {([
+                    ["heroPageAdsEnabled", "Hero page ads"],
+                    ["dashboardAdsEnabled", "Dashboard ads"],
+                    ["withdrawPageAdsEnabled", "Withdraw page ads"],
+                    ["generalAdsEnabled", "General page ads"],
+                    ["sidebarAdsEnabled", "Sidebar ads"],
+                  ] as const).map(([key, label]) => (
+                    <Toggle
+                      key={key}
+                      value={adsSettings[key]}
+                      onChange={(value) => adsPlacementSaving === null && toggleAdsSetting(key, value)}
+                      label={adsPlacementSaving === key ? "Saving..." : label}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
 
