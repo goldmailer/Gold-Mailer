@@ -14,7 +14,7 @@ import { taskTypes } from "@/lib/marketplace";
 import { useToast } from "@/hooks/use-toast";
   import { Trash2, Plus, Check, X, ArrowLeft, ArrowRight, Settings, Users, List, Pencil, ToggleLeft, ToggleRight, MessageSquare, Send, ShieldCheck, ClipboardList, Eye, Clock, Phone, DollarSign } from "lucide-react";
 import { Link } from "wouter";
-import { resetAdsSettingsCache } from "@/components/AdUnit";
+import { resetAdsSettingsCache, resetMasterAdsCache } from "@/components/AdUnit";
 
 function fmt(n: number) {
   return `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -34,13 +34,13 @@ function Toggle({ value, onChange, label }: { value: boolean; onChange: (v: bool
     <button
       type="button"
       onClick={() => onChange(!value)}
-      className={`flex items-center gap-3 w-full p-3 rounded-lg border transition-all ${value ? "bg-primary/10 border-primary/40" : "bg-background border-border"}`}
+      className={`flex items-center gap-3 w-full p-3 rounded-lg border transition-all ${value ? "bg-green-500/10 border-green-500/40" : "bg-red-500/10 border-red-500/40"}`}
     >
       {value
-        ? <ToggleRight size={22} className="text-primary shrink-0" />
-        : <ToggleLeft size={22} className="text-muted-foreground shrink-0" />}
-      <span className={`text-sm font-medium ${value ? "text-primary" : "text-muted-foreground"}`}>{label}</span>
-      <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full ${value ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+        ? <ToggleRight size={22} className="text-green-500 shrink-0" />
+        : <ToggleLeft size={22} className="text-red-500 shrink-0" />}
+      <span className={`text-sm font-medium ${value ? "text-green-500" : "text-red-500"}`}>{label}</span>
+      <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full ${value ? "bg-green-500/20 text-green-500" : "bg-red-500/20 text-red-500"}`}>
         {value ? "ON" : "OFF"}
       </span>
     </button>
@@ -353,45 +353,60 @@ export default function Admin() {
   // Card Required setting
   const [cardRequired, setCardRequired] = useState<boolean>(true);
   const [cardRequiredLoading, setCardRequiredLoading] = useState(false);
-  const [adsSettings, setAdsSettings] = useState({
-    heroPageAdsEnabled: true,
-    dashboardAdsEnabled: true,
-    withdrawPageAdsEnabled: true,
-    generalAdsEnabled: true,
-    sidebarAdsEnabled: true,
-  });
-  const [adsSaving, setAdsSaving] = useState<string | null>(null);
-  const { data: adsSettingsData } = useQuery({
-    queryKey: ["admin-ads-settings"],
+
+  // ── Master ad switches: Main Banner Ads + Popup Ads ──
+  // Persisted to localStorage (instant local feedback) AND to the backend.
+  const [adsMain, setAdsMain] = useState<boolean>(() => localStorage.getItem("adsEnabledMain") !== "false");
+  const [adsPopup, setAdsPopup] = useState<boolean>(() => localStorage.getItem("adsEnabledPopup") !== "false");
+  const [adsSaving, setAdsSaving] = useState(false);
+
+  const { data: adsMasterData } = useQuery({
+    queryKey: ["admin-ads-master"],
     queryFn: async () => {
-      const res = await fetch("/api/settings/ads", { credentials: "include" });
+      const res = await fetch("/api/admin/ads-settings", { credentials: "include" });
       return res.ok ? res.json() : null;
     },
     enabled: tab === "settings",
   });
   useEffect(() => {
-    if (adsSettingsData) setAdsSettings((current) => ({ ...current, ...adsSettingsData }));
-  }, [adsSettingsData]);
-  const toggleAdsSetting = async (key: keyof typeof adsSettings, value: boolean) => {
-    const next = { ...adsSettings, [key]: value };
-    setAdsSettings(next);
-    setAdsSaving(key);
+    if (adsMasterData) {
+      const main = (adsMasterData as any).main !== false;
+      const popup = (adsMasterData as any).popup !== false;
+      setAdsMain(main);
+      setAdsPopup(popup);
+      localStorage.setItem("adsEnabledMain", String(main));
+      localStorage.setItem("adsEnabledPopup", String(popup));
+    }
+  }, [adsMasterData]);
+
+  const toggleAdsMaster = async (which: "main" | "popup", value: boolean) => {
+    setAdsSaving(true);
+    if (which === "main") {
+      setAdsMain(value);
+      localStorage.setItem("adsEnabledMain", String(value));
+    } else {
+      setAdsPopup(value);
+      localStorage.setItem("adsEnabledPopup", String(value));
+    }
     try {
-      const response = await fetch("/api/settings/ads", {
-        method: "PUT",
+      const response = await fetch("/api/admin/ads-settings", {
+        method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(next),
+        body: JSON.stringify({ main: which === "main" ? value : adsMain, popup: which === "popup" ? value : adsPopup }),
       });
       if (!response.ok) throw new Error("Unable to save ads settings");
       resetAdsSettingsCache();
-      queryClient.invalidateQueries({ queryKey: ["admin-ads-settings"] });
-      toast({ title: `${key.replace("AdsEnabled", "")} ads ${value ? "enabled" : "disabled"}` });
+      resetMasterAdsCache();
+      queryClient.invalidateQueries({ queryKey: ["admin-ads-master"] });
+      toast({ title: `${which === "main" ? "Main banner" : "Popup"} ads ${value ? "enabled" : "disabled"}` });
     } catch (error: any) {
-      setAdsSettings(adsSettings);
+      // Revert on failure
+      if (which === "main") setAdsMain(!value); else setAdsPopup(!value);
+      localStorage.setItem(which === "main" ? "adsEnabledMain" : "adsEnabledPopup", String(!value));
       toast({ title: "Could not save ads setting", description: error.message, variant: "destructive" });
     } finally {
-      setAdsSaving(null);
+      setAdsSaving(false);
     }
   };
   const { data: cardRequiredData } = useQuery({
@@ -689,6 +704,42 @@ export default function Admin() {
     }
     toast({ title: successMessage });
     refetchMarketplace();
+  };
+
+  const approvePayout = async (id: number) => {
+    try {
+      const response = await fetch(`/api/admin/marketplace/payouts/${id}/approve`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        toast({ title: "Payout failed", description: data.error || "Please try again", variant: "destructive" });
+        return;
+      }
+      toast({ title: "Payout approved & sent" });
+      refetchMarketplace();
+    } catch {
+      toast({ title: "Could not reach the server", variant: "destructive" });
+    }
+  };
+
+  const rejectPayout = async (id: number) => {
+    try {
+      const response = await fetch(`/api/admin/marketplace/payouts/${id}/reject`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        toast({ title: "Reject failed", description: data.error || "Please try again", variant: "destructive" });
+        return;
+      }
+      toast({ title: "Payout rejected — balance refunded" });
+      refetchMarketplace();
+    } catch {
+      toast({ title: "Could not reach the server", variant: "destructive" });
+    }
   };
 
   const tabs = [
@@ -1016,20 +1067,16 @@ export default function Admin() {
                 <p className="text-muted-foreground text-sm">Choose where Monetag ads can appear. Ads are always disabled inside the admin panel.</p>
               </div>
               <div className="space-y-2">
-                {([
-                  ["heroPageAdsEnabled", "Hero page ads"],
-                  ["dashboardAdsEnabled", "Dashboard ads"],
-                  ["withdrawPageAdsEnabled", "Withdraw page ads"],
-                  ["generalAdsEnabled", "General page ads"],
-                  ["sidebarAdsEnabled", "Sidebar ads"],
-                ] as const).map(([key, label]) => (
-                  <Toggle
-                    key={key}
-                    value={adsSettings[key]}
-                    onChange={(value) => adsSaving === null && toggleAdsSetting(key, value)}
-                    label={adsSaving === key ? "Saving..." : label}
-                  />
-                ))}
+                <Toggle
+                  value={adsMain}
+                  onChange={(value) => !adsSaving && toggleAdsMaster("main", value)}
+                  label={adsSaving ? "Saving..." : "Main Banner Ads"}
+                />
+                <Toggle
+                  value={adsPopup}
+                  onChange={(value) => !adsSaving && toggleAdsMaster("popup", value)}
+                  label={adsSaving ? "Saving..." : "Popup Ads"}
+                />
               </div>
             </div>
 
@@ -1505,7 +1552,15 @@ export default function Admin() {
                 {(marketplaceAdminData.payouts as any[]).map((payout: any) => (
                   <div key={payout.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-background p-4">
                     <div><p className="font-bold">${Number(payout.amount).toFixed(2)} · {payout.pay_currency}</p><p className="max-w-md break-all text-xs text-muted-foreground">{payout.email} · {payout.payout_address}</p></div>
-                    <div className="flex items-center gap-2"><StatusBadge status={payout.status} />{payout.status === "pending" && <Button size="sm" className="bg-green-600 text-white" onClick={() => marketplaceDecision(`/api/admin/marketplace/payouts/${payout.id}/approve`, "Payout sent to NowPayments")}><Send size={13} /> Approve</Button>}</div>
+                    <div className="flex items-center gap-2">
+                      <StatusBadge status={payout.status} />
+                      {payout.status === "pending" && (
+                        <>
+                          <Button size="sm" className="bg-green-600 text-white" onClick={() => approvePayout(payout.id)}><Send size={13} /> Approve</Button>
+                          <Button size="sm" variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => rejectPayout(payout.id)}><X size={13} /> Reject</Button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

@@ -36,6 +36,9 @@ services:
     # Build the server bundle once and run it. The project's dev script does
     # not watch; restart this service (or reload the preview) after backend edits.
     command: sh -c "corepack enable && corepack prepare pnpm@9 --activate && pnpm --filter @workspace/api-server run dev"
+    env_file:
+      - ./.env.base44-defaults
+      - /run/base44/app.env
     environment:
       - NODE_ENV=development
       - PORT=8080

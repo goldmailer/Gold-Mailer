@@ -508,4 +508,38 @@ router.post("/admin/marketplace/payouts/:id/approve", requireAdmin, async (req, 
   res.json({ success: true, payoutId: result.id ?? result.batch_withdrawal_id ?? null });
 });
 
+// POST /admin/marketplace/payouts/:id/reject — admin rejects a pending payout.
+// The withheld user balance is refunded so the worker can request again later.
+router.post("/admin/marketplace/payouts/:id/reject", requireAdmin, async (req, res) => {
+  const payout = await pool.query(
+    `SELECT * FROM marketplace_payouts WHERE id = $1 AND status = 'pending' LIMIT 1`,
+    [Number(req.params.id)],
+  );
+  if (!payout.rows[0]) {
+    res.status(404).json({ error: "Pending payout not found" });
+    return;
+  }
+  const row = payout.rows[0];
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query(
+      `UPDATE marketplace_payouts SET status = 'rejected', processed_at = now() WHERE id = $1`,
+      [row.id],
+    );
+    // Refund the total (user amount + admin cut) back to the user's balance.
+    await client.query(
+      `UPDATE users SET balance = balance + $1 WHERE id = $2`,
+      [Number(row.amount), row.user_id],
+    );
+    await client.query("COMMIT");
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+  res.json({ success: true });
+});
+
 export default router;

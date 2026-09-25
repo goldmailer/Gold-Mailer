@@ -43,6 +43,32 @@ router.get("/settings/ads", async (_req, res) => {
   res.json(serializeAdsSettings(row));
 });
 
+// GET /admin/ads-settings — public master switches (main banner + popup) used by
+// the site-wide AdBanner / PopunderAd components to decide whether to render.
+router.get("/admin/ads-settings", async (_req, res) => {
+  const [row] = await db.select().from(adsSettingsTable).limit(1);
+  res.json({
+    main: row?.mainAdsEnabled ?? true,
+    popup: row?.popupAdsEnabled ?? true,
+  });
+});
+
+// POST /admin/ads-settings — admin-only update of the master ad switches.
+router.post("/admin/ads-settings", requireAdmin, async (req, res) => {
+  const body = req.body && typeof req.body === "object" ? req.body : {};
+  const main = typeof body.main === "boolean" ? body.main : true;
+  const popup = typeof body.popup === "boolean" ? body.popup : true;
+  const currentRows = await db.select().from(adsSettingsTable).limit(1);
+  if (currentRows[0]) {
+    await db.update(adsSettingsTable)
+      .set({ mainAdsEnabled: main, popupAdsEnabled: popup, updatedAt: new Date() })
+      .where(eq(adsSettingsTable.id, currentRows[0].id));
+  } else {
+    await db.insert(adsSettingsTable).values({ mainAdsEnabled: main, popupAdsEnabled: popup });
+  }
+  res.json({ main, popup });
+});
+
 // PUT /settings/ads — only an authenticated admin can change ad placements.
 router.put("/settings/ads", requireAdmin, async (req, res) => {
   const currentRows = await db.select().from(adsSettingsTable).limit(1);

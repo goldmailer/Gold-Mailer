@@ -7,6 +7,8 @@ export const adsSettingsTable = pgTable("ads_settings", {
   withdrawPageAdsEnabled: boolean("withdraw_page_ads_enabled").notNull().default(false),
   generalAdsEnabled: boolean("general_ads_enabled").notNull().default(false),
   sidebarAdsEnabled: boolean("sidebar_ads_enabled").notNull().default(false),
+  mainAdsEnabled: boolean("main_ads_enabled").notNull().default(true),
+  popupAdsEnabled: boolean("popup_ads_enabled").notNull().default(true),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 

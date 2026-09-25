@@ -30,8 +30,27 @@ const settingForPlacement: Record<AdPlacement, keyof AdsSettings> = {
 let settingsPromise: Promise<AdsSettings> | null = null;
 let settingsCachedAt = 0;
 
+// Master ad switches (main banner + popup) fetched from /admin/ads-settings.
+let masterPromise: Promise<{ main: boolean; popup: boolean }> | null = null;
+let masterCachedAt = 0;
+
 function isAdminPath() {
-  return window.location.pathname === "/admin" || window.location.pathname.startsWith("/admin/");
+  return window.location.pathname.includes("/admin");
+}
+
+function loadMasterAdsSettings() {
+  if (!masterPromise || Date.now() - masterCachedAt > 30_000) {
+    masterCachedAt = Date.now();
+    masterPromise = fetch("/api/admin/ads-settings", { credentials: "include" })
+      .then((r) => r.ok ? r.json() : { main: true, popup: true })
+      .catch(() => ({ main: true, popup: true }));
+  }
+  return masterPromise;
+}
+
+export function resetMasterAdsCache() {
+  masterPromise = null;
+  masterCachedAt = 0;
 }
 
 function removeMonetagScripts() {
@@ -65,9 +84,11 @@ export function AdUnit({ placement, zoneId, label = "Sponsored", size = "fluid" 
       removeMonetagScripts();
       return () => { active = false; };
     }
-    loadAdsSettings().then((settings) => {
+    // Master "Main Banner Ads" switch must be ON, then the per-placement setting applies.
+    Promise.all([loadMasterAdsSettings(), loadAdsSettings()]).then(([master, settings]) => {
       if (active) {
-        setEnabled(Boolean(settings[settingForPlacement[placement]]));
+        const placementOn = Boolean(settings[settingForPlacement[placement]]);
+        setEnabled(Boolean(master.main) && placementOn);
         setChecked(true);
       }
     });
