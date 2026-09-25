@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ALL_COUNTRIES } from "@/lib/countries";
-import { taskTypes } from "@/lib/marketplace";
+import { taskTypes, TASK_PRICING_OPTIONS } from "@/lib/marketplace";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Plus, Check, X, ArrowLeft, ArrowRight, Settings, Users, List, Pencil, ToggleLeft, ToggleRight, MessageSquare, Send, ShieldCheck, ClipboardList, Eye, Clock, Phone, DollarSign, Tv } from "lucide-react";
 import { Link } from "wouter";
@@ -1307,25 +1307,58 @@ export default function Admin() {
 
             <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
               <div>
-                <h2 className="font-bold text-lg mb-1">Marketplace task pricing</h2>
-                <p className="text-muted-foreground text-sm">Set a different worker reward for every task type. Advertisers cannot change these rates when posting.</p>
+                <h2 className="font-bold text-lg mb-1">Marketplace Task Pricing & Tags</h2>
+                <p className="text-muted-foreground text-sm">Set the worker payout for each task type ($0.01 – $10.00). Advertisers are charged this exact rate.</p>
               </div>
-              <div className="space-y-3">
+
+              {/* Quick Bulk Setting */}
+              <div className="rounded-xl border border-border bg-background/50 p-3 space-y-2">
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Quick bulk set all rates:</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {["0.05", "0.10", "0.20", "0.30", "0.50", "0.70", "1.00"].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => {
+                        const updated: Record<string, string> = {};
+                        taskTypes.forEach((t) => { updated[t] = preset; });
+                        setTaskPrices(updated);
+                        toast({ title: `All rates set to ${preset}`, description: "Click 'Save all task rates' below to confirm." });
+                      }}
+                      className="px-2.5 py-1 text-xs font-bold rounded-lg border border-border bg-card hover:border-primary hover:text-primary transition-colors cursor-pointer"
+                    >
+                      ${preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2.5 max-h-[600px] overflow-y-auto pr-1">
                 {taskTypes.map((type) => (
-                  <label key={type} className="flex items-center gap-3 text-sm">
-                    <span className="min-w-0 flex-1">{type}</span>
-                    <span className="text-muted-foreground">$</span>
+                  <label key={type} className="flex items-center gap-3 text-sm p-2 rounded-xl hover:bg-white/[0.02] border border-transparent hover:border-border transition-colors">
+                    <span className="min-w-0 flex-1 font-medium">{type}</span>
+                    <span className="text-muted-foreground font-mono">$</span>
                     <select
                       value={taskPrices[type] ?? "0.70"}
                       onChange={(event) => setTaskPrices((current) => ({ ...current, [type]: event.target.value }))}
-                      className="w-28 rounded-lg border border-border bg-background px-2 py-2 text-sm"
+                      className="w-32 rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm font-semibold focus:outline-none focus:border-primary"
                     >
-                      {["0.10", "0.25", "0.50", "0.70", "1.00", "2.00", "5.00", "10.00"].map((price) => <option key={price} value={price}>{price}</option>)}
+                      {TASK_PRICING_OPTIONS.map((price) => (
+                        <option key={price} value={price}>
+                          ${price}
+                        </option>
+                      ))}
+                      {taskPrices[type] && !TASK_PRICING_OPTIONS.includes(taskPrices[type] as any) && (
+                        <option value={taskPrices[type]}>${taskPrices[type]}</option>
+                      )}
                     </select>
                   </label>
                 ))}
-                <Button onClick={saveTaskPrices} disabled={taskPriceSaving} className="w-full">{taskPriceSaving ? "Saving..." : "Save all task rates"}</Button>
               </div>
+
+              <Button onClick={saveTaskPrices} disabled={taskPriceSaving} className="w-full bg-primary text-primary-foreground font-black py-3">
+                {taskPriceSaving ? "Saving..." : "Save all task rates"}
+              </Button>
             </div>
 
             {/* ── Ads Control ── */}

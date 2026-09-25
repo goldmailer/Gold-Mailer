@@ -8,27 +8,46 @@ const COMMISSION_RATE = 0.2;
 const MIN_PAYOUT = 5;
 
 export const MARKETPLACE_TASK_TYPES = [
-  "YouTube Watch & Subscribe",
-  "Facebook Follow/Like/Share",
-  "Instagram Follow/Like/Comment",
-  "TikTok Follow/Like/View",
-  "Twitter/X Follow/Like/Retweet",
-  "Telegram Channel Join",
-  "Discord Server Join",
-  "Website Visit & Click",
-  "Google Search & Click",
-  "App Install & Review",
+  // ── Social Tasks ──
+  "Follow on Instagram",
+  "Like Instagram Post",
+  "Comment on Instagram Post",
+  "Follow on Facebook Page",
+  "Like Facebook Post",
+  "Share Facebook Post",
+  "Follow on Twitter / X",
+  "Like Tweet on X",
+  "Retweet on X",
+  "Follow on TikTok",
+  "Like TikTok Video",
+  "Follow on YouTube Channel",
+  "Like YouTube Video",
+  "Watch YouTube Video 60s",
+  "Join Telegram Channel",
+  "Join Telegram Group",
+  "Follow on Threads",
+  "Connect on LinkedIn",
+  "Follow on Snapchat",
+
+  // ── App & Website Tasks ──
+  "Download App from Play Store",
+  "Install App and Register",
+  "Rate 5 Stars on Play Store",
+  "Visit Website 1 Minute",
   "Sign Up on Website",
-  "Comment on Blog/Post",
-  "Like/Dislike Post",
-  "Watch Ad Video",
-  "Referral/Invite Friends",
+  "Watch Video Ad 30s",
+
+  // ── Engagement Tasks ──
+  "Join WhatsApp Channel",
+  "Join Discord Server",
+  "Upvote on Reddit",
+  "Review on Google",
+  "Refer a Friend",
+
+  // ── Additional & Custom ──
+  "YouTube Watch & Subscribe",
   "Survey/Questionnaire",
   "Review on Google/Trustpilot",
-  "Reddit Upvote/Join",
-  "LinkedIn Follow/Connect",
-  "WhatsApp Group Join",
-  "Test Website/App",
   "Other (Custom)",
 ] as const;
 
