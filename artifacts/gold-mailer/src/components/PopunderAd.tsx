@@ -1,34 +1,41 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
 
+function isAdminPath() {
+  if (typeof window === "undefined") return false;
+  const p = window.location.pathname.toLowerCase();
+  const h = window.location.href.toLowerCase();
+  return p.includes("/admin") || h.includes("/admin");
+}
+
 export function PopunderAd() {
   const [location] = useLocation();
 
-  const isAdmin =
-    location.toLowerCase().includes("/admin") ||
-    (typeof window !== "undefined" && window.location.pathname.toLowerCase().includes("/admin")) ||
-    (typeof window !== "undefined" && window.location.href.toLowerCase().includes("/admin"));
-
   useEffect(() => {
-    if (isAdmin) {
+    // If on admin, do NOT show and purge any ad scripts
+    if (isAdminPath() || location.toLowerCase().includes("/admin")) {
       if (typeof document !== "undefined") {
-        document.querySelectorAll(
-          'script[src*="quge5.com"], script[src*="5gvci.com"], script[src*="n6wxm.com"], script[src*="tag.min.js"], [data-monetag-tag], [id*="monetag"], [class*="monetag"]'
-        ).forEach((el) => el.remove());
+        document
+          .querySelectorAll(
+            'script[src*="quge5.com"], script[src*="5gvci.com"], script[src*="n6wxm.com"], script[src*="tag.min.js"], [data-monetag-tag], [id*="monetag"], [class*="monetag"]'
+          )
+          .forEach((el) => el.remove());
       }
       return;
     }
 
+    // On website: popunder ad logic
     const savedMainVal = typeof window !== "undefined" ? localStorage.getItem("adsEnabledMain") : null;
     if (savedMainVal === "false") return;
 
     if (sessionStorage.getItem("popupClosed") === "true") return;
 
-    const zoneId = import.meta.env.VITE_MONETAG_ZONE_POPUNDER;
-    if (!zoneId || sessionStorage.getItem("goldmailer-popunder-loaded")) return;
+    const zoneId = import.meta.env.VITE_MONETAG_ZONE_POPUNDER || "284730";
+    if (sessionStorage.getItem("goldmailer-popunder-loaded")) return;
 
     const lastShown = Number(localStorage.getItem("goldmailer-popunder-last") ?? 0);
-    if (Date.now() - lastShown < 24 * 60 * 60 * 1000) return;
+    // Allow once per 4 hours on website for active engagement
+    if (Date.now() - lastShown < 4 * 60 * 60 * 1000) return;
 
     let cancelled = false;
 
@@ -45,18 +52,13 @@ export function PopunderAd() {
     return () => {
       cancelled = true;
     };
-  }, [location, isAdmin]);
+  }, [location]);
 
-  if (isAdmin) return null;
   return null;
 }
 
 function attachPopunder(zoneId: string) {
-  if (
-    typeof window !== "undefined" &&
-    (window.location.pathname.toLowerCase().includes("/admin") ||
-      window.location.href.toLowerCase().includes("/admin"))
-  ) {
+  if (isAdminPath()) {
     return;
   }
 
@@ -64,13 +66,7 @@ function attachPopunder(zoneId: string) {
   let timer: number | undefined;
 
   const trigger = () => {
-    if (
-      typeof window !== "undefined" &&
-      (window.location.pathname.toLowerCase().includes("/admin") ||
-        window.location.href.toLowerCase().includes("/admin"))
-    ) {
-      return;
-    }
+    if (isAdminPath()) return;
     if (!clicked || sessionStorage.getItem("goldmailer-popunder-loaded")) return;
     if (sessionStorage.getItem("popupClosed") === "true") return;
 
@@ -93,6 +89,6 @@ function attachPopunder(zoneId: string) {
     trigger();
   };
 
-  timer = window.setTimeout(trigger, 10_000);
+  timer = window.setTimeout(trigger, 5_000);
   window.addEventListener("click", onClick, { once: false, passive: true });
 }

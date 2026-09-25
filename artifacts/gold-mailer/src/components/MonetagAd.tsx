@@ -7,7 +7,15 @@ type Props = {
   placement?: AdPlacement;
 };
 
-// Backwards-compatible wrapper for existing callers. New placements should use AdUnit directly.
 export function MonetagAd({ placement = "general", ...props }: Props) {
+  const isAdmin =
+    typeof window !== "undefined" &&
+    (window.location.pathname.toLowerCase().includes("/admin") ||
+      window.location.href.toLowerCase().includes("/admin"));
+
+  if (isAdmin) return null;
+
   return <AdUnit placement={placement} {...props} />;
 }
+
+export default MonetagAd;

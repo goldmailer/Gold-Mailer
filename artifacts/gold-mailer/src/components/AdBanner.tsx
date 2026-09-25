@@ -8,11 +8,12 @@ type Props = {
 };
 
 export function AdBanner({ placement = "general", ...props }: Props) {
-  const isAdmin = typeof window !== 'undefined' && window.location.pathname.includes('/admin');
-  if (isAdmin) return null;
+  const isAdmin =
+    typeof window !== "undefined" &&
+    (window.location.pathname.toLowerCase().includes("/admin") ||
+      window.location.href.toLowerCase().includes("/admin"));
 
-  const savedMain = typeof window !== 'undefined' ? localStorage.getItem('adsEnabledMain') : null;
-  if (savedMain === 'false') return null;
+  if (isAdmin) return null;
 
   return <AdUnit placement={placement} {...props} />;
 }

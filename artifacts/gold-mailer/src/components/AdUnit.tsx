@@ -30,7 +30,6 @@ const settingForPlacement: Record<AdPlacement, keyof AdsSettings> = {
 let settingsPromise: Promise<AdsSettings> | null = null;
 let settingsCachedAt = 0;
 
-// Master ad switches (main banner + popup) fetched from /admin/ads-settings.
 let masterPromise: Promise<{ main: boolean; popup: boolean }> | null = null;
 let masterCachedAt = 0;
 
@@ -38,14 +37,14 @@ function isAdminPath() {
   if (typeof window === "undefined") return false;
   const p = window.location.pathname.toLowerCase();
   const h = window.location.href.toLowerCase();
-  return p.includes("/admin") || h.includes("/admin") || p.includes("admin");
+  return p.includes("/admin") || h.includes("/admin");
 }
 
 function loadMasterAdsSettings() {
   if (!masterPromise || Date.now() - masterCachedAt > 30_000) {
     masterCachedAt = Date.now();
     masterPromise = fetch("/api/admin/ads-settings", { credentials: "include" })
-      .then((r) => r.ok ? r.json() : { main: true, popup: true })
+      .then((r) => (r.ok ? r.json() : { main: true, popup: true }))
       .catch(() => ({ main: true, popup: true }));
   }
   return masterPromise;
@@ -57,15 +56,18 @@ export function resetMasterAdsCache() {
 }
 
 function removeMonetagScripts() {
-  document.querySelectorAll('script[src*="quge5.com"], script[src*="n6wxm.com"], script[src*="vignette"]').forEach((script) => script.remove());
-  document.querySelectorAll('[id*="monetag"], [class*="monetag"]').forEach((el) => el.remove());
+  document
+    .querySelectorAll(
+      'script[src*="quge5.com"], script[src*="5gvci.com"], script[src*="n6wxm.com"], script[src*="vignette"], [data-monetag-tag], [id*="monetag"], [class*="monetag"]'
+    )
+    .forEach((el) => el.remove());
 }
 
 function loadAdsSettings() {
   if (!settingsPromise || Date.now() - settingsCachedAt > 30_000) {
     settingsCachedAt = Date.now();
     settingsPromise = fetch("/api/settings/ads", { credentials: "include" })
-      .then((response) => response.ok ? response.json() : {})
+      .then((response) => (response.ok ? response.json() : {}))
       .then((data) => data as AdsSettings)
       .catch(() => defaultAdsSettings);
   }
@@ -78,58 +80,83 @@ export function resetAdsSettingsCache() {
 }
 
 export function AdUnit({ placement, zoneId, label = "Sponsored", size = "fluid" }: Props) {
-  const isAdmin = typeof window !== 'undefined' && window.location.pathname.includes('/admin');
-  if (isAdmin) return null;
+  // STRICT RULE: If on ANY admin page, NEVER render ads.
+  if (isAdminPath()) {
+    return null;
+  }
 
-  const savedMainCheck = typeof window !== 'undefined' ? localStorage.getItem('adsEnabledMain') : null;
-  if (savedMainCheck === 'false') return null;
-
+  const effectiveZone = zoneId || (placement === "heroPage" ? "284203" : "284730");
   const ref = useRef<HTMLDivElement>(null);
-  const [enabled, setEnabled] = useState(false);
+  const [enabled, setEnabled] = useState(true);
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.pathname.includes('/admin')) return;
-    const savedMain = typeof window !== 'undefined' ? localStorage.getItem('adsEnabledMain') : null;
-    if (savedMain === 'false') return;
-
-    let active = true;
     if (isAdminPath()) {
       removeMonetagScripts();
-      return () => { active = false; };
+      return;
     }
-    // Master "Main Banner Ads" switch must be ON, then the per-placement setting applies.
-    Promise.all([loadMasterAdsSettings(), loadAdsSettings()]).then(([master, settings]) => {
-      if (active) {
-        const placementOn = Boolean(settings[settingForPlacement[placement]]);
-        setEnabled(Boolean(master.main) && placementOn);
-        setChecked(true);
-      }
-    });
-    return () => { active = false; };
+
+    let active = true;
+
+    Promise.all([loadMasterAdsSettings(), loadAdsSettings()])
+      .then(([master, settings]) => {
+        if (active) {
+          const placementOn = settings[settingForPlacement[placement]] ?? true;
+          const isMasterOn = master.main ?? true;
+          setEnabled(Boolean(isMasterOn && placementOn));
+          setChecked(true);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setEnabled(true);
+          setChecked(true);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
   }, [placement]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.pathname.includes('/admin')) return;
-    const savedMain = typeof window !== 'undefined' ? localStorage.getItem('adsEnabledMain') : null;
-    if (savedMain === 'false') return;
+    if (isAdminPath()) return;
+    if (!checked || !enabled || !effectiveZone || !ref.current) return;
 
-    if (!checked || !enabled || !zoneId || !ref.current) return;
+    // Check if script already attached
+    if (ref.current.querySelector(`script[data-zone="${effectiveZone}"]`)) return;
+
     const script = document.createElement("script");
-    script.id = `monetag-zone-${placement}-${zoneId}`;
+    script.id = `monetag-zone-${placement}-${effectiveZone}`;
     script.async = true;
-    script.dataset.zone = zoneId;
+    script.dataset.zone = effectiveZone;
     script.dataset.cfasync = "false";
     script.src = "https://quge5.com/88/tag.min.js";
     ref.current.appendChild(script);
-    return () => script.remove();
-  }, [checked, enabled, placement, zoneId]);
 
-  if (isAdmin || isAdminPath() || !checked || !enabled || !zoneId) return null;
-  const sizeClass = size === "leaderboard" ? "min-h-[90px] max-w-[728px]" : size === "sidebar" ? "min-h-[250px] max-w-[300px]" : "min-h-[90px]";
+    return () => {
+      script.remove();
+    };
+  }, [checked, enabled, placement, effectiveZone]);
+
+  if (isAdminPath() || !checked || !enabled || !effectiveZone) return null;
+
+  const sizeClass =
+    size === "leaderboard"
+      ? "min-h-[90px] max-w-[728px]"
+      : size === "sidebar"
+      ? "min-h-[250px] max-w-[300px]"
+      : "min-h-[90px]";
+
   return (
-    <div ref={ref} className={`min-w-0 w-full max-w-full ${sizeClass} rounded-2xl border border-white/5 bg-white/[0.02] flex items-center justify-center overflow-hidden`} aria-label={label}>
-      <span className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground/50">{label}</span>
+    <div
+      ref={ref}
+      className={`min-w-0 w-full max-w-full ${sizeClass} rounded-2xl border border-white/5 bg-white/[0.02] flex items-center justify-center overflow-hidden`}
+      aria-label={label}
+    >
+      <span className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground/50">
+        {label}
+      </span>
     </div>
   );
 }
