@@ -5,6 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export default function AdminLogin() {
+  useEffect(() => {
+    document.querySelectorAll('script[src*="quge5.com"], script[src*="n6wxm.com"], script[src*="vignette"]').forEach((el) => el.remove());
+    document.querySelectorAll('[data-monetag-tag], [id*="monetag"], [class*="monetag"]').forEach((el) => el.remove());
+  }, []);
+
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
