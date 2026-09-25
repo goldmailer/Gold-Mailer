@@ -69,6 +69,15 @@ pool.query(`
     "created_at" timestamp NOT NULL DEFAULT now()
   );
 
+  CREATE TABLE IF NOT EXISTS "ad_tags" (
+    "id" serial PRIMARY KEY,
+    "tag_slot" varchar(50) NOT NULL UNIQUE,
+    "tag_code" text,
+    "status" varchar(20) NOT NULL DEFAULT 'disconnected',
+    "created_at" timestamp NOT NULL DEFAULT now(),
+    "updated_at" timestamp NOT NULL DEFAULT now()
+  );
+
   CREATE TABLE IF NOT EXISTS "stakes" (
     "id" serial PRIMARY KEY,
     "user_id" integer NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
@@ -374,7 +383,7 @@ app.use(cors({
 }));
 app.use(express.json({ limit: "25mb" }));
 app.use(express.urlencoded({ extended: true, limit: "25mb" }));
-app.use(sessionMiddleware);
+app.use(sessionMiddleware as any);
 
 app.use("/api", router);
 

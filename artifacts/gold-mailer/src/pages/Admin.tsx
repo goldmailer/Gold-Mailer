@@ -480,6 +480,61 @@ export default function Admin() {
     }
   };
 
+  const [tagInputs, setTagInputs] = useState<Record<string, string>>({
+    "Tag 1": "",
+    "Tag 2": "",
+    "Tag 3": "",
+    "Tag 4": "",
+    "Tag 5": "",
+  });
+  const [tagSaving, setTagSaving] = useState<string | null>(null);
+
+  const { data: adTagsData, refetch: refetchAdTags } = useQuery({
+    queryKey: ["admin-ad-tags"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/ad-tags", { credentials: "include" });
+      return res.ok ? res.json() : null;
+    },
+    enabled: tab === "ads",
+  });
+
+  useEffect(() => {
+    if (adTagsData) {
+      const nextInputs: Record<string, string> = {};
+      for (let i = 1; i <= 5; i++) {
+        const slot = `Tag ${i}`;
+        nextInputs[slot] = adTagsData[slot]?.tag_code || "";
+      }
+      setTagInputs(nextInputs);
+    }
+  }, [adTagsData]);
+
+  const handleTagAction = async (slot: string, action: "connect" | "disconnect") => {
+    setTagSaving(slot);
+    try {
+      const res = await fetch("/api/admin/ad-tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          tag_slot: slot,
+          tag_code: tagInputs[slot] || "",
+          action,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to update ad tag");
+      await refetchAdTags();
+      toast({
+        title: action === "connect" ? `${slot} Installed & Connected` : `${slot} Disconnected`,
+        description: action === "connect" ? "Injected into website header automatically." : "Tag code preserved.",
+      });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setTagSaving(null);
+    }
+  };
+
   const { data: cardRequiredData } = useQuery({
     queryKey: ["admin-card-required"],
     queryFn: async () => {
@@ -1105,10 +1160,100 @@ export default function Admin() {
 
         {/* ── ADS TAB ── */}
         {tab === "ads" && (
-          <div className="max-w-lg space-y-8">
+          <div className="max-w-2xl space-y-8">
+            {/* Tag Slots 1 to 5 */}
+            <div className="bg-card border border-border rounded-2xl p-6 space-y-6">
+              <div className="flex items-center justify-between border-b border-border pb-4">
+                <div>
+                  <h2 className="font-bold text-lg mb-1">Monetag Tag Manager (Tag 1 to Tag 5)</h2>
+                  <p className="text-muted-foreground text-sm">
+                    Paste Monetag tags for pop-up ads, in-app push ads, interstitials, and banners. Click <strong>Connect</strong> to save and inject into the website header automatically. Click <strong>Disconnect</strong> to remove from header without deleting the code.
+                  </p>
+                </div>
+                <div>
+                  <a
+                    href="/admin/ads.php"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-500/30 text-amber-400 hover:bg-amber-500/10 transition"
+                  >
+                    Open admin/ads.php ↗
+                  </a>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                {(["Tag 1", "Tag 2", "Tag 3", "Tag 4", "Tag 5"] as const).map((slot, index) => {
+                  const tagInfo = adTagsData?.[slot];
+                  const isConnected = tagInfo?.status === "connected";
+                  const slotPurposes = [
+                    "Pop-up / Pop-under ad tag",
+                    "In-App Push notification ad tag",
+                    "Vignette / Interstitial ad tag",
+                    "Native Banner / In-Page ad tag",
+                    "Custom Ad Script / Pixel code",
+                  ];
+                  const isSavingThis = tagSaving === slot;
+
+                  return (
+                    <div key={slot} className="border border-border/80 rounded-xl p-4 bg-background/50 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-sm">{slot}</span>
+                          <span className="text-xs text-muted-foreground">({slotPurposes[index]})</span>
+                        </div>
+                        <div>
+                          {isConnected ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
+                              Installed / Connected
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-muted-foreground border border-border">
+                              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60" />
+                              Disconnected
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <textarea
+                        value={tagInputs[slot] || ""}
+                        onChange={(e) => setTagInputs({ ...tagInputs, [slot]: e.target.value })}
+                        placeholder={`Paste Monetag tag code for ${slot}...`}
+                        className="w-full min-h-[75px] text-xs font-mono bg-card border border-border rounded-lg p-3 text-foreground focus:outline-none focus:border-primary resize-y"
+                      />
+
+                      <div className="flex items-center justify-end gap-2">
+                        {isConnected && (
+                          <button
+                            type="button"
+                            disabled={isSavingThis}
+                            onClick={() => handleTagAction(slot, "disconnect")}
+                            className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-border text-muted-foreground hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/10 transition"
+                          >
+                            {isSavingThis ? "Updating..." : "Disconnect"}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          disabled={isSavingThis}
+                          onClick={() => handleTagAction(slot, "connect")}
+                          className="text-xs font-semibold px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition shadow-sm"
+                        >
+                          {isSavingThis ? "Saving..." : isConnected ? "Update & Keep Connected" : "Connect"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Master Switches & Per-Placement Control */}
             <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
               <div>
-                <h2 className="font-bold text-lg mb-1">Monetag Ads Control</h2>
+                <h2 className="font-bold text-lg mb-1">Monetag Ads Placement Control</h2>
                 <p className="text-muted-foreground text-sm">Choose where Monetag ads can appear. Ads are always completely blocked inside the admin panel.</p>
               </div>
               <div className="space-y-2">

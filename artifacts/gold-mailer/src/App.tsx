@@ -6,6 +6,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute, AdminRoute } from "@/components/ProtectedRoute";
 import { useNotificationPoller } from "@/hooks/useNotifications";
 import { PopunderAd } from "@/components/PopunderAd";
+import { AdTagLoader } from "@/components/AdTagLoader";
 import { NavigationLoader } from "@/components/NavigationLoader";
 
 import AdminLogin from "@/pages/AdminLogin";
@@ -117,6 +118,7 @@ function App() {
         <TooltipProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
             <NotificationPollerMount />
+            <AdTagLoader />
             <PopunderAd />
             <NavigationLoader />
             <Router />

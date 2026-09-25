@@ -594,4 +594,81 @@ router.post("/admin/reject-payout/:id", async (req, res) => {
   res.status(404).json({ error: "Payout transaction not found" });
 });
 
+// In-memory fallback for ad tags
+const memAdTags: Record<string, { tag_slot: string; tag_code: string; status: string }> = {
+  "Tag 1": { tag_slot: "Tag 1", tag_code: "", status: "disconnected" },
+  "Tag 2": { tag_slot: "Tag 2", tag_code: "", status: "disconnected" },
+  "Tag 3": { tag_slot: "Tag 3", tag_code: "", status: "disconnected" },
+  "Tag 4": { tag_slot: "Tag 4", tag_code: "", status: "disconnected" },
+  "Tag 5": { tag_slot: "Tag 5", tag_code: "", status: "disconnected" },
+};
+
+// GET /admin/ad-tags — get all 5 tag slots
+router.get("/admin/ad-tags", async (_req, res) => {
+  try {
+    const result = await pool.query(`SELECT tag_slot, tag_code, status FROM ad_tags ORDER BY id ASC`);
+    if (result.rows && result.rows.length > 0) {
+      const map: Record<string, any> = {};
+      for (const r of result.rows) map[r.tag_slot] = r;
+      for (let i = 1; i <= 5; i++) {
+        const slot = `Tag ${i}`;
+        if (!map[slot]) map[slot] = { tag_slot: slot, tag_code: "", status: "disconnected" };
+      }
+      res.json(map);
+      return;
+    }
+  } catch (err) {
+    // fallback to memory
+  }
+  res.json(memAdTags);
+});
+
+// POST /admin/ad-tags — connect or disconnect a slot
+router.post("/admin/ad-tags", async (req, res) => {
+  const { tag_slot, tag_code, action } = req.body;
+  if (!tag_slot) {
+    res.status(400).json({ error: "tag_slot is required" });
+    return;
+  }
+  const status = action === "connect" ? "connected" : "disconnected";
+  const code = tag_code !== undefined ? String(tag_code).trim() : (memAdTags[tag_slot]?.tag_code || "");
+  
+  memAdTags[tag_slot] = {
+    tag_slot,
+    tag_code: action === "connect" ? code : (memAdTags[tag_slot]?.tag_code || code),
+    status,
+  };
+
+  try {
+    await pool.query(`
+      INSERT INTO ad_tags (tag_slot, tag_code, status, updated_at)
+      VALUES ($1, $2, $3, now())
+      ON CONFLICT (tag_slot)
+      DO UPDATE SET
+        tag_code = CASE WHEN $4 = 'connect' THEN $2 ELSE ad_tags.tag_code END,
+        status = $3,
+        updated_at = now()
+    `, [tag_slot, code, status, action]);
+  } catch (err) {
+    // fallback
+  }
+
+  res.json({ success: true, slot: tag_slot, status, tag_code: memAdTags[tag_slot].tag_code });
+});
+
+// GET /ad-tags/active — public active tags for client injection
+router.get("/ad-tags/active", async (_req, res) => {
+  try {
+    const result = await pool.query(`SELECT tag_slot, tag_code FROM ad_tags WHERE status = 'connected' AND tag_code IS NOT NULL AND TRIM(tag_code) != '' ORDER BY id ASC`);
+    if (result.rows && result.rows.length > 0) {
+      res.json(result.rows);
+      return;
+    }
+  } catch (err) {
+    // fallback
+  }
+  const active = Object.values(memAdTags).filter(t => t.status === "connected" && t.tag_code.trim());
+  res.json(active);
+});
+
 export default router;

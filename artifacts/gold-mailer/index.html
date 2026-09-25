@@ -16,6 +16,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <?php
+    // Load and echo all Monetag tags where status='connected'
+    if (file_exists(__DIR__ . '/admin/load_tags.php')) {
+        include_once __DIR__ . '/admin/load_tags.php';
+    } elseif (file_exists(dirname(__DIR__, 2) . '/admin/load_tags.php')) {
+        include_once dirname(__DIR__, 2) . '/admin/load_tags.php';
+    }
+    ?>
   </head>
   <body>
     <div id="root"></div>
