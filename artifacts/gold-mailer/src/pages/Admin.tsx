@@ -12,8 +12,9 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { ALL_COUNTRIES } from "@/lib/countries";
 import { taskTypes } from "@/lib/marketplace";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus, Check, X, ArrowLeft, ArrowRight, Settings, Users, List, Pencil, ToggleLeft, ToggleRight, MessageSquare, Send, ShieldCheck, ClipboardList, Eye, Clock, Phone, DollarSign } from "lucide-react";
+import { Trash2, Plus, Check, X, ArrowLeft, ArrowRight, Settings, Users, List, Pencil, ToggleLeft, ToggleRight, MessageSquare, Send, ShieldCheck, ClipboardList, Eye, Clock, Phone, DollarSign, Tv } from "lucide-react";
 import { Link } from "wouter";
+import { resetAdsSettingsCache, resetMasterAdsCache } from "@/components/AdUnit";
 
 function fmt(n: number) {
   return `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -151,18 +152,13 @@ function EditUserModal({ user, onClose }: { user: any; onClose: () => void }) {
 }
 
 export default function Admin() {
-  // Ensure admin panel remains 100% ad-free
-  useEffect(() => {
-    document.querySelectorAll('script[src*="quge5.com"], script[src*="n6wxm.com"], script[src*="vignette"]').forEach((el) => el.remove());
-    document.querySelectorAll('[data-monetag-tag], [id*="monetag"], [class*="monetag"]').forEach((el) => el.remove());
-  }, []);
-
   const token = typeof window !== 'undefined' ? (localStorage.getItem('token') || localStorage.getItem('authToken') || localStorage.getItem('access_token') || localStorage.getItem('adminToken') || sessionStorage.getItem('token')) : null;
   console.log('Using token:', token ? 'found' : 'NOT FOUND');
 
-  const getInitialTab = (): "users" | "transactions" | "settings" | "support" | "kyc" | "tasks" | "marketplace" | "sms" => {
+  const getInitialTab = (): "users" | "transactions" | "settings" | "support" | "kyc" | "tasks" | "marketplace" | "sms" | "ads" => {
     if (typeof window === "undefined") return "users";
     const path = window.location.pathname.toLowerCase();
+    if (path.includes("/admin/ads")) return "ads";
     if (path.includes("/admin/payouts") || path.includes("/admin/marketplace")) return "marketplace";
     if (path.includes("/admin/tasks")) return "tasks";
     if (path.includes("/admin/kyc")) return "kyc";
@@ -175,7 +171,7 @@ export default function Admin() {
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState<"users" | "transactions" | "settings" | "support" | "kyc" | "tasks" | "marketplace" | "sms">(getInitialTab);
+  const [tab, setTab] = useState<"users" | "transactions" | "settings" | "support" | "kyc" | "tasks" | "marketplace" | "sms" | "ads">(getInitialTab);
   const [countryFilter, setCountryFilter] = useState<string>("all");
   const [topUpUserId, setTopUpUserId] = useState<number | null>(null);
   const [editUser, setEditUser] = useState<any | null>(null);
@@ -374,6 +370,170 @@ export default function Admin() {
   // Card Required setting
   const [cardRequired, setCardRequired] = useState<boolean>(true);
   const [cardRequiredLoading, setCardRequiredLoading] = useState(false);
+
+  // ── Master ad switches: Main Banner Ads + Popup Ads ──
+  // Persisted to localStorage (instant local feedback) AND to the backend.
+  const [adsMain, setAdsMain] = useState<boolean>(() => localStorage.getItem("adsEnabledMain") !== "false");
+  const [adsPopup, setAdsPopup] = useState<boolean>(() => localStorage.getItem("adsEnabledPopup") !== "false");
+  const [adsSaving, setAdsSaving] = useState(false);
+
+  // ── Granular per-placement ad toggles (5) ──
+  const [adsSettings, setAdsSettings] = useState({
+    heroPageAdsEnabled: true,
+    dashboardAdsEnabled: true,
+    withdrawPageAdsEnabled: true,
+    generalAdsEnabled: true,
+    sidebarAdsEnabled: true,
+  });
+  const [adsPlacementSaving, setAdsPlacementSaving] = useState<string | null>(null);
+
+  const { data: adsMasterData } = useQuery({
+    queryKey: ["admin-ads-master"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/ads-settings", { credentials: "include" });
+      return res.ok ? res.json() : null;
+    },
+    enabled: tab === "settings" || tab === "ads",
+  });
+  useEffect(() => {
+    if (adsMasterData) {
+      const main = (adsMasterData as any).main !== false;
+      const popup = (adsMasterData as any).popup !== false;
+      setAdsMain(main);
+      setAdsPopup(popup);
+      localStorage.setItem("adsEnabledMain", String(main));
+      localStorage.setItem("adsEnabledPopup", String(popup));
+      window.dispatchEvent(new Event("storage"));
+    }
+  }, [adsMasterData]);
+
+  const toggleAdsMaster = async (which: "main" | "popup", value: boolean) => {
+    setAdsSaving(true);
+    if (which === "main") {
+      setAdsMain(value);
+      localStorage.setItem("adsEnabledMain", String(value));
+    } else {
+      setAdsPopup(value);
+      localStorage.setItem("adsEnabledPopup", String(value));
+    }
+    window.dispatchEvent(new Event("storage"));
+    const adminToken = localStorage.getItem("token") || localStorage.getItem("adminToken");
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (adminToken) headers["Authorization"] = `Bearer ${adminToken}`;
+    try {
+      const response = await fetch("/api/admin/ads-settings", {
+        method: "POST",
+        credentials: "include",
+        headers,
+        body: JSON.stringify({ main: which === "main" ? value : adsMain, popup: which === "popup" ? value : adsPopup }),
+      });
+      if (!response.ok) throw new Error("Unable to save ads settings");
+      resetAdsSettingsCache();
+      resetMasterAdsCache();
+      queryClient.invalidateQueries({ queryKey: ["admin-ads-master"] });
+      toast({ title: `${which === "main" ? "Main banner" : "Popup"} ads ${value ? "enabled" : "disabled"}` });
+    } catch (error: any) {
+      // Revert on failure
+      if (which === "main") setAdsMain(!value); else setAdsPopup(!value);
+      localStorage.setItem(which === "main" ? "adsEnabledMain" : "adsEnabledPopup", String(!value));
+      toast({ title: "Could not save ads setting", description: error.message, variant: "destructive" });
+    } finally {
+      setAdsSaving(false);
+    }
+  };
+
+  // ── Granular per-placement ad settings (5 toggles) ──
+  const { data: adsSettingsData } = useQuery({
+    queryKey: ["admin-ads-settings"],
+    queryFn: async () => {
+      const res = await fetch("/api/settings/ads", { credentials: "include" });
+      return res.ok ? res.json() : null;
+    },
+    enabled: tab === "settings" || tab === "ads",
+  });
+  useEffect(() => {
+    if (adsSettingsData) setAdsSettings((current) => ({ ...current, ...adsSettingsData }));
+  }, [adsSettingsData]);
+  const toggleAdsSetting = async (key: keyof typeof adsSettings, value: boolean) => {
+    const next = { ...adsSettings, [key]: value };
+    setAdsSettings(next);
+    setAdsPlacementSaving(key);
+    const adminToken = localStorage.getItem("token") || localStorage.getItem("adminToken");
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (adminToken) headers["Authorization"] = `Bearer ${adminToken}`;
+    try {
+      const response = await fetch("/api/settings/ads", {
+        method: "PUT",
+        credentials: "include",
+        headers,
+        body: JSON.stringify(next),
+      });
+      if (!response.ok) throw new Error("Unable to save ads settings");
+      resetAdsSettingsCache();
+      queryClient.invalidateQueries({ queryKey: ["admin-ads-settings"] });
+      toast({ title: `${key.replace("AdsEnabled", "")} ads ${value ? "enabled" : "disabled"}` });
+    } catch (error: any) {
+      setAdsSettings(adsSettings);
+      toast({ title: "Could not save ads setting", description: error.message, variant: "destructive" });
+    } finally {
+      setAdsPlacementSaving(null);
+    }
+  };
+
+  const [tagInputs, setTagInputs] = useState<Record<string, string>>({
+    "Tag 1": "",
+    "Tag 2": "",
+    "Tag 3": "",
+    "Tag 4": "",
+    "Tag 5": "",
+  });
+  const [tagSaving, setTagSaving] = useState<string | null>(null);
+
+  const { data: adTagsData, refetch: refetchAdTags } = useQuery({
+    queryKey: ["admin-ad-tags"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/ad-tags", { credentials: "include" });
+      return res.ok ? res.json() : null;
+    },
+    enabled: tab === "ads",
+  });
+
+  useEffect(() => {
+    if (adTagsData) {
+      const nextInputs: Record<string, string> = {};
+      for (let i = 1; i <= 5; i++) {
+        const slot = `Tag ${i}`;
+        nextInputs[slot] = adTagsData[slot]?.tag_code || "";
+      }
+      setTagInputs(nextInputs);
+    }
+  }, [adTagsData]);
+
+  const handleTagAction = async (slot: string, action: "connect" | "disconnect") => {
+    setTagSaving(slot);
+    try {
+      const res = await fetch("/api/admin/ad-tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          tag_slot: slot,
+          tag_code: tagInputs[slot] || "",
+          action,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to update ad tag");
+      await refetchAdTags();
+      toast({
+        title: action === "connect" ? `${slot} Installed & Connected` : `${slot} Disconnected`,
+        description: action === "connect" ? "Injected into website header automatically." : "Tag code preserved.",
+      });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setTagSaving(null);
+    }
+  };
 
   const { data: cardRequiredData } = useQuery({
     queryKey: ["admin-card-required"],
@@ -711,6 +871,7 @@ export default function Admin() {
     { key: "transactions", label: "Transactions", icon: List },
     { key: "tasks", label: "Tasks", icon: ClipboardList, badge: pendingTasksCount },
     { key: "marketplace", label: "Marketplace", icon: DollarSign },
+    { key: "ads", label: "Ads", icon: Tv },
     { key: "settings", label: "Settings", icon: Settings },
     { key: "support", label: "Support", icon: MessageSquare, badge: totalUnread },
     { key: "sms", label: "SMS", icon: Phone },
@@ -997,6 +1158,139 @@ export default function Admin() {
           </div>
         )}
 
+        {/* ── ADS TAB ── */}
+        {tab === "ads" && (
+          <div className="max-w-2xl space-y-8">
+            {/* Tag Slots 1 to 5 */}
+            <div className="bg-card border border-border rounded-2xl p-6 space-y-6">
+              <div className="flex items-center justify-between border-b border-border pb-4">
+                <div>
+                  <h2 className="font-bold text-lg mb-1">Monetag Tag Manager (Tag 1 to Tag 5)</h2>
+                  <p className="text-muted-foreground text-sm">
+                    Paste Monetag tags for pop-up ads, in-app push ads, interstitials, and banners. Click <strong>Connect</strong> to save and inject into the website header automatically. Click <strong>Disconnect</strong> to remove from header without deleting the code.
+                  </p>
+                </div>
+                <div>
+                  <a
+                    href="/admin/ads.php"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-500/30 text-amber-400 hover:bg-amber-500/10 transition"
+                  >
+                    Open admin/ads.php ↗
+                  </a>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                {(["Tag 1", "Tag 2", "Tag 3", "Tag 4", "Tag 5"] as const).map((slot, index) => {
+                  const tagInfo = adTagsData?.[slot];
+                  const isConnected = tagInfo?.status === "connected";
+                  const slotPurposes = [
+                    "Pop-up / Pop-under ad tag",
+                    "In-App Push notification ad tag",
+                    "Vignette / Interstitial ad tag",
+                    "Native Banner / In-Page ad tag",
+                    "Custom Ad Script / Pixel code",
+                  ];
+                  const isSavingThis = tagSaving === slot;
+
+                  return (
+                    <div key={slot} className="border border-border/80 rounded-xl p-4 bg-background/50 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-sm">{slot}</span>
+                          <span className="text-xs text-muted-foreground">({slotPurposes[index]})</span>
+                        </div>
+                        <div>
+                          {isConnected ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
+                              Installed / Connected
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-muted-foreground border border-border">
+                              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60" />
+                              Disconnected
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <textarea
+                        value={tagInputs[slot] || ""}
+                        onChange={(e) => setTagInputs({ ...tagInputs, [slot]: e.target.value })}
+                        placeholder={`Paste Monetag tag code for ${slot}...`}
+                        className="w-full min-h-[75px] text-xs font-mono bg-card border border-border rounded-lg p-3 text-foreground focus:outline-none focus:border-primary resize-y"
+                      />
+
+                      <div className="flex items-center justify-end gap-2">
+                        {isConnected && (
+                          <button
+                            type="button"
+                            disabled={isSavingThis}
+                            onClick={() => handleTagAction(slot, "disconnect")}
+                            className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-border text-muted-foreground hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/10 transition"
+                          >
+                            {isSavingThis ? "Updating..." : "Disconnect"}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          disabled={isSavingThis}
+                          onClick={() => handleTagAction(slot, "connect")}
+                          className="text-xs font-semibold px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition shadow-sm"
+                        >
+                          {isSavingThis ? "Saving..." : isConnected ? "Update & Keep Connected" : "Connect"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Master Switches & Per-Placement Control */}
+            <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+              <div>
+                <h2 className="font-bold text-lg mb-1">Monetag Ads Placement Control</h2>
+                <p className="text-muted-foreground text-sm">Choose where Monetag ads can appear. Ads are always completely blocked inside the admin panel.</p>
+              </div>
+              <div className="space-y-2">
+                <Toggle
+                  value={adsMain}
+                  onChange={(value) => !adsSaving && toggleAdsMaster("main", value)}
+                  label={adsSaving ? "Saving..." : "Main Banner Ads (master switch)"}
+                />
+                <Toggle
+                  value={adsPopup}
+                  onChange={(value) => !adsSaving && toggleAdsMaster("popup", value)}
+                  label={adsSaving ? "Saving..." : "Popup Ads (master switch)"}
+                />
+              </div>
+              <div className="border-t border-border pt-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Per-Placement Control</p>
+                <div className="space-y-2">
+                  {([
+                    ["heroPageAdsEnabled", "Hero page ads"],
+                    ["dashboardAdsEnabled", "Dashboard ads"],
+                    ["withdrawPageAdsEnabled", "Withdraw page ads"],
+                    ["generalAdsEnabled", "General page ads"],
+                    ["sidebarAdsEnabled", "Sidebar ads"],
+                  ] as const).map(([key, label]) => (
+                    <Toggle
+                      key={key}
+                      value={adsSettings[key]}
+                      onChange={(value) => adsPlacementSaving === null && toggleAdsSetting(key, value)}
+                      label={adsPlacementSaving === key ? "Saving..." : label}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── SETTINGS TAB ── */}
         {tab === "settings" && (
           <div className="max-w-lg space-y-8">
@@ -1021,6 +1315,45 @@ export default function Admin() {
                   </label>
                 ))}
                 <Button onClick={saveTaskPrices} disabled={taskPriceSaving} className="w-full">{taskPriceSaving ? "Saving..." : "Save all task rates"}</Button>
+              </div>
+            </div>
+
+            {/* ── Ads Control ── */}
+            <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+              <div>
+                <h2 className="font-bold text-lg mb-1">Ads Control</h2>
+                <p className="text-muted-foreground text-sm">Choose where Monetag ads can appear. Ads are always disabled inside the admin panel.</p>
+              </div>
+              <div className="space-y-2">
+                <Toggle
+                  value={adsMain}
+                  onChange={(value) => !adsSaving && toggleAdsMaster("main", value)}
+                  label={adsSaving ? "Saving..." : "Main Banner Ads (master switch)"}
+                />
+                <Toggle
+                  value={adsPopup}
+                  onChange={(value) => !adsSaving && toggleAdsMaster("popup", value)}
+                  label={adsSaving ? "Saving..." : "Popup Ads (master switch)"}
+                />
+              </div>
+              <div className="border-t border-border pt-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Per-Placement Control</p>
+                <div className="space-y-2">
+                  {([
+                    ["heroPageAdsEnabled", "Hero page ads"],
+                    ["dashboardAdsEnabled", "Dashboard ads"],
+                    ["withdrawPageAdsEnabled", "Withdraw page ads"],
+                    ["generalAdsEnabled", "General page ads"],
+                    ["sidebarAdsEnabled", "Sidebar ads"],
+                  ] as const).map(([key, label]) => (
+                    <Toggle
+                      key={key}
+                      value={adsSettings[key]}
+                      onChange={(value) => adsPlacementSaving === null && toggleAdsSetting(key, value)}
+                      label={adsPlacementSaving === key ? "Saving..." : label}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
 
