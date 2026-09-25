@@ -599,9 +599,9 @@ router.post("/admin/reject-payout/:id", async (req, res) => {
 // In-memory fallback for ad tags
 const memAdTags: Record<string, { tag_slot: string; tag_code: string; status: string }> = {
   "Tag 1": { tag_slot: "Tag 1", tag_code: '<script src="https://quge5.com/88/tag.min.js" data-zone="284730" async data-cfasync="false"></script>', status: "connected" },
-  "Tag 2": { tag_slot: "Tag 2", tag_code: '<script src="https://quge5.com/88/tag.min.js" data-zone="284731" async data-cfasync="false"></script>', status: "connected" },
+  "Tag 2": { tag_slot: "Tag 2", tag_code: '<script src="https://quge5.com/88/tag.min.js" data-zone="284209" async data-cfasync="false"></script>', status: "connected" },
   "Tag 3": { tag_slot: "Tag 3", tag_code: "<script>(function(s){s.dataset.zone='11874239',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>", status: "disconnected" },
-  "Tag 4": { tag_slot: "Tag 4", tag_code: '<script src="https://quge5.com/88/tag.min.js" data-zone="284731" async data-cfasync="false"></script>', status: "disconnected" },
+  "Tag 4": { tag_slot: "Tag 4", tag_code: '<script src="https://quge5.com/88/tag.min.js" data-zone="284209" async data-cfasync="false"></script>', status: "disconnected" },
   "Tag 5": { tag_slot: "Tag 5", tag_code: "", status: "disconnected" },
 };
 

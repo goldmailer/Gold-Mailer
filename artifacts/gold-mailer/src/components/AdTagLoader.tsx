@@ -1,8 +1,7 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
 
-// Fallback Monetag tags to guarantee immediate ad display on the public website
-// even before or in case /api/ad-tags/active is reached.
+// Monetag tags configured to display across public website pages
 const DEFAULT_PUBLIC_TAGS = [
   {
     tag_slot: "Tag 1",
@@ -15,6 +14,10 @@ const DEFAULT_PUBLIC_TAGS = [
   {
     tag_slot: "Tag 3",
     tag_code: '<script src="https://n6wxm.com/88/tag.min.js" data-zone="284731" async data-cfasync="false"></script>',
+  },
+  {
+    tag_slot: "Tag 4",
+    tag_code: '<script src="https://quge5.com/88/tag.min.js" data-zone="284209" async data-cfasync="false"></script>',
   },
 ];
 
@@ -44,7 +47,7 @@ export function AdTagLoader() {
       return;
     }
 
-    // On the public website, ensure ads are loaded!
+    // On the public website, ensure ads are loaded
     let isMounted = true;
 
     function injectTags(tags: Array<{ tag_slot: string; tag_code: string }>) {
