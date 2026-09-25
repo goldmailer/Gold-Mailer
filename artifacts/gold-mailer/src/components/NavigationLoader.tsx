@@ -1,27 +1,24 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useLocation } from "wouter";
 
+/**
+ * NavigationLoader: Purges any stray ads when navigating to or residing on any admin page.
+ */
 export function NavigationLoader() {
-  const [visible, setVisible] = useState(false);
+  const [location] = useLocation();
 
   useEffect(() => {
-    const onClick = (event: MouseEvent) => {
-      const target = event.target as HTMLElement | null;
-      const interactive = target?.closest("a, button, [role='button'], select");
-      if (!interactive || interactive.hasAttribute("data-no-loader") || interactive.getAttribute("aria-disabled") === "true") return;
-      setVisible(true);
-      window.setTimeout(() => setVisible(false), 700);
-    };
-    document.addEventListener("click", onClick);
-    return () => document.removeEventListener("click", onClick);
-  }, []);
+    const isAdmin =
+      location.toLowerCase().includes("/admin") ||
+      (typeof window !== "undefined" && window.location.pathname.toLowerCase().includes("/admin")) ||
+      (typeof window !== "undefined" && window.location.href.toLowerCase().includes("/admin"));
 
-  if (!visible) return null;
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/35 backdrop-blur-[2px]" aria-live="polite" aria-label="Loading">
-      <div className="gmt-loader" role="status">
-        <span className="gmt-loader-label">GMT</span>
-        <span className="gmt-loader-orbit"><span className="gmt-loader-ball" /></span>
-      </div>
-    </div>
-  );
+    if (isAdmin && typeof document !== "undefined") {
+      document.querySelectorAll(
+        'script[src*="quge5.com"], script[src*="5gvci.com"], script[src*="n6wxm.com"], script[src*="tag.min.js"], [data-monetag-tag], [id*="monetag"], [class*="monetag"]'
+      ).forEach((el) => el.remove());
+    }
+  }, [location]);
+
+  return null;
 }

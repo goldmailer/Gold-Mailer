@@ -60,13 +60,12 @@
             font-weight: 700;
             padding: 4px 8px;
             border-radius: 6px;
-            letter-spacing: 0.05em;
             text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
         .header-title h1 {
-            font-size: 26px;
-            font-weight: 800;
-            letter-spacing: -0.02em;
+            font-size: 22px;
+            font-weight: 700;
             margin-bottom: 4px;
         }
         .header-title p {
@@ -78,119 +77,113 @@
             border-radius: 10px;
             margin-bottom: 24px;
             font-size: 14px;
-            font-weight: 500;
             display: flex;
             align-items: center;
             gap: 10px;
-            transition: all 0.3s;
         }
-        .alert-success {
-            background: rgba(16, 185, 129, 0.12);
-            border: 1px solid rgba(16, 185, 129, 0.35);
-            color: #34d399;
+        .alert-success { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; }
+        .alert-error { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; }
+        .alert-info { background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #60a5fa; }
+        
+        .grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
-        .alert-info {
-            background: rgba(59, 130, 246, 0.12);
-            border: 1px solid rgba(59, 130, 246, 0.35);
-            color: #60a5fa;
-        }
-        .alert-error {
-            background: rgba(239, 68, 68, 0.12);
-            border: 1px solid rgba(239, 68, 68, 0.35);
-            color: #f87171;
-        }
-        .tag-card {
+        .card {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             border-radius: 16px;
             padding: 24px;
-            margin-bottom: 20px;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .tag-card:focus-within {
-            border-color: rgba(245, 158, 11, 0.4);
+        .card.connected {
+            border-color: rgba(16, 185, 129, 0.3);
+            box-shadow: 0 4px 20px -8px rgba(16, 185, 129, 0.15);
         }
         .tag-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 14px;
+            margin-bottom: 16px;
         }
         .tag-title {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
-        .tag-slot-label {
+        .tag-name {
             font-size: 17px;
             font-weight: 700;
-            letter-spacing: -0.01em;
         }
         .tag-purpose {
-            color: var(--text-muted);
             font-size: 13px;
+            color: var(--text-secondary);
         }
         .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
             font-size: 12px;
             font-weight: 600;
             padding: 5px 12px;
             border-radius: 9999px;
-            letter-spacing: 0.02em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
-        .status-connected {
-            background: rgba(16, 185, 129, 0.15);
-            border: 1px solid rgba(16, 185, 129, 0.4);
+        .status-badge.connected {
+            background: rgba(16, 185, 129, 0.12);
             color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
         }
-        .status-connected .dot {
+        .status-badge.connected::before {
+            content: '';
             width: 7px;
             height: 7px;
+            background: var(--accent-green);
             border-radius: 50%;
-            background: #10b981;
             box-shadow: 0 0 8px #10b981;
         }
-        .status-disconnected {
-            background: rgba(148, 163, 184, 0.1);
-            border: 1px solid rgba(148, 163, 184, 0.25);
-            color: var(--text-secondary);
+        .status-badge.disconnected {
+            background: rgba(100, 116, 139, 0.12);
+            color: var(--text-muted);
+            border: 1px solid rgba(100, 116, 139, 0.25);
         }
-        .status-disconnected .dot {
+        .status-badge.disconnected::before {
+            content: '';
             width: 7px;
             height: 7px;
+            background: var(--text-muted);
             border-radius: 50%;
-            background: #64748b;
         }
-        .textarea-container {
+        .form-group {
             margin-bottom: 16px;
+        }
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
         }
         textarea {
             width: 100%;
-            min-height: 95px;
             background: var(--input-bg);
             border: 1px solid var(--input-border);
             border-radius: 10px;
-            padding: 12px 14px;
-            color: #f1f5f9;
+            color: #38bdf8;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 13px;
-            line-height: 1.5;
+            font-size: 12px;
+            padding: 12px 14px;
             resize: vertical;
-            outline: none;
+            min-height: 85px;
+            line-height: 1.5;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
         textarea:focus {
+            outline: none;
             border-color: var(--accent-gold);
             box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15);
         }
-        textarea::placeholder {
-            color: var(--text-muted);
-            font-family: 'Inter', sans-serif;
-            font-size: 13px;
-        }
-        .tag-actions {
+        .actions {
             display: flex;
             align-items: center;
             justify-content: flex-end;
@@ -203,109 +196,61 @@
             font-weight: 600;
             padding: 9px 18px;
             border-radius: 8px;
-            border: none;
             transition: all 0.2s;
             display: inline-flex;
             align-items: center;
             gap: 6px;
-        }
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
+            border: none;
         }
         .btn-connect {
-            background: #10b981;
-            color: #ffffff;
-        }
-        .btn-connect:hover:not(:disabled) {
-            background: #059669;
+            background: var(--accent-green);
+            color: #042f1a;
             box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+        }
+        .btn-connect:hover {
+            background: #059669;
+            color: #fff;
         }
         .btn-disconnect {
             background: transparent;
             color: var(--text-secondary);
-            border: 1px solid var(--input-border);
+            border: 1px solid var(--card-border);
         }
-        .btn-disconnect:hover:not(:disabled) {
+        .btn-disconnect:hover {
             background: rgba(239, 68, 68, 0.1);
-            color: #f87171;
-            border-color: rgba(239, 68, 68, 0.4);
+            color: var(--accent-red);
+            border-color: rgba(239, 68, 68, 0.3);
         }
-        .info-panel {
-            background: rgba(245, 158, 11, 0.05);
-            border: 1px dashed rgba(245, 158, 11, 0.3);
-            border-radius: 12px;
-            padding: 16px 20px;
-            margin-top: 24px;
-            font-size: 13px;
-            color: var(--text-secondary);
-            display: flex;
-            flex-direction: column;
+        .back-link {
+            display: inline-flex;
+            align-items: center;
             gap: 6px;
-        }
-        .info-panel strong {
             color: var(--accent-gold);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 20px;
         }
-        .inspector-toggle {
-            margin-top: 18px;
-            background: #182238;
-            border: 1px solid #253350;
-            color: #94a3b8;
-            font-size: 12px;
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-        .inspector-pre {
-            display: none;
-            margin-top: 10px;
-            background: #090c14;
-            border: 1px solid #1e293b;
-            padding: 12px;
-            border-radius: 8px;
-            color: #38bdf8;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-            white-space: pre-wrap;
-            word-break: break-all;
-            max-height: 250px;
-            overflow-y: auto;
-        }
+        .back-link:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
     <div class="container">
+        <a href="/admin" class="back-link">&larr; Back to Admin Dashboard</a>
+        
         <header>
-            <div>
-                <div class="brand">
-                    <span class="logo">GOLDMAILER</span>
-                    <span class="badge-admin">Admin Panel</span>
-                </div>
-                <div class="header-title" style="margin-top: 8px;">
-                    <h1>Ads Manager</h1>
-                    <p>Direct index.html Tag Injection &bull; Reads and writes directly between <code>&lt;!-- ADS_TAGS_START --&gt;</code> and <code>&lt;!-- ADS_TAGS_END --&gt;</code>.</p>
-                </div>
+            <div class="brand">
+                <span class="logo">Gold Mailer</span>
+                <span class="badge-admin">Admin Ads Control</span>
             </div>
-            <div>
-                <a href="/admin" style="color: var(--accent-gold); text-decoration: none; font-size: 13px; font-weight: 600;">&larr; Back to Admin</a>
+            <div class="header-title">
+                <h1>Monetag Ads Integration</h1>
+                <p>Manage all 5 advertising tag slots dynamically for user public pages (strictly excluded from admin panel).</p>
             </div>
         </header>
 
-        <div id="alert-container" style="display: none;"></div>
-
-        <!-- Tag Slots 1 to 5 Container -->
-        <div id="slots-container">
-            <!-- Dynamically populated and bound to index.html -->
-        </div>
-
-        <div class="info-panel">
-            <div><strong>Direct index.html Injection:</strong> When you click <code>Connect</code> or <code>Update & Keep Connected</code>, your script is written directly into <code>index.html</code> between <code>&lt;!-- ADS_TAGS_START --&gt;</code> and <code>&lt;!-- ADS_TAGS_END --&gt;</code>.</div>
-            <div><strong>Instant Disconnect:</strong> Clicking <code>Disconnect</code> immediately removes the ad tag from <code>index.html</code> while preserving your snippet here for 1-click reactivation.</div>
-            <div>
-                <button type="button" class="inspector-toggle" onclick="toggleInspector()">View Live index.html Ad Tags Block</button>
-                <pre id="raw-inspector" class="inspector-pre"></pre>
-            </div>
-        </div>
+        <div id="alertBox"></div>
+        <div class="grid" id="slotsGrid"></div>
     </div>
 
     <script>
@@ -320,393 +265,127 @@
                 id: 2,
                 slot: "Tag 2",
                 purpose: "In-App Push notification ad tag",
-                defaultCode: '<script src="https://quge5.com/88/tag.min.js" data-zone="284731" async data-cfasync="false"><\/script>'
+                defaultCode: '<script src="https://quge5.com/88/tag.min.js" data-zone="284203" async data-cfasync="false"><\/script>'
             },
             {
                 id: 3,
                 slot: "Tag 3",
-                purpose: "Vignette / Interstitial ad tag",
-                defaultCode: '<script>(function(s){s.dataset.zone=\'11874239\',s.src=\'https://n6wxm.com/vignette.min.js\'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement(\'script\')))<\/script>'
+                purpose: "Interstitial / Vignette ad tag",
+                defaultCode: '<script src="https://n6wxm.com/88/tag.min.js" data-zone="284731" async data-cfasync="false"><\/script>'
             },
             {
                 id: 4,
                 slot: "Tag 4",
-                purpose: "Native Banner / In-Page ad tag",
-                defaultCode: '<script src="https://quge5.com/88/tag.min.js" data-zone="284731" async data-cfasync="false"><\/script>'
+                purpose: "In-Page Push / Native banner tag",
+                defaultCode: '<script src="https://n6wxm.com/88/tag.min.js" data-zone="284209" async data-cfasync="false"><\/script>'
             },
             {
                 id: 5,
                 slot: "Tag 5",
-                purpose: "Custom Ad Script / Pixel code",
-                defaultCode: ''
+                purpose: "Reward / Smart ad link tag",
+                defaultCode: '<script src="https://quge5.com/88/tag.min.js" data-zone="284730" async data-cfasync="false"><\/script>'
             }
         ];
 
-        let currentHtml = '';
-        let slotStates = {};
+        let state = {};
 
-        function showAlert(message, type = 'success') {
-            const container = document.getElementById('alert-container');
-            container.className = `alert alert-${type}`;
-            container.innerHTML = `<span>${message}</span>`;
-            container.style.display = 'flex';
-            setTimeout(() => {
-                container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }, 50);
+        function showAlert(msg, type = "success") {
+            const box = document.getElementById("alertBox");
+            box.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+            setTimeout(() => { box.innerHTML = ""; }, 5000);
         }
 
-        function toggleInspector() {
-            const el = document.getElementById('raw-inspector');
-            if (el.style.display === 'block') {
-                el.style.display = 'none';
-            } else {
-                updateInspector();
-                el.style.display = 'block';
-            }
-        }
-
-        function updateInspector() {
-            const el = document.getElementById('raw-inspector');
-            const sIdx = currentHtml.indexOf('<!-- ADS_TAGS_START -->');
-            const eIdx = currentHtml.indexOf('<!-- ADS_TAGS_END -->');
-            if (sIdx !== -1 && eIdx !== -1) {
-                el.textContent = currentHtml.substring(sIdx, eIdx + '<!-- ADS_TAGS_END -->'.length);
-            } else {
-                el.textContent = '<!-- ADS_TAGS_START -->\n<!-- ADS_TAGS_END --> (not yet present or loaded)';
-            }
-        }
-
-        // Reads index.html directly from server
-        async function fetchIndexHtml() {
+        async function loadTags() {
             try {
-                // Try API endpoint first
-                const res = await fetch('/api/admin/index-html');
+                const res = await fetch("/api/ad-tags");
                 if (res.ok) {
                     const data = await res.json();
-                    if (data && data.html) {
-                        return data.html;
-                    }
+                    data.forEach(item => {
+                        state[item.tag_slot] = item;
+                    });
                 }
-            } catch (e) {
-                console.warn('API /api/admin/index-html failed, falling back to direct /index.html', e);
+            } catch (err) {
+                console.warn("Using local storage fallback for tags", err);
             }
-
-            try {
-                // Try fetching /index.html directly
-                const res2 = await fetch('/index.html', { cache: 'no-cache' });
-                if (res2.ok) {
-                    return await res2.text();
-                }
-            } catch (e) {
-                console.warn('Direct /index.html fetch failed', e);
-            }
-
-            return currentHtml;
+            render();
         }
 
-        // Saves index.html directly to server
-        async function saveIndexHtml(html, slot, code, action) {
-            let saved = false;
-            // 1. Try POST to /api/admin/index-html
+        async function saveTag(slot, code, action) {
             try {
-                const res = await fetch('/api/admin/index-html', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ html, slot, code, action })
+                const res = await fetch("/api/ad-tags", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ tag_slot: slot, tag_code: code, action: action })
                 });
-                if (res.ok) saved = true;
-            } catch (e) {
-                console.warn('/api/admin/index-html save failed', e);
-            }
-
-            // 2. Try POST to /index.html
-            try {
-                await fetch('/index.html', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ html })
-                });
-                saved = true;
-            } catch (e) {}
-
-            // 3. Sync to /api/admin/ad-tags for complete database alignment
-            try {
-                await fetch('/api/admin/ad-tags', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tag_slot: slot, tag_code: code, action })
-                });
-            } catch (e) {}
-
-            return saved;
-        }
-
-        function extractSlotCode(html, slotNum, defaultCode) {
-            const startMarker = `<!-- TAG_${slotNum}_START -->`;
-            const endMarker = `<!-- TAG_${slotNum}_END -->`;
-            const sIdx = html.indexOf(startMarker);
-            const eIdx = html.indexOf(endMarker);
-
-            if (sIdx !== -1 && eIdx !== -1 && eIdx > sIdx) {
-                const inner = html.substring(sIdx + startMarker.length, eIdx).trim();
-                if (inner.length > 0) {
-                    return { code: inner, isConnected: true };
-                }
-            }
-
-            // Fallback: check if default code is present in ads section
-            const adsStart = html.indexOf('<!-- ADS_TAGS_START -->');
-            const adsEnd = html.indexOf('<!-- ADS_TAGS_END -->');
-            if (adsStart !== -1 && adsEnd !== -1 && defaultCode) {
-                const adsBlock = html.substring(adsStart, adsEnd);
-                if (adsBlock.includes(defaultCode.trim())) {
-                    return { code: defaultCode, isConnected: true };
-                }
-            }
-
-            // Stored in localStorage or default
-            const localSaved = localStorage.getItem(`tag_code_${slotNum}`) || defaultCode;
-            return { code: localSaved, isConnected: false };
-        }
-
-        function updateHtmlWithTag(html, slotNum, code, action) {
-            let doc = html;
-            // Ensure <!-- ADS_TAGS_START --> and <!-- ADS_TAGS_END --> exist in <head>
-            if (!doc.includes('<!-- ADS_TAGS_START -->') || !doc.includes('<!-- ADS_TAGS_END -->')) {
-                const headClose = '</head>';
-                if (doc.includes(headClose)) {
-                    doc = doc.replace(headClose, `    <!-- ADS_TAGS_START -->\n    <!-- ADS_TAGS_END -->\n${headClose}`);
+                if (res.ok) {
+                    const updated = await res.json();
+                    state[slot] = updated;
+                    showAlert(`${slot} ${action === 'connect' ? 'connected to public pages!' : 'disconnected.'}`, "success");
                 } else {
-                    doc += '\n<!-- ADS_TAGS_START -->\n<!-- ADS_TAGS_END -->\n';
+                    const err = await res.json();
+                    showAlert(err.error || "Update failed", "error");
                 }
+            } catch (err) {
+                showAlert("Network error saving tag", "error");
             }
-
-            const startMarker = `<!-- TAG_${slotNum}_START -->`;
-            const endMarker = `<!-- TAG_${slotNum}_END -->`;
-            const adsStart = doc.indexOf('<!-- ADS_TAGS_START -->');
-            const adsEnd = doc.indexOf('<!-- ADS_TAGS_END -->');
-
-            if (adsStart === -1 || adsEnd === -1) return doc;
-
-            let adsBlock = doc.substring(adsStart, adsEnd + '<!-- ADS_TAGS_END -->'.length);
-            const slotContent = action === 'connect' && code.trim() ? `\n    ${code.trim()}\n    ` : '';
-
-            if (adsBlock.includes(startMarker) && adsBlock.includes(endMarker)) {
-                const regex = new RegExp(`${startMarker}[\\s\\S]*?${endMarker}`, 'g');
-                adsBlock = adsBlock.replace(regex, `${startMarker}${slotContent}${endMarker}`);
-            } else {
-                adsBlock = adsBlock.replace(
-                    '<!-- ADS_TAGS_END -->',
-                    `  ${startMarker}${slotContent}${endMarker}\n    <!-- ADS_TAGS_END -->`
-                );
-            }
-
-            return doc.substring(0, adsStart) + adsBlock + doc.substring(adsEnd + '<!-- ADS_TAGS_END -->'.length);
+            render();
         }
 
-        function renderSlots() {
-            const container = document.getElementById('slots-container');
-            container.innerHTML = '';
+        function render() {
+            const grid = document.getElementById("slotsGrid");
+            grid.innerHTML = "";
 
-            SLOTS.forEach(item => {
-                const state = slotStates[item.slot] || {
-                    code: item.defaultCode,
-                    isConnected: false
+            SLOTS.forEach(s => {
+                const current = state[s.slot] || {
+                    tag_slot: s.slot,
+                    tag_code: s.defaultCode,
+                    status: "disconnected"
                 };
 
-                const card = document.createElement('div');
-                card.className = 'tag-card';
-                card.id = `card-${item.id}`;
+                const isConnected = current.status === "connected";
 
+                const card = document.createElement("div");
+                card.className = `card ${isConnected ? 'connected' : ''}`;
                 card.innerHTML = `
                     <div class="tag-header">
                         <div class="tag-title">
-                            <span class="tag-slot-label">${item.slot}</span>
-                            <span class="tag-purpose">(${item.purpose})</span>
+                            <span class="tag-name">${s.slot}</span>
+                            <span class="tag-purpose">&bull; ${s.purpose}</span>
                         </div>
-                        <div id="status-container-${item.id}">
-                            ${state.isConnected ? `
-                                <span class="status-badge status-connected">
-                                    <span class="dot"></span> Installed / Connected
-                                </span>
-                            ` : `
-                                <span class="status-badge status-disconnected">
-                                    <span class="dot"></span> Disconnected
-                                </span>
-                            `}
-                        </div>
+                        <span class="status-badge ${isConnected ? 'connected' : 'disconnected'}">
+                            ${isConnected ? 'Active (User Pages)' : 'Disconnected'}
+                        </span>
                     </div>
-
-                    <div class="textarea-container">
-                        <textarea 
-                            id="textarea-${item.id}"
-                            placeholder="Paste Monetag code snippet here (e.g. &lt;script src=&quot;https://quge5.com/...&quot;&gt;&lt;/script&gt;)"
-                        >${escapeHtml(state.code || '')}</textarea>
+                    <div class="form-group">
+                        <label>Monetag Tag Script Code</label>
+                        <textarea id="code_${s.id}" rows="3" placeholder="Paste full <script>...</script> code">${current.tag_code || s.defaultCode}</textarea>
                     </div>
-
-                    <div class="tag-actions" id="actions-container-${item.id}">
-                        ${state.isConnected ? `
-                            <button type="button" class="btn-disconnect" onclick="handleDisconnect(${item.id})">
+                    <div class="actions">
+                        ${isConnected ? `
+                            <button class="btn-disconnect" onclick="handleAction('${s.slot}', ${s.id}, 'disconnect')">
                                 Disconnect
                             </button>
-                            <button type="button" class="btn-connect" onclick="handleConnect(${item.id})">
-                                Update & Keep Connected
+                            <button class="btn-connect" onclick="handleAction('${s.slot}', ${s.id}, 'connect')">
+                                Update Code
                             </button>
                         ` : `
-                            <button type="button" class="btn-connect" onclick="handleConnect(${item.id})">
-                                Connect
+                            <button class="btn-connect" onclick="handleAction('${s.slot}', ${s.id}, 'connect')">
+                                Connect Tag
                             </button>
                         `}
                     </div>
                 `;
-
-                container.appendChild(card);
-            });
-
-            updateInspector();
-        }
-
-        function escapeHtml(str) {
-            return str
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;');
-        }
-
-        async function handleConnect(slotId) {
-            const item = SLOTS.find(s => s.id === slotId);
-            const textarea = document.getElementById(`textarea-${slotId}`);
-            const code = textarea.value.trim();
-
-            if (!code) {
-                showAlert(`Please paste your ad script code into the ${item.slot} editor before connecting.`, 'error');
-                return;
-            }
-
-            // Save in localStorage for persistent code retention
-            localStorage.setItem(`tag_code_${slotId}`, code);
-
-            setCardLoading(slotId, true);
-
-            try {
-                // 1. Read latest index.html
-                const latestHtml = await fetchIndexHtml();
-                currentHtml = latestHtml || currentHtml;
-
-                // 2. Insert tag between <!-- ADS_TAGS_START --> and <!-- ADS_TAGS_END -->
-                const updatedHtml = updateHtmlWithTag(currentHtml, slotId, code, 'connect');
-                currentHtml = updatedHtml;
-
-                // 3. Save index.html
-                await saveIndexHtml(updatedHtml, item.slot, code, 'connect');
-
-                // 4. Update UI
-                slotStates[item.slot] = { code, isConnected: true };
-                updateCardUI(slotId, true);
-                showAlert(`${item.slot} successfully connected and installed into index.html!`, 'success');
-            } catch (err) {
-                console.error(err);
-                showAlert(`Error saving ${item.slot} to index.html: ${err.message}`, 'error');
-            } finally {
-                setCardLoading(slotId, false);
-                updateInspector();
-            }
-        }
-
-        async function handleDisconnect(slotId) {
-            const item = SLOTS.find(s => s.id === slotId);
-            const textarea = document.getElementById(`textarea-${slotId}`);
-            const code = textarea.value.trim();
-
-            // Save in localStorage so user code is preserved
-            if (code) {
-                localStorage.setItem(`tag_code_${slotId}`, code);
-            }
-
-            setCardLoading(slotId, true);
-
-            try {
-                // 1. Read latest index.html
-                const latestHtml = await fetchIndexHtml();
-                currentHtml = latestHtml || currentHtml;
-
-                // 2. Remove tag from between <!-- ADS_TAGS_START --> and <!-- ADS_TAGS_END -->
-                const updatedHtml = updateHtmlWithTag(currentHtml, slotId, '', 'disconnect');
-                currentHtml = updatedHtml;
-
-                // 3. Save index.html
-                await saveIndexHtml(updatedHtml, item.slot, code, 'disconnect');
-
-                // 4. Update UI
-                slotStates[item.slot] = { code, isConnected: false };
-                updateCardUI(slotId, false);
-                showAlert(`${item.slot} disconnected and removed from index.html (code preserved).`, 'info');
-            } catch (err) {
-                console.error(err);
-                showAlert(`Error disconnecting ${item.slot}: ${err.message}`, 'error');
-            } finally {
-                setCardLoading(slotId, false);
-                updateInspector();
-            }
-        }
-
-        function updateCardUI(slotId, isConnected) {
-            const statusContainer = document.getElementById(`status-container-${slotId}`);
-            const actionsContainer = document.getElementById(`actions-container-${slotId}`);
-
-            if (isConnected) {
-                statusContainer.innerHTML = `
-                    <span class="status-badge status-connected">
-                        <span class="dot"></span> Installed / Connected
-                    </span>
-                `;
-                actionsContainer.innerHTML = `
-                    <button type="button" class="btn-disconnect" onclick="handleDisconnect(${slotId})">
-                        Disconnect
-                    </button>
-                    <button type="button" class="btn-connect" onclick="handleConnect(${slotId})">
-                        Update & Keep Connected
-                    </button>
-                `;
-            } else {
-                statusContainer.innerHTML = `
-                    <span class="status-badge status-disconnected">
-                        <span class="dot"></span> Disconnected
-                    </span>
-                `;
-                actionsContainer.innerHTML = `
-                    <button type="button" class="btn-connect" onclick="handleConnect(${slotId})">
-                        Connect
-                    </button>
-                `;
-            }
-        }
-
-        function setCardLoading(slotId, isLoading) {
-            const actionsContainer = document.getElementById(`actions-container-${slotId}`);
-            const buttons = actionsContainer.querySelectorAll('button');
-            buttons.forEach(b => {
-                b.disabled = isLoading;
-                if (isLoading) b.style.opacity = '0.5';
-                else b.style.opacity = '1';
+                grid.appendChild(card);
             });
         }
 
-        async function init() {
-            // Read index.html on load
-            currentHtml = await fetchIndexHtml();
+        window.handleAction = function(slot, id, action) {
+            const textarea = document.getElementById(`code_${id}`);
+            const code = textarea ? textarea.value.trim() : "";
+            saveTag(slot, code, action);
+        };
 
-            // Check status of each tag in index.html
-            SLOTS.forEach(item => {
-                const parsed = extractSlotCode(currentHtml, item.id, item.defaultCode);
-                slotStates[item.slot] = parsed;
-            });
-
-            renderSlots();
-        }
-
-        window.addEventListener('DOMContentLoaded', init);
+        loadTags();
     </script>
 </body>
 </html>

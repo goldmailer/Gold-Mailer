@@ -35,7 +35,10 @@ let masterPromise: Promise<{ main: boolean; popup: boolean }> | null = null;
 let masterCachedAt = 0;
 
 function isAdminPath() {
-  return window.location.pathname.includes("/admin");
+  if (typeof window === "undefined") return false;
+  const p = window.location.pathname.toLowerCase();
+  const h = window.location.href.toLowerCase();
+  return p.includes("/admin") || h.includes("/admin") || p.includes("admin");
 }
 
 function loadMasterAdsSettings() {

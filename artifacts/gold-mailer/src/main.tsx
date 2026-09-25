@@ -5,7 +5,8 @@ import { LanguageProvider } from "./i18n/LanguageContext";
 
 document.documentElement.classList.add("dark");
 
-if (import.meta.env.PROD && "serviceWorker" in navigator) {
+const isAdminPage = typeof window !== "undefined" && (window.location.pathname.toLowerCase().includes("/admin") || window.location.href.toLowerCase().includes("/admin"));
+if (!isAdminPage && import.meta.env.PROD && "serviceWorker" in navigator) {
   navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`, {
     scope: import.meta.env.BASE_URL,
   }).catch(() => {

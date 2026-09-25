@@ -2,16 +2,24 @@ import { useEffect } from "react";
 import { useLocation } from "wouter";
 
 /**
- * AdTagLoader dynamically injects all connected Monetag tags from ad_tags table
- * into document.head when browsing user pages. Ads are strictly disabled on /admin paths.
+ * AdTagLoader dynamically injects Monetag tags into document.head when browsing user pages.
+ * ADS ARE STRICTLY AND PERMANENTLY DISABLED ON ALL /admin ROUTES.
  */
 export function AdTagLoader() {
   const [location] = useLocation();
 
+  const isAdmin =
+    location.toLowerCase().includes("/admin") ||
+    (typeof window !== "undefined" && window.location.pathname.toLowerCase().includes("/admin")) ||
+    (typeof window !== "undefined" && window.location.href.toLowerCase().includes("/admin"));
+
   useEffect(() => {
-    // Completely disable ads inside the admin panel
-    if (location.includes("/admin") || window.location.pathname.includes("/admin")) {
-      document.querySelectorAll("[data-monetag-tag]").forEach((el) => el.remove());
+    if (isAdmin) {
+      if (typeof document !== "undefined") {
+        document.querySelectorAll(
+          'script[src*="quge5.com"], script[src*="5gvci.com"], script[src*="n6wxm.com"], script[src*="tag.min.js"], [data-monetag-tag], [id*="monetag"], [class*="monetag"]'
+        ).forEach((el) => el.remove());
+      }
       return;
     }
 
@@ -24,7 +32,13 @@ export function AdTagLoader() {
         const tags = await res.json();
         if (!Array.isArray(tags) || !isMounted) return;
 
-        // Clean up previous dynamically injected tags
+        if (
+          window.location.pathname.toLowerCase().includes("/admin") ||
+          window.location.href.toLowerCase().includes("/admin")
+        ) {
+          return;
+        }
+
         document.querySelectorAll("[data-monetag-tag]").forEach((el) => el.remove());
 
         tags.forEach((tag: { tag_slot: string; tag_code: string }) => {
@@ -35,7 +49,6 @@ export function AdTagLoader() {
           container.style.display = "none";
           container.innerHTML = tag.tag_code;
 
-          // Re-create script tags so they execute
           const scripts = container.querySelectorAll("script");
           scripts.forEach((oldScript) => {
             const newScript = document.createElement("script");
@@ -64,7 +77,7 @@ export function AdTagLoader() {
     return () => {
       isMounted = false;
     };
-  }, [location]);
+  }, [location, isAdmin]);
 
   return null;
 }
