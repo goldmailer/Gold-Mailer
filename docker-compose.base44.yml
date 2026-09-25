@@ -1,0 +1,72 @@
+# Base44 development environment for GoldMailer.
+# Runs PostgreSQL + the Express API (live-reload) + the Vite frontend (HMR)
+# from the cloned source. The frontend on host port 3000 proxies /api to the
+# API service, so the whole app is served from a single origin.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: goldmailer
+      POSTGRES_PASSWORD: goldmailer_dev
+      POSTGRES_DB: goldmailer
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U goldmailer"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  # One-shot: install workspace dependencies into the bind-mounted node_modules.
+  setup:
+    image: node:22-slim
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: sh -c "corepack enable && corepack prepare pnpm@9 --activate && pnpm install"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    image: node:22-slim
+    working_dir: /app
+    volumes:
+      - ./:/app
+    # Build the server bundle once and run it. The project's dev script does
+    # not watch; restart this service (or reload the preview) after backend edits.
+    command: sh -c "corepack enable && corepack prepare pnpm@9 --activate && pnpm --filter @workspace/api-server run dev"
+    environment:
+      - NODE_ENV=development
+      - PORT=8080
+      - DATABASE_URL=postgresql://goldmailer:goldmailer_dev@db:5432/goldmailer
+      - DATABASE_SSL=false
+      - SESSION_SECRET=base44-dev-session-secret-replace-in-prod
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+
+  web:
+    image: node:22-slim
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: sh -c "corepack enable && corepack prepare pnpm@9 --activate && pnpm --filter @workspace/gold-mailer run dev"
+    environment:
+      - PORT=5173
+      - BASE_PATH=/
+      - VITE_API_PROXY_TARGET=http://api:8080
+      # Platform-provided: appended to Vite's allowedHosts (vite >= 6.1).
+      - __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
+    ports:
+      - "3000:5173"
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+      api:
+        condition: service_started
+
+volumes:
+  pgdata:
