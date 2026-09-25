@@ -13,24 +13,35 @@ export function WalletSummary({ compact = false }: { compact?: boolean }) {
     },
     staleTime: 15_000,
   });
+
   const money = (value = 0) => `$${value.toFixed(2)}`;
+
   return (
     <div className={`grid ${compact ? "sm:grid-cols-2" : "md:grid-cols-2"} gap-3`}>
-      <div className="rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/15 to-primary/5 p-4">
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span className="flex items-center gap-2"><Wallet size={14} className="text-primary" /> Earning Wallet</span>
-          <Link href="/withdraw"><ArrowUpRight size={14} className="hover:text-primary" /></Link>
+      <div className="rounded-2xl border border-white/10 bg-[#1a1a1a] p-4">
+        <div className="flex items-center justify-between text-xs text-[#888888]">
+          <span className="flex items-center gap-2">
+            <Wallet size={14} className="text-[#00ff88]" /> Earning Wallet
+          </span>
+          <Link href="/withdraw" className="text-[#888888] hover:text-[#00ff88] transition-colors">
+            <ArrowUpRight size={14} />
+          </Link>
         </div>
-        <p className="mt-3 text-2xl font-black text-primary">{isLoading ? "—" : money(data?.earningWallet)}</p>
-        <p className="mt-1 text-[11px] text-muted-foreground">Withdrawable via crypto</p>
+        <p className="mt-3 text-2xl font-black text-[#00ff88]">{isLoading ? "—" : money(data?.earningWallet)}</p>
+        <p className="mt-1 text-[11px] text-[#888888]">Withdrawable via crypto</p>
       </div>
-      <div className="rounded-2xl border border-blue-400/25 bg-gradient-to-br from-blue-400/15 to-blue-400/5 p-4">
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span className="flex items-center gap-2"><Megaphone size={14} className="text-blue-300" /> Advertising Wallet</span>
-          <Link href="/deposit"><ArrowUpRight size={14} className="hover:text-blue-300" /></Link>
+
+      <div className="rounded-2xl border border-white/10 bg-[#1a1a1a] p-4">
+        <div className="flex items-center justify-between text-xs text-[#888888]">
+          <span className="flex items-center gap-2">
+            <Megaphone size={14} className="text-[#00ff88]" /> Advertising Wallet
+          </span>
+          <Link href="/deposit" className="text-[#888888] hover:text-[#00ff88] transition-colors">
+            <ArrowUpRight size={14} />
+          </Link>
         </div>
-        <p className="mt-3 text-2xl font-black text-blue-300">{isLoading ? "—" : money(data?.advertisingWallet)}</p>
-        <p className="mt-1 text-[11px] text-muted-foreground">Only for posting tasks</p>
+        <p className="mt-3 text-2xl font-black text-white">{isLoading ? "—" : money(data?.advertisingWallet)}</p>
+        <p className="mt-1 text-[11px] text-[#888888]">Only for posting tasks</p>
       </div>
     </div>
   );

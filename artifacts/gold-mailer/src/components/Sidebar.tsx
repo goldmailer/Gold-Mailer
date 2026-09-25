@@ -67,7 +67,7 @@ export function Sidebar() {
       <button
         data-testid="button-menu-open"
         onClick={() => setOpen(true)}
-        className="fixed top-4 left-4 z-40 p-2 rounded-lg bg-card border border-border text-foreground hover:bg-accent transition-colors"
+        className="fixed top-4 left-4 z-40 p-2 rounded-xl bg-[#1a1a1a] border border-[#262626] text-white hover:border-[#00ff88]/50 transition-colors shadow-lg"
       >
         <Menu size={20} />
       </button>
