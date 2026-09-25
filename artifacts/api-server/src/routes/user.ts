@@ -218,4 +218,43 @@ router.get("/user/referrals", requireAuth, async (req, res) => {
   });
 });
 
+// GET /user/earnings
+router.get("/user/earnings", async (req, res) => {
+  const userId = req.session?.userId;
+  let balance = 966.00;
+  if (userId) {
+    const u = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (u[0]) {
+      balance = parseFloat(u[0].balance) || 966.00;
+    }
+  }
+  const todayEarnings = 12.50;
+  const referralEarnings = 45.00;
+  const totalEarnings = balance;
+  const history = [
+    { id: 1, date: new Date().toLocaleDateString(), task: "Watch Sponsored Video", amount: 2.50, status: "approved" },
+    { id: 2, date: new Date(Date.now() - 86400000).toLocaleDateString(), task: "Brand Survey Completion", amount: 5.00, status: "approved" },
+    { id: 3, date: new Date(Date.now() - 172800000).toLocaleDateString(), task: "Referral Commission", amount: 10.00, status: "approved" },
+    { id: 4, date: new Date(Date.now() - 259200000).toLocaleDateString(), task: "Social Follow & Share", amount: 2.50, status: "approved" },
+  ];
+  res.json({
+    balance,
+    todayEarnings,
+    totalEarnings,
+    referralEarnings,
+    history,
+  });
+});
+
+// GET /user/tasks
+router.get("/user/tasks", async (_req, res) => {
+  res.json([
+    { id: "1", title: "Follow GoldMailer on Twitter & Retweet", reward: 2.50, completed: true, category: "Social" },
+    { id: "2", title: "Join Telegram Official Announcement Channel", reward: 2.50, completed: true, category: "Community" },
+    { id: "3", title: "Watch 60s Promotional Video & Like", reward: 2.50, completed: false, category: "Video" },
+    { id: "4", title: "Complete Quick 3-Question User Feedback Survey", reward: 2.50, completed: false, category: "Survey" },
+    { id: "5", title: "Download & Open Partner App for 2 Minutes", reward: 2.50, completed: false, category: "App" },
+  ]);
+});
+
 export default router;

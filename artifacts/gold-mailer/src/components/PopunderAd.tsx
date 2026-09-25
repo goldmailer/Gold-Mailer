@@ -2,8 +2,17 @@ import { useEffect } from "react";
 import { useLocation } from "wouter";
 
 export function PopunderAd() {
+  const isAdmin = typeof window !== 'undefined' && window.location.pathname.includes('/admin');
+  if (isAdmin) return null;
+  if (typeof window !== 'undefined' && sessionStorage.getItem('popupClosed') === 'true') return null;
+
   const [location] = useLocation();
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.pathname.includes('/admin')) return;
+    if (typeof window !== 'undefined' && sessionStorage.getItem('popupClosed') === 'true') return;
+    const savedMain = typeof window !== 'undefined' ? localStorage.getItem('adsEnabledMain') : null;
+    if (savedMain === 'false') return;
+
     const adminPath = location.includes("/admin");
     if (adminPath) {
       document.querySelectorAll('script[src*="quge5.com/88/tag.min.js"]').forEach((script) => script.remove());

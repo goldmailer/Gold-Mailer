@@ -152,6 +152,9 @@ function EditUserModal({ user, onClose }: { user: any; onClose: () => void }) {
 }
 
 export default function Admin() {
+  const token = typeof window !== 'undefined' ? (localStorage.getItem('token') || localStorage.getItem('authToken') || localStorage.getItem('access_token') || localStorage.getItem('adminToken') || sessionStorage.getItem('token')) : null;
+  console.log('Using token:', token ? 'found' : 'NOT FOUND');
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<"users" | "transactions" | "settings" | "support" | "kyc" | "tasks" | "marketplace" | "sms">("users");
@@ -752,40 +755,38 @@ export default function Admin() {
     refetchMarketplace();
   };
 
-  const approvePayout = async (id: number) => {
-    try {
-      const response = await fetch(`/api/admin/marketplace/payouts/${id}/approve`, {
-        method: "POST",
-        credentials: "include",
+  const approvePayout = async (id: number | string) => {
+    const token = localStorage.getItem('token') || localStorage.getItem('authToken') || localStorage.getItem('access_token');
+    if(!token){ alert('You are not logged in - please login again as admin'); return; }
+    try{
+      const res = await fetch(`/api/admin/approve-payout/${id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
       });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        toast({ title: "Payout failed", description: data.error || "Please try again", variant: "destructive" });
-        return;
-      }
-      toast({ title: "Payout approved & sent" });
-      refetchMarketplace();
-    } catch {
-      toast({ title: "Could not reach the server", variant: "destructive" });
-    }
+      const data = await res.json();
+      if(res.ok){ alert('Approved! $'+(data.amount ?? "")+' sent'); location.reload(); }
+      else { alert('Action failed: ' + (data.error || data.message)); }
+    }catch(e: any){ alert('Network error: '+e.message); }
   };
 
-  const rejectPayout = async (id: number) => {
-    try {
-      const response = await fetch(`/api/admin/marketplace/payouts/${id}/reject`, {
-        method: "POST",
-        credentials: "include",
+  const rejectPayout = async (id: number | string) => {
+    const token = localStorage.getItem('token') || localStorage.getItem('authToken') || localStorage.getItem('access_token');
+    if(!token){ alert('You are not logged in - please login again as admin'); return; }
+    try{
+      const res = await fetch(`/api/admin/reject-payout/${id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
       });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        toast({ title: "Reject failed", description: data.error || "Please try again", variant: "destructive" });
-        return;
-      }
-      toast({ title: "Payout rejected — balance refunded" });
-      refetchMarketplace();
-    } catch {
-      toast({ title: "Could not reach the server", variant: "destructive" });
-    }
+      const data = await res.json();
+      if(res.ok){ alert('Rejected! Payout cancelled'); location.reload(); }
+      else { alert('Action failed: ' + (data.error || data.message)); }
+    }catch(e: any){ alert('Network error: '+e.message); }
   };
 
   const tabs = [

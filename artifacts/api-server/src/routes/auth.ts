@@ -212,8 +212,10 @@ router.post("/auth/login", async (req, res) => {
   req.session.isAdmin = user.isAdmin;
 
   const hasDeposited = await checkHasDeposited(user.id);
+  const token = "usr_" + Buffer.from(`${user.id}:${Date.now()}`).toString("base64");
   res.json({
     message: "Login successful",
+    token,
     user: buildUserResponse(user, hasDeposited),
   });
 });

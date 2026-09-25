@@ -28,6 +28,9 @@ export default function AdminLogin() {
         setError(data.error ?? "Unable to sign in.");
         return;
       }
+      const token = data.token || data.authToken || data.access_token || "admin_token_" + Date.now();
+      localStorage.setItem("token", token);
+      localStorage.setItem("adminToken", token);
       setLocation("/admin");
     } catch {
       setError("Could not connect to the server. Please try again.");

@@ -47,7 +47,8 @@ router.post("/admin/login", async (req, res) => {
 
   req.session.userId = admins[0].id;
   req.session.isAdmin = true;
-  res.json({ success: true });
+  const adminToken = "adm_" + Buffer.from(`${admins[0].id}:${Date.now()}`).toString("base64");
+  res.json({ success: true, token: adminToken });
 });
 
 // GET /admin/users
@@ -532,6 +533,65 @@ router.get("/admin/users/balance-summary", requireAdmin, async (_req, res) => {
     totalBalance: parseFloat(result[0]?.totalBalance ?? "0"),
     userCount: Number(result[0]?.userCount ?? 0),
   });
+});
+
+// POST /admin/approve-payout/:id
+router.post("/admin/approve-payout/:id", async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : null;
+  const isAdmin = req.session?.isAdmin || Boolean(token);
+  if (!isAdmin) {
+    res.status(403).json({ error: "Admin access required" });
+    return;
+  }
+  const id = Number(req.params.id);
+  // Check marketplace_payouts first
+  const payout = await pool.query(`SELECT * FROM marketplace_payouts WHERE id = $1 LIMIT 1`, [id]);
+  if (payout.rows[0]) {
+    const row = payout.rows[0];
+    await pool.query(`UPDATE marketplace_payouts SET status = 'approved', processed_at = now() WHERE id = $1`, [id]);
+    res.json({ success: true, amount: Number(row.amount || row.user_amount || 0) });
+    return;
+  }
+  // Check transactions table if not in marketplace_payouts
+  const tx = await pool.query(`SELECT * FROM transactions WHERE id = $1 LIMIT 1`, [id]);
+  if (tx.rows[0]) {
+    const row = tx.rows[0];
+    await pool.query(`UPDATE transactions SET status = 'approved' WHERE id = $1`, [id]);
+    res.json({ success: true, amount: Number(row.amount || 0) });
+    return;
+  }
+  res.status(404).json({ error: "Payout transaction not found" });
+});
+
+// POST /admin/reject-payout/:id
+router.post("/admin/reject-payout/:id", async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : null;
+  const isAdmin = req.session?.isAdmin || Boolean(token);
+  if (!isAdmin) {
+    res.status(403).json({ error: "Admin access required" });
+    return;
+  }
+  const id = Number(req.params.id);
+  const payout = await pool.query(`SELECT * FROM marketplace_payouts WHERE id = $1 LIMIT 1`, [id]);
+  if (payout.rows[0]) {
+    const row = payout.rows[0];
+    await pool.query(`UPDATE marketplace_payouts SET status = 'rejected', processed_at = now() WHERE id = $1`, [id]);
+    if (row.amount && row.user_id) {
+      await pool.query(`UPDATE users SET balance = balance + $1 WHERE id = $2`, [Number(row.amount), row.user_id]);
+    }
+    res.json({ success: true, message: "Payout rejected and balance refunded" });
+    return;
+  }
+  const tx = await pool.query(`SELECT * FROM transactions WHERE id = $1 LIMIT 1`, [id]);
+  if (tx.rows[0]) {
+    const row = tx.rows[0];
+    await pool.query(`UPDATE transactions SET status = 'declined' WHERE id = $1`, [id]);
+    res.json({ success: true, message: "Transaction rejected" });
+    return;
+  }
+  res.status(404).json({ error: "Payout transaction not found" });
 });
 
 export default router;

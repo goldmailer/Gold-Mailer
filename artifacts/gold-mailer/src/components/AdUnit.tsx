@@ -74,11 +74,21 @@ export function resetAdsSettingsCache() {
 }
 
 export function AdUnit({ placement, zoneId, label = "Sponsored", size = "fluid" }: Props) {
+  const isAdmin = typeof window !== 'undefined' && window.location.pathname.includes('/admin');
+  if (isAdmin) return null;
+
+  const savedMainCheck = typeof window !== 'undefined' ? localStorage.getItem('adsEnabledMain') : null;
+  if (savedMainCheck === 'false') return null;
+
   const ref = useRef<HTMLDivElement>(null);
   const [enabled, setEnabled] = useState(false);
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.pathname.includes('/admin')) return;
+    const savedMain = typeof window !== 'undefined' ? localStorage.getItem('adsEnabledMain') : null;
+    if (savedMain === 'false') return;
+
     let active = true;
     if (isAdminPath()) {
       removeMonetagScripts();
@@ -96,10 +106,10 @@ export function AdUnit({ placement, zoneId, label = "Sponsored", size = "fluid" 
   }, [placement]);
 
   useEffect(() => {
-    if (isAdminPath()) {
-      removeMonetagScripts();
-      return;
-    }
+    if (typeof window !== 'undefined' && window.location.pathname.includes('/admin')) return;
+    const savedMain = typeof window !== 'undefined' ? localStorage.getItem('adsEnabledMain') : null;
+    if (savedMain === 'false') return;
+
     if (!checked || !enabled || !zoneId || !ref.current) return;
     const script = document.createElement("script");
     script.id = `monetag-zone-${placement}-${zoneId}`;
@@ -111,7 +121,7 @@ export function AdUnit({ placement, zoneId, label = "Sponsored", size = "fluid" 
     return () => script.remove();
   }, [checked, enabled, placement, zoneId]);
 
-  if (isAdminPath() || !checked || !enabled || !zoneId) return null;
+  if (isAdmin || isAdminPath() || !checked || !enabled || !zoneId) return null;
   const sizeClass = size === "leaderboard" ? "min-h-[90px] max-w-[728px]" : size === "sidebar" ? "min-h-[250px] max-w-[300px]" : "min-h-[90px]";
   return (
     <div ref={ref} className={`min-w-0 w-full max-w-full ${sizeClass} rounded-2xl border border-white/5 bg-white/[0.02] flex items-center justify-center overflow-hidden`} aria-label={label}>

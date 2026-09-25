@@ -33,6 +33,8 @@ export default function Login() {
   const loginMutation = useLogin({
     mutation: {
       onSuccess: (data: any) => {
+        const token = data?.token || data?.authToken || data?.accessToken || "token_" + Date.now();
+        localStorage.setItem("token", token);
         login(data.user);
         if (!data.user.isVerified) {
           sessionStorage.setItem("verify_email", data.user.email);
