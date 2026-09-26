@@ -47,11 +47,9 @@ export default function MarketplaceHome() {
       <header className="sticky top-0 z-30 bg-[#0a0a0a]/95 backdrop-blur-md border-b border-[#1a1a1a]">
         <nav className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-5 lg:px-8">
           <Link href="/" className="flex min-w-0 shrink items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#00ff88] text-black font-black text-lg">
-              G
-            </span>
+            <img src="/favicon.svg" alt="Task Nest" className="h-9 w-9 rounded-xl" />
             <span className="truncate text-base font-black tracking-tight sm:text-lg text-white">
-              GoldMailer<span className="text-[#00ff88]">Tasks</span>
+              Task <span className="text-[#00ff88]">Nest</span>
             </span>
           </Link>
 
@@ -243,26 +241,14 @@ export default function MarketplaceHome() {
           </div>
         </section>
 
-        {/* Real Stats Section */}
-        <section className="px-5 pb-20 lg:px-8 bg-[#0a0a0a]">
+        {/* Sponsor Banner */}
+        <section className="px-5 pb-16 lg:px-8 bg-[#0a0a0a]">
           <div className="mx-auto max-w-7xl">
             <AdUnit
               placement="general"
               zoneId={import.meta.env.VITE_MONETAG_ZONE_FOOTER || "284731"}
               label="Sponsored"
             />
-            <div className="mt-16 grid gap-5 md:grid-cols-3">
-              {[
-                [formatMetric(stats.users), "registered workers"],
-                [formatMetric(stats.payouts), "approved payouts"],
-                [formatCurrency(stats.payoutAmount), "paid to workers"],
-              ].map(([value, label]) => (
-                <div key={label} className="rounded-2xl border border-[#262626] bg-[#1a1a1a] p-6 text-center">
-                  <p className="text-3xl font-black text-[#00ff88]">{value}</p>
-                  <p className="mt-2 text-sm text-[#888888] font-medium">{label}</p>
-                </div>
-              ))}
-            </div>
           </div>
         </section>
       </main>
@@ -270,7 +256,7 @@ export default function MarketplaceHome() {
       {/* Black Footer */}
       <footer className="border-t border-[#1a1a1a] bg-[#0a0a0a] px-5 py-8 lg:px-8">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 text-sm text-[#888888] sm:flex-row sm:items-center sm:justify-between">
-          <span>© 2026 GoldMailerTasks</span>
+          <span>© 2026 Task Nest</span>
           <div className="flex flex-wrap gap-5">
             <Link href="/about" className="hover:text-white transition-colors">
               About us

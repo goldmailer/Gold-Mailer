@@ -29,6 +29,37 @@ export const MARKETPLACE_TASK_TYPES = [
   "Connect on LinkedIn",
   "Follow on Snapchat",
 
+  // ── Comments Tasks ──
+  // TikTok Comments
+  "TikTok Custom Comments",
+  "TikTok Random Comments",
+  "TikTok Emoji Comments",
+  "TikTok Positive Comments",
+  // Facebook Comments
+  "Facebook Custom Comments",
+  "Facebook Random Comments",
+  "Facebook Sticker Comments",
+  "Facebook Tag Friends Comments",
+  // Instagram Comments
+  "Instagram Custom Comments",
+  "Instagram Random Comments",
+  "Instagram Emoji Comments",
+  // YouTube Comments
+  "YouTube Custom Comments",
+  "YouTube Random Comments",
+  // Other Comments
+  "X / Twitter Comments / Replies",
+  "LinkedIn Post Comments",
+  "Reddit Comments",
+  "Telegram Post Comments",
+  "Threads Comments",
+  "Google Maps Custom Comments / Reviews",
+  "Play Store App Reviews / Comments",
+  "Website Blog Comments",
+  "Quora Answer Upvotes + Comments",
+  "Discord Comments / Chat",
+  "Snapchat Story Replies",
+
   // ── App & Website Tasks ──
   "Download App from Play Store",
   "Install App and Register",
@@ -262,7 +293,7 @@ router.post("/payments/nowpayments/deposit", requireAuth, async (req, res) => {
       price_amount: Number(amount.toFixed(2)),
       price_currency: "usd",
       order_id: `advertising-${req.session.userId}-${Date.now()}`,
-      order_description: "GoldMailerTasks Advertising Wallet deposit",
+      order_description: "Task Nest Advertising Wallet deposit",
       ipn_callback_url: `${req.protocol}://${req.get("host")}/api/webhooks/nowpayments`,
       success_url: `${req.protocol}://${req.get("host")}/deposit?status=success`,
       cancel_url: `${req.protocol}://${req.get("host")}/deposit?status=cancelled`,

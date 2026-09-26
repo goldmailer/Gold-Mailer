@@ -11,8 +11,8 @@ const principles = [
 
 export default function About() {
   useEffect(() => {
-    document.title = "About GoldMailerTasks";
-    const description = "Learn how GoldMailerTasks connects people with simple online tasks and transparent earning opportunities.";
+    document.title = "About Task NestTasks";
+    const description = "Learn how Task NestTasks connects people with simple online tasks and transparent earning opportunities.";
     let tag = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
     if (!tag) {
       tag = document.createElement("meta");
@@ -29,7 +29,7 @@ export default function About() {
         <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-5 lg:px-8">
           <Link href="/" className="flex items-center gap-2">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary font-black text-primary-foreground">G</span>
-            <span className="text-base font-black tracking-tight sm:text-lg">GoldMailer<span className="text-primary">Tasks</span></span>
+            <span className="text-base font-black tracking-tight sm:text-lg">Task Nest<span className="text-primary">Tasks</span></span>
           </Link>
           <div className="flex items-center gap-2">
             <Link href="/login" className="rounded-lg px-3 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground">Sign in</Link>
@@ -42,9 +42,9 @@ export default function About() {
         <section className="relative border-b border-white/5 px-5 py-20 sm:py-28 lg:px-8">
           <div className="pointer-events-none absolute -left-32 -top-24 h-80 w-80 rounded-full bg-primary/15 blur-[110px]" />
           <div className="relative mx-auto max-w-4xl text-center">
-            <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-primary"><Sparkles size={14} /> About GoldMailerTasks</div>
+            <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-primary"><Sparkles size={14} /> About Task NestTasks</div>
             <h1 className="mt-6 text-4xl font-black tracking-[-0.04em] sm:text-6xl">A simpler way to turn small actions into opportunity.</h1>
-            <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">GoldMailerTasks is a task marketplace that connects people who want to earn with advertisers who need genuine actions completed online.</p>
+            <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">Task NestTasks is a task marketplace that connects people who want to earn with advertisers who need genuine actions completed online.</p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row"><Link href="/register"><Button className="w-full bg-primary px-6 font-bold text-primary-foreground sm:w-auto">Start earning <ArrowRight size={16} /></Button></Link><Link href="/"><Button variant="outline" className="w-full border-primary/30 px-6 text-primary sm:w-auto">Explore the marketplace</Button></Link></div>
           </div>
         </section>
@@ -67,7 +67,7 @@ export default function About() {
         </section>
       </main>
 
-      <footer className="border-t border-white/5 px-5 py-8 lg:px-8"><div className="mx-auto flex max-w-7xl flex-col gap-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between"><span>© 2026 GoldMailerTasks</span><div className="flex gap-4"><Link href="/" className="hover:text-foreground">Home</Link><Link href="/privacy" className="hover:text-foreground">Privacy</Link><Link href="/terms" className="hover:text-foreground">Terms</Link></div></div></footer>
+      <footer className="border-t border-white/5 px-5 py-8 lg:px-8"><div className="mx-auto flex max-w-7xl flex-col gap-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between"><span>© 2026 Task NestTasks</span><div className="flex gap-4"><Link href="/" className="hover:text-foreground">Home</Link><Link href="/privacy" className="hover:text-foreground">Privacy</Link><Link href="/terms" className="hover:text-foreground">Terms</Link></div></div></footer>
     </div>
   );
 }

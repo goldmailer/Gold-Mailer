@@ -48,7 +48,7 @@ function CardDetailModal({ cardId, onClose }: { cardId: number; onClose: () => v
             <div className="virtual-card h-44 p-5 flex flex-col justify-between text-white">
               <div className="flex justify-between">
                 <CreditCard size={24} className="text-yellow-400" />
-                <span className="text-yellow-400 font-bold text-xs tracking-widest">GOLDMAILER</span>
+                <span className="text-[#00ff88] font-bold text-xs tracking-widest">TASK NEST</span>
               </div>
               <div>
                 <p className="font-mono tracking-widest text-base mb-2">
@@ -142,7 +142,7 @@ export default function Cards() {
               <div key={card.id} data-testid={`card-virtual-${card.id}`} className="virtual-card h-52 p-6 flex flex-col justify-between text-white relative group">
                 <div className="flex justify-between items-start">
                   <CreditCard size={26} className="text-yellow-400" />
-                  <span className="text-yellow-400 font-bold text-xs tracking-widest">GOLDMAILER</span>
+                  <span className="text-[#00ff88] font-bold text-xs tracking-widest">TASK NEST</span>
                 </div>
                 <div>
                   <p className="font-mono tracking-widest text-lg mb-3">{maskCard(card.lastFour.padStart(16, "0"))}</p>

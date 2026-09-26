@@ -33,6 +33,7 @@ export function Sidebar() {
     { href: "/post-task", label: "Post a Task", icon: PlusCircle },
     { href: "/submissions", label: "My Submissions", icon: BriefcaseBusiness },
     { href: "/referrals", label: t("nav.referrals"), icon: Users },
+    { href: "/profile", label: "Social Accounts", icon: User },
     { href: "/settings", label: t("nav.settings"), icon: Settings },
   ];
 
@@ -83,7 +84,7 @@ export function Sidebar() {
         className={`fixed top-0 left-0 h-full z-50 w-72 bg-sidebar border-r border-sidebar-border flex flex-col transition-transform duration-300 ease-in-out ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
-          <span className="text-primary font-bold text-lg tracking-widest">GOLDMAILER</span>
+          <div className="flex items-center gap-2.5"><img src="/favicon.svg" alt="Task Nest" className="w-6 h-6 rounded-md" /><span className="text-white font-black text-lg tracking-wide">Task <span className="text-primary">Nest</span></span></div>
           <div className="flex items-center gap-1">
             <NotificationBell />
             <button

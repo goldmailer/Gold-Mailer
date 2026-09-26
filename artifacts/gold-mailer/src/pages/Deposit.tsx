@@ -143,7 +143,7 @@ export default function Deposit() {
 
           <aside className="space-y-4">
             <div className="rounded-3xl border border-border bg-card p-6"><div className="flex items-center gap-3"><Wallet className="text-primary" size={20} /><h2 className="font-bold">Before you deposit</h2></div><ul className="mt-5 space-y-4 text-sm text-muted-foreground"><li>Use an account or wallet you control.</li><li>Check the destination details before sending.</li><li>Keep your payment reference until approval.</li><li>Never share your password or verification code.</li></ul></div>
-            <div className="rounded-3xl border border-border/80 bg-background/40 p-6"><p className="text-sm font-bold">Need help?</p><p className="mt-2 text-xs leading-relaxed text-muted-foreground">Pending manual deposits are reviewed by the GoldMailer team. Check Transactions for the latest status.</p></div>
+            <div className="rounded-3xl border border-border/80 bg-background/40 p-6"><p className="text-sm font-bold">Need help?</p><p className="mt-2 text-xs leading-relaxed text-muted-foreground">Pending manual deposits are reviewed by the Task Nest team. Check Transactions for the latest status.</p></div>
           </aside>
         </div>
       </main>

@@ -47,7 +47,7 @@ export default function AdminLogin() {
             <div>
               <Link href="/" className="inline-flex items-center gap-3">
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary font-black text-primary-foreground">G</span>
-                <span className="text-xl font-black tracking-tight">GoldMailer<span className="text-primary">Tasks</span></span>
+                <span className="text-xl font-black tracking-tight">Task Nest<span className="text-primary">Tasks</span></span>
               </Link>
               <div className="mt-24 max-w-sm">
                 <p className="text-sm font-bold uppercase tracking-[0.2em] text-primary">Operations console</p>
@@ -66,7 +66,7 @@ export default function AdminLogin() {
           <section className="p-7 sm:p-10">
             <Link href="/" className="mb-12 inline-flex items-center gap-2 text-sm font-bold text-muted-foreground transition hover:text-foreground lg:hidden">
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary font-black text-primary-foreground">G</span>
-              GoldMailerTasks
+              Task NestTasks
             </Link>
             <div className="mb-8">
               <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-primary">

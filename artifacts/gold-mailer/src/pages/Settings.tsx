@@ -129,7 +129,7 @@ export default function Settings() {
           <div className="bg-card border border-border rounded-2xl p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center"><ShieldCheck size={18} className="text-primary" /></div>
-              <div><h2 className="font-bold">Legal and account policies</h2><p className="text-xs text-muted-foreground">Read the policies that apply to your GoldMailer account.</p></div>
+              <div><h2 className="font-bold">Legal and account policies</h2><p className="text-xs text-muted-foreground">Read the policies that apply to your Task Nest account.</p></div>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <Link href="/terms" className="flex items-center justify-between rounded-xl border border-border bg-background/50 p-4 text-sm font-semibold hover:border-primary/50"><span className="flex items-center gap-2"><FileText size={16} className="text-primary" /> Terms of Service</span><span>→</span></Link>

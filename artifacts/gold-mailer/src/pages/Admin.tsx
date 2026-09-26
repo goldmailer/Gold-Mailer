@@ -184,6 +184,7 @@ export default function Admin() {
 
   // KYC state
   const [kycImagePreview, setKycImagePreview] = useState<string | null>(null);
+  const [proofImagePreview, setProofImagePreview] = useState<string | null>(null);
   const [kycDeclineId, setKycDeclineId] = useState<number | null>(null);
   const [kycDeclineNote, setKycDeclineNote] = useState("");
   const [kycFilter, setKycFilter] = useState<"all" | "pending" | "approved" | "declined">("all");
@@ -869,7 +870,7 @@ export default function Admin() {
   const tabs = [
     { key: "users", label: "Users", icon: Users },
     { key: "transactions", label: "Transactions", icon: List },
-    { key: "tasks", label: "Tasks", icon: ClipboardList, badge: pendingTasksCount },
+    { key: "tasks", label: "Task Submissions", icon: ClipboardList, badge: pendingTasksCount },
     { key: "marketplace", label: "Marketplace", icon: DollarSign },
     { key: "ads", label: "Ads", icon: Tv },
     { key: "settings", label: "Settings", icon: Settings },
@@ -881,6 +882,21 @@ export default function Admin() {
     <div className="min-h-screen bg-background">
       {topUpUserId !== null && <TopUpModal userId={topUpUserId} onClose={() => setTopUpUserId(null)} />}
       {editUser !== null && <EditUserModal user={editUser} onClose={() => setEditUser(null)} />}
+
+            {/* Task Proof Screenshot Modal */}
+      {proofImagePreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4" onClick={() => setProofImagePreview(null)}>
+          <div className="relative max-w-2xl w-full bg-[#141414] border border-[#262626] rounded-2xl p-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-[#262626]">
+              <h3 className="font-bold text-white text-sm">Task Proof Screenshot</h3>
+              <button onClick={() => setProofImagePreview(null)} className="text-zinc-400 hover:text-white p-1 rounded-lg">
+                <X size={18} />
+              </button>
+            </div>
+            <img src={proofImagePreview} alt="Task proof" className="w-full max-h-[75vh] object-contain rounded-xl" />
+          </div>
+        </div>
+      )}
 
       {/* KYC Image Preview Modal */}
       {kycImagePreview && (
@@ -925,7 +941,7 @@ export default function Admin() {
             </button>
           </Link>
           <div>
-            <h1 className="font-black text-xl text-primary">GOLDMAILER</h1>
+            <div className="flex items-center gap-2"><img src="/favicon.svg" alt="Task Nest" className="w-6 h-6 rounded-md" /><h1 className="font-black text-xl text-white">Task <span className="text-primary">Nest</span></h1></div>
             <p className="text-xs text-muted-foreground">Admin Panel</p>
           </div>
           <div className="ml-auto flex items-center gap-1 px-3 py-1.5 bg-primary/10 border border-primary/30 rounded-full">

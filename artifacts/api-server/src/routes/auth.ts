@@ -26,6 +26,12 @@ function buildUserResponse(user: any, hasDeposited: boolean) {
     phone: user.phone ?? null,
     kycStatus: user.kycStatus ?? "none",
     isAdmin: Boolean(user.isAdmin),
+    instagramHandle: user.instagramHandle ?? null,
+    facebookLink: user.facebookLink ?? null,
+    tiktokHandle: user.tiktokHandle ?? null,
+    youtubeLink: user.youtubeLink ?? null,
+    twitterHandle: user.twitterHandle ?? null,
+    telegramHandle: user.telegramHandle ?? null,
     createdAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : user.createdAt,
   };
 }
@@ -39,12 +45,12 @@ function generateOtp(): string {
 function generateReferralCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   const bytes = randomBytes(6);
-  return "GM" + Array.from(bytes).map(b => chars[b % chars.length]).join("");
+  return "TN" + Array.from(bytes).map(b => chars[b % chars.length]).join("");
 }
 
 function otpExpiry(): Date {
   const d = new Date();
-  d.setMinutes(d.getMinutes() + 20);
+  d.setMinutes(d.getMinutes() + 10);
   return d;
 }
 

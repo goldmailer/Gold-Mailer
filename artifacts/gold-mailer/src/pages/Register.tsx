@@ -21,11 +21,11 @@ type FormData = z.infer<typeof schema>;
 
 const TERMS = `TERMS OF SERVICE
 
-By using GoldMailer, you agree to use the service lawfully, provide accurate account information, and keep your login details secure.
+By using Task Nest, you agree to use the service lawfully, provide accurate account information, and keep your login details secure.
 
 Wallet deposits and withdrawals may be reviewed before approval. Do not submit false information, misuse payment callbacks, bypass access controls, or interfere with another account.
 
-GoldMailer collects the information needed to provide the service, process account activity, prevent abuse, and provide support. We do not sell personal information. Read the full Terms and Privacy Policy at goldmailer.xyz/terms and goldmailer.xyz/privacy.
+Task Nest collects the information needed to provide the service, process account activity, prevent abuse, and provide support. We do not sell personal information. Read the full Terms and Privacy Policy at TaskNest.name.ng/terms and TaskNest.name.ng/privacy.
 
 Questions: 1xemailsupportbox@gmail.com`;
 
@@ -117,7 +117,7 @@ export default function Register() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/">
-            <span className="text-primary font-black text-2xl tracking-widest cursor-pointer">GOLDMAILER</span>
+            <div className="flex items-center justify-center gap-2 cursor-pointer"><img src="/favicon.svg" alt="Task Nest" className="w-8 h-8 rounded-lg" /><span className="text-white font-black text-2xl tracking-wide">Task <span className="text-primary">Nest</span></span></div>
           </Link>
           <h1 className="text-2xl font-bold mt-4 mb-1">{t("auth.createAccount")}</h1>
           <p className="text-muted-foreground text-sm">{t("auth.startEarning")}</p>

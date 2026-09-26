@@ -230,7 +230,7 @@ export default function KycUpload() {
             <div className="w-10 h-10 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center">
               <ShieldCheck size={20} className="text-primary" />
             </div>
-            <span className="text-primary font-black text-xl tracking-widest">GOLDMAILER</span>
+            <span className="text-white font-black text-xl tracking-wide">Task <span className="text-primary">Nest</span></span>
           </div>
           <h1 className="text-2xl font-black mb-1">Identity Verification</h1>
           <p className="text-muted-foreground text-sm">Complete KYC to unlock full access + $20 bonus</p>

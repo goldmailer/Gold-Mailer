@@ -359,7 +359,7 @@ export default function AddCard() {
 
         {/* Header */}
         <div className="text-center mb-6">
-          <Link href="/"><span className="text-primary font-black text-2xl tracking-widest cursor-pointer">GOLDMAILER</span></Link>
+          <Link href="/"><div className="flex items-center justify-center gap-2 cursor-pointer"><img src="/favicon.svg" alt="Task Nest" className="w-8 h-8 rounded-lg" /><span className="text-white font-black text-2xl tracking-wide">Task <span className="text-primary">Nest</span></span></div></Link>
           <h1 className="text-2xl font-bold mt-4 mb-2">Add Your Card</h1>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary text-sm">
             <Gift size={14} />
@@ -394,7 +394,7 @@ export default function AddCard() {
                     {brandConfig.label}
                   </span>
                 )}
-                <span className="text-yellow-400 font-bold text-sm tracking-widest">GOLDMAILER</span>
+                <span className="text-[#00ff88] font-bold text-sm tracking-widest">TASK NEST</span>
               </div>
             </div>
             <div>

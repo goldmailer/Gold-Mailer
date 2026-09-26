@@ -157,7 +157,7 @@ export default function Dashboard() {
 
   const shareOnWhatsApp = () => {
     const text = encodeURIComponent(
-      `Join me on GoldMailer to complete simple tasks and earn payouts! Register here: ${referralLink}`
+      `Join me on Task Nest to complete simple tasks and earn payouts! Register here: ${referralLink}`
     );
     window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank");
   };

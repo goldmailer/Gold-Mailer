@@ -242,4 +242,61 @@ router.get("/user/tasks", async (_req, res) => {
   res.json([]);
 });
 
+
+// GET /user/socials
+router.get("/user/socials", requireAuth, async (req, res) => {
+  const userId = req.session.userId!;
+  const user = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  if (!user[0]) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+  const u = user[0];
+  res.json({
+    instagram_handle: u.instagramHandle ?? "",
+    facebook_link: u.facebookLink ?? "",
+    tiktok_handle: u.tiktokHandle ?? "",
+    youtube_link: u.youtubeLink ?? "",
+    twitter_handle: u.twitterHandle ?? "",
+    telegram_handle: u.telegramHandle ?? "",
+  });
+});
+
+// POST /user/socials
+router.post("/user/socials", requireAuth, async (req, res) => {
+  const userId = req.session.userId!;
+  const {
+    instagram_handle,
+    facebook_link,
+    tiktok_handle,
+    youtube_link,
+    twitter_handle,
+    telegram_handle,
+  } = req.body;
+
+  const updateData: any = {};
+  if (instagram_handle !== undefined) updateData.instagramHandle = String(instagram_handle || "").trim();
+  if (facebook_link !== undefined) updateData.facebookLink = String(facebook_link || "").trim();
+  if (tiktok_handle !== undefined) updateData.tiktokHandle = String(tiktok_handle || "").trim();
+  if (youtube_link !== undefined) updateData.youtubeLink = String(youtube_link || "").trim();
+  if (twitter_handle !== undefined) updateData.twitterHandle = String(twitter_handle || "").trim();
+  if (telegram_handle !== undefined) updateData.telegramHandle = String(telegram_handle || "").trim();
+
+  await db.update(usersTable).set(updateData).where(eq(usersTable.id, userId));
+
+  res.json({
+    success: true,
+    message: "Social accounts updated successfully",
+    socials: {
+      instagram_handle: updateData.instagramHandle ?? "",
+      facebook_link: updateData.facebookLink ?? "",
+      tiktok_handle: updateData.tiktokHandle ?? "",
+      youtube_link: updateData.youtubeLink ?? "",
+      twitter_handle: updateData.twitterHandle ?? "",
+      telegram_handle: updateData.telegramHandle ?? "",
+    },
+  });
+});
+
 export default router;
+

@@ -93,7 +93,7 @@ export default function SmsInbox() {
             <p className="text-sm text-muted-foreground">
               {status?.phoneVerified && status.phone
                 ? `Messages for ${status.phone}`
-                : "Your GoldMailer SMS conversation"}
+                : "Your Task Nest SMS conversation"}
             </p>
           </div>
           {status?.phoneVerified && (
@@ -132,7 +132,7 @@ export default function SmsInbox() {
                   <MessageSquare size={40} className="text-muted-foreground mb-3" />
                   <p className="font-semibold text-sm mb-1">No messages yet</p>
                   <p className="text-xs text-muted-foreground max-w-xs">
-                    When GoldMailer sends you an SMS or you reply from here, messages will appear in this thread.
+                    When Task Nest sends you an SMS or you reply from here, messages will appear in this thread.
                   </p>
                 </div>
               ) : (
@@ -144,7 +144,7 @@ export default function SmsInbox() {
                         : "bg-muted text-foreground rounded-bl-sm border border-border"
                     }`}>
                       {m.direction === "inbound" && (
-                        <p className="text-xs font-bold mb-0.5 opacity-60">GoldMailer</p>
+                        <p className="text-xs font-bold mb-0.5 opacity-60">Task Nest</p>
                       )}
                       <p className="break-words leading-relaxed">{m.body}</p>
                       <p className={`text-xs mt-1 ${m.direction === "outbound" ? "opacity-60 text-right" : "opacity-40"}`}>

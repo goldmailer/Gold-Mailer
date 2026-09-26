@@ -50,7 +50,7 @@ export default function Leaderboard() {
               </div>
               <div>
                 <h1 className="text-2xl font-black">Leaderboard</h1>
-                <p className="text-xs text-muted-foreground">Top investors on GoldMailer</p>
+                <p className="text-xs text-muted-foreground">Top investors on Task Nest</p>
               </div>
             </div>
           </div>

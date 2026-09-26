@@ -26,6 +26,13 @@ export const usersTable = pgTable("users", {
   country: text("country").default("NG"),
   phone: text("phone"),
   kycStatus: text("kyc_status").notNull().default("none"),
+  // Social media linking
+  instagramHandle: text("instagram_handle"),
+  facebookLink: text("facebook_link"),
+  tiktokHandle: text("tiktok_handle"),
+  youtubeLink: text("youtube_link"),
+  twitterHandle: text("twitter_handle"),
+  telegramHandle: text("telegram_handle"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

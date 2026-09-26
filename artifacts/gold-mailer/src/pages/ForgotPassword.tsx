@@ -39,7 +39,7 @@ export default function ForgotPassword() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link href="/"><span className="text-primary font-black text-2xl tracking-widest cursor-pointer">GOLDMAILER</span></Link>
+          <Link href="/"><div className="flex items-center justify-center gap-2 cursor-pointer"><img src="/favicon.svg" alt="Task Nest" className="w-8 h-8 rounded-lg" /><span className="text-white font-black text-2xl tracking-wide">Task <span className="text-primary">Nest</span></span></div></Link>
           <h1 className="text-2xl font-bold mt-4 mb-1">Forgot Password</h1>
           <p className="text-muted-foreground text-sm">Enter your email to receive a reset code</p>
         </div>

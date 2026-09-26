@@ -99,7 +99,7 @@ export default function VerifyEmail() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/">
-            <span className="text-primary font-black text-2xl tracking-widest cursor-pointer">GOLDMAILER</span>
+            <div className="flex items-center justify-center gap-2.5 cursor-pointer"><img src="/favicon.svg" alt="Task Nest" className="w-8 h-8 rounded-lg" /><span className="text-white font-black text-2xl tracking-wide">Task <span className="text-primary">Nest</span></span></div>
           </Link>
         </div>
 
@@ -121,10 +121,10 @@ export default function VerifyEmail() {
               <AlertTriangle size={16} className="text-yellow-500 mt-0.5 shrink-0" />
               <div>
                 <p className="text-yellow-500 text-xs font-semibold mb-1">Email delivery unavailable</p>
-                <p className="text-muted-foreground text-xs">
-                  Your verification code is{" "}
-                  <span className="text-white font-bold text-sm tracking-widest">{devCode}</span>
-                  {" "}— tap to fill automatically.
+                <p className="text-muted-foreground text-xs leading-relaxed">
+                  Welcome to Task Nest! Your verification code is{" "}
+                  <span className="text-[#00ff88] font-bold text-sm tracking-widest">{devCode}</span>.
+                  It expires in 10 minutes. Don't share this code with anyone. — Task Nest Team
                 </p>
               </div>
             </button>
@@ -148,7 +148,7 @@ export default function VerifyEmail() {
           </div>
 
           <p className="text-xs text-muted-foreground mb-6">
-            Code expires in <span className="text-primary font-semibold">20 minutes</span>
+            Code expires in <span className="text-primary font-semibold">10 minutes</span>
           </p>
 
           <Button

@@ -17,6 +17,7 @@ import Login from "@/pages/Login";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
 import SetupProfile from "@/pages/SetupProfile";
+import Profile from "@/pages/Profile";
 import Dashboard from "@/pages/Dashboard";
 import Deposit from "@/pages/Deposit";
 import Withdraw from "@/pages/Withdraw";

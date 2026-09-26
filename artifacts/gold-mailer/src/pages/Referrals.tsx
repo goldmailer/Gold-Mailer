@@ -46,7 +46,7 @@ export default function Referrals() {
       <main className="pt-16 max-w-2xl mx-auto px-4 sm:pl-16 py-8">
         <h1 className="text-2xl font-black mb-1">Referrals</h1>
         <p className="text-muted-foreground text-sm mb-8">
-          Invite friends and earn when they join GoldMailer
+          Invite friends and earn when they join Task Nest
         </p>
 
         <div className="bg-card border border-border rounded-xl p-5 mb-6">
