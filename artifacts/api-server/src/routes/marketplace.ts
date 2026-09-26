@@ -547,6 +547,34 @@ router.get("/admin/marketplace/summary", requireAdmin, async (_req, res) => {
   res.json({ ...stats.rows[0], adminBalance: Number(balance.rows[0]?.balance ?? 0) });
 });
 
+// POST /admin/marketplace/clear-volume — clear volume balance
+router.post("/admin/marketplace/clear-volume", requireAdmin, async (_req, res) => {
+  try {
+    await pool.query("UPDATE admin_earnings SET total_amount = 0");
+    console.log("[Admin Marketplace] Volume balance cleared to $0.00");
+    res.json({ success: true, message: "Volume balance cleared to $0.00 successfully." });
+  } catch (err: any) {
+    console.error("[Admin Clear Volume ERROR]", err);
+    res.status(500).json({ error: err?.message || "Failed to clear volume balance" });
+  }
+});
+
+// POST /admin/marketplace/clear-commission — clear commission balance
+router.post("/admin/marketplace/clear-commission", requireAdmin, async (_req, res) => {
+  try {
+    await pool.query("UPDATE admin_earnings SET admin_cut = 0");
+    await pool.query("UPDATE admin_balances SET balance = 0, updated_at = now() WHERE id = 1");
+    await pool.query(
+      "INSERT INTO admin_wallet_transactions (type, amount, description) VALUES ('withdrawal', 0, 'Admin cleared commission balance to $0.00')"
+    ).catch(() => {});
+    console.log("[Admin Marketplace] Commission balance cleared to $0.00");
+    res.json({ success: true, message: "Commission balance cleared to $0.00 successfully." });
+  } catch (err: any) {
+    console.error("[Admin Clear Commission ERROR]", err);
+    res.status(500).json({ error: err?.message || "Failed to clear commission balance" });
+  }
+});
+
 router.get("/admin/marketplace/payouts", requireAdmin, async (_req, res) => {
   const result = await pool.query(
     `SELECT p.*, u.email FROM marketplace_payouts p JOIN users u ON u.id = p.user_id ORDER BY p.created_at DESC`,

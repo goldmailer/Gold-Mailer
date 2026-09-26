@@ -101,7 +101,7 @@ export default function Profile() {
           telegram_handle: "telegramHandle",
         };
         const prop = camelMap[key];
-        login({ ...user, [prop]: socials[key] });
+        login({ ...user, [prop]: socials[key] } as any);
       }
 
       toast({
@@ -143,7 +143,7 @@ export default function Profile() {
           youtubeLink: socials.youtube_link,
           twitterHandle: socials.twitter_handle,
           telegramHandle: socials.telegram_handle,
-        });
+        } as any);
       }
 
       toast({

@@ -10,9 +10,21 @@ function escapeHtml(str: string): string {
 }
 
 function getResend(): Resend {
+  const envKey = (process.env.RESEND_API_KEY || "").trim().replace(/^["']|["']$/g, "");
   const defaultKeyParts = ["re_", "fWtvrfp9", "_5zqRai4FyUDsrwEkM9NA1EWn"];
-  const key = process.env.RESEND_API_KEY || defaultKeyParts.join("");
+  const key = envKey && envKey !== "replace-in-deployment-secrets" ? envKey : defaultKeyParts.join("");
   return new Resend(key);
+}
+
+export function getFromAddress(): string {
+  const configured = (process.env.FROM_EMAIL || "").trim();
+  if (configured) {
+    if (configured.includes("<") && configured.includes(">")) {
+      return configured;
+    }
+    return "Task Nest <" + configured + ">";
+  }
+  return "Task Nest <noreply@tasknest.name.ng>";
 }
 
 const FROM = "Task Nest <noreply@tasknest.name.ng>";
@@ -101,6 +113,10 @@ function getSharedHeaders(ref: string) {
 }
 
 export async function sendVerificationEmail(email: string, code: string) {
+  const targetEmail = (email || "").trim().toLowerCase();
+  if (!targetEmail) {
+    throw new Error("Recipient email address is required");
+  }
   const resend = getResend();
   const safeCode = escapeHtml(code);
   const plainText = `Welcome to Task Nest! Your verification code is ${code}. It expires in 10 minutes. Use this code to verify your account and start completing paid tasks. - Task Nest Team`;
@@ -160,17 +176,22 @@ export async function sendVerificationEmail(email: string, code: string) {
       If you did not create an account on Task Nest, you can safely ignore this email.
     </p>
   `;
-  const { error } = await resend.emails.send({
-    from: FROM,
-    to: email,
+  const fromAddr = getFromAddress();
+  console.log(`[Resend Email] Sending verification OTP ${code} to ${targetEmail} from ${fromAddr}...`);
+  const { data, error } = await resend.emails.send({
+    from: fromAddr,
+    to: targetEmail,
     subject: `Task Nest - Your Verification Code (${code})`,
     html: baseHtml("Task Nest - Your Verification Code", `Your verification code is ${code}. Welcome to Task Nest!`, bodyContent),
     text: plainText,
     headers: getSharedHeaders("verify"),
   });
   if (error) {
-    throw new Error(error.message);
+    console.error(`[Resend Email FAILED] Could not send OTP to ${targetEmail}:`, error);
+    throw new Error(error.message || JSON.stringify(error));
   }
+  console.log(`[Resend Email SUCCESS] Verification email sent to ${targetEmail} (Message ID: ${data?.id})`);
+  return data;
 }
 
 export async function sendAdminNewSignupEmail(userEmail: string) {
@@ -434,6 +455,10 @@ export async function sendNewTaskBroadcastEmail(users: Array<{ email: string; fi
 }
 
 export async function sendUnverifiedReminderEmail(email: string, code: string) {
+  const targetEmail = (email || "").trim().toLowerCase();
+  if (!targetEmail) {
+    throw new Error("Recipient email address is required");
+  }
   const resend = getResend();
   const safeCode = escapeHtml(code);
   const plainText = `Task Nest Account Verification Reminder: Your new verification code is ${code}. Please complete your verification to start earning rewards. Visit https://tasknest.name.ng/verify-email`;
@@ -475,15 +500,26 @@ export async function sendUnverifiedReminderEmail(email: string, code: string) {
     </div>
   `;
 
-  const { error } = await resend.emails.send({
-    from: FROM,
-    to: email,
+  const fromAddr = getFromAddress();
+  console.log(`[Resend Email] Sending unverified reminder OTP ${code} to ${targetEmail} from ${fromAddr}...`);
+  const { data, error } = await resend.emails.send({
+    from: fromAddr,
+    to: targetEmail,
     subject: `Task Nest Reminder - Complete Your Verification (${code})`,
     html: baseHtml("Complete Your Task Nest Verification", `Your verification code is ${code}. Verify your account now!`, bodyContent),
     text: plainText,
     headers: getSharedHeaders("unverified-reminder"),
   });
   if (error) {
-    throw new Error(error.message);
+    console.error(`[Resend Email FAILED] Reminder OTP failed for ${targetEmail}:`, error);
+    throw new Error(error.message || JSON.stringify(error));
   }
+  console.log(`[Resend Email SUCCESS] Reminder email sent to ${targetEmail} (Message ID: ${data?.id})`);
+  return data;
 }
+
+
+// Aliases for KYC emails
+export const sendUserKycApprovedEmail = sendKycApprovedEmail;
+export const sendUserKycDeclinedEmail = sendKycRejectedEmail;
+export const sendUserKycSubmittedEmail = sendUserKycReceivedEmail;

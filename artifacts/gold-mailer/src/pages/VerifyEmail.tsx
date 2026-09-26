@@ -1,22 +1,38 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useVerifyEmail, useResendVerification } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { Mail, RefreshCw, AlertTriangle } from "lucide-react";
+import { Mail, RefreshCw, Pencil, Check } from "lucide-react";
 import { Link } from "wouter";
 
 export default function VerifyEmail() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { login } = useAuth();
-  const email = sessionStorage.getItem("verify_email") || "";
+  
+  const [email, setEmail] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const urlEmail = new URLSearchParams(window.location.search).get("email");
+      if (urlEmail) return urlEmail.trim();
+      return (sessionStorage.getItem("verify_email") || "").trim();
+    }
+    return "";
+  });
+
+  const [isEditingEmail, setIsEditingEmail] = useState(!email);
+  const [editEmailVal, setEditEmailVal] = useState(email);
   const [code, setCode] = useState(["", "", "", "", "", ""]);
-  const [devCode, setDevCode] = useState<string | null>(
-    sessionStorage.getItem("verify_dev_code") || null
-  );
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    if (email) {
+      sessionStorage.setItem("verify_email", email);
+      setEditEmailVal(email);
+    }
+  }, [email]);
 
   const verifyMutation = useVerifyEmail({
     mutation: {
@@ -34,7 +50,11 @@ export default function VerifyEmail() {
         setLocation("/setup-profile");
       },
       onError: (err: any) => {
-        toast({ title: "Verification failed", description: err?.data?.error || err?.message || "Invalid or expired code", variant: "destructive" });
+        toast({
+          title: "Verification failed",
+          description: err?.data?.error || err?.message || "Invalid or expired code",
+          variant: "destructive",
+        });
       },
     },
   });
@@ -42,16 +62,17 @@ export default function VerifyEmail() {
   const resendMutation = useResendVerification({
     mutation: {
       onSuccess: (data: any) => {
-        if (data?.devCode) {
-          setDevCode(data.devCode);
-          sessionStorage.setItem("verify_dev_code", data.devCode);
-          toast({ title: "New code generated", description: "Email delivery is unavailable — use the code shown below." });
-        } else {
-          toast({ title: "Code resent", description: "Check your email for a new verification code." });
-        }
+        toast({
+          title: "Code resent!",
+          description: data?.message || "A fresh 6-digit verification code has been sent. Check your inbox and spam folder.",
+        });
       },
-      onError: () => {
-        toast({ title: "Failed to resend", description: "Please try again later.", variant: "destructive" });
+      onError: (err: any) => {
+        toast({
+          title: "Failed to resend",
+          description: err?.data?.error || err?.message || "Please try again later or check your email address.",
+          variant: "destructive",
+        });
       },
     },
   });
@@ -78,20 +99,44 @@ export default function VerifyEmail() {
     inputs.current[Math.min(text.length, 5)]?.focus();
   };
 
-  const fillDevCode = () => {
-    if (!devCode) return;
-    const digits = devCode.split("");
-    setCode(digits);
-    inputs.current[5]?.focus();
+  const handleResendClick = () => {
+    const targetEmail = (email || editEmailVal).trim().toLowerCase();
+    if (!targetEmail || !targetEmail.includes("@")) {
+      toast({
+        title: "Valid email required",
+        description: "Please enter your registered email address before requesting a new code.",
+        variant: "destructive",
+      });
+      setIsEditingEmail(true);
+      return;
+    }
+    setEmail(targetEmail);
+    resendMutation.mutate({ data: { email: targetEmail } });
   };
 
   const handleSubmit = () => {
+    const targetEmail = (email || editEmailVal).trim().toLowerCase();
+    if (!targetEmail || !targetEmail.includes("@")) {
+      toast({ title: "Email required", description: "Please enter your registered email address.", variant: "destructive" });
+      setIsEditingEmail(true);
+      return;
+    }
     const fullCode = code.join("");
     if (fullCode.length !== 6) {
       toast({ title: "Enter the 6-digit code", variant: "destructive" });
       return;
     }
-    verifyMutation.mutate({ data: { email, code: fullCode } });
+    verifyMutation.mutate({ data: { email: targetEmail, code: fullCode } });
+  };
+
+  const saveEditedEmail = () => {
+    const cleaned = editEmailVal.trim().toLowerCase();
+    if (cleaned && cleaned.includes("@")) {
+      setEmail(cleaned);
+      sessionStorage.setItem("verify_email", cleaned);
+      setIsEditingEmail(false);
+      toast({ title: "Email updated", description: `Sending codes to ${cleaned}` });
+    }
   };
 
   return (
@@ -99,7 +144,12 @@ export default function VerifyEmail() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/">
-            <div className="flex items-center justify-center gap-2.5 cursor-pointer"><img src="/favicon.svg" alt="Task Nest" className="w-8 h-8 rounded-lg" /><span className="text-white font-black text-2xl tracking-wide">Task <span className="text-primary">Nest</span></span></div>
+            <div className="flex items-center justify-center gap-2.5 cursor-pointer">
+              <img src="/favicon.svg" alt="Task Nest" className="w-8 h-8 rounded-lg" />
+              <span className="text-white font-black text-2xl tracking-wide">
+                Task <span className="text-primary">Nest</span>
+              </span>
+            </div>
           </Link>
         </div>
 
@@ -111,21 +161,48 @@ export default function VerifyEmail() {
           <p className="text-muted-foreground text-sm mb-1">
             We sent a 6-digit code to
           </p>
-          <p className="text-primary font-medium text-sm mb-6 truncate">{email || "your email address"}</p>
 
-          
+          {isEditingEmail ? (
+            <div className="flex items-center gap-2 mb-6 max-w-xs mx-auto">
+              <Input
+                type="email"
+                placeholder="your.email@example.com"
+                value={editEmailVal}
+                onChange={(e) => setEditEmailVal(e.target.value)}
+                className="text-xs h-9 text-center"
+              />
+              <Button size="sm" onClick={saveEditedEmail} className="h-9 px-3 bg-primary text-black font-bold">
+                <Check size={14} />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center gap-1.5 mb-6">
+              <p className="text-primary font-medium text-sm truncate max-w-[260px]">
+                {email || "your email address"}
+              </p>
+              <button
+                onClick={() => setIsEditingEmail(true)}
+                className="text-muted-foreground hover:text-foreground p-1 rounded"
+                title="Change email"
+              >
+                <Pencil size={13} />
+              </button>
+            </div>
+          )}
 
           <div className="flex gap-2 justify-center mb-2" onPaste={handlePaste}>
             {code.map((digit, idx) => (
               <input
                 key={idx}
-                ref={el => { inputs.current[idx] = el; }}
+                ref={(el) => {
+                  inputs.current[idx] = el;
+                }}
                 type="text"
                 inputMode="numeric"
                 maxLength={1}
                 value={digit}
-                onChange={e => handleChange(idx, e.target.value)}
-                onKeyDown={e => handleKeyDown(idx, e)}
+                onChange={(e) => handleChange(idx, e.target.value)}
+                onKeyDown={(e) => handleKeyDown(idx, e)}
                 data-testid={`input-otp-${idx}`}
                 className="w-12 h-14 text-center text-2xl font-bold bg-background border-2 border-input rounded-xl focus:border-primary focus:outline-none focus:ring-0 transition-colors"
               />
@@ -153,10 +230,10 @@ export default function VerifyEmail() {
           </div>
 
           <button
-            onClick={() => resendMutation.mutate({ data: { email } })}
+            onClick={handleResendClick}
             disabled={resendMutation.isPending}
             data-testid="button-resend-code"
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors mx-auto"
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors mx-auto font-medium"
           >
             <RefreshCw size={14} className={resendMutation.isPending ? "animate-spin" : ""} />
             {resendMutation.isPending ? "Resending..." : "Resend code"}

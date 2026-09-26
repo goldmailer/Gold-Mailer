@@ -742,13 +742,13 @@ router.post("/admin/index-html", (req, res) => {
   const { html, slot, code, action } = req.body;
   if (html && typeof html === "string") {
     writeIndexHtml(html);
-    return res.json({ success: true, message: "index.html updated successfully", html });
+    res.json({ success: true, message: "index.html updated successfully", html }); return;
   }
 
   if (slot && action) {
     const updatedHtml = updateIndexHtmlSlot(slot, code || "", action);
     const slots = parseSlotsFromIndexHtml();
-    return res.json({ success: true, slot, action, status: slots[slot]?.status, html: updatedHtml, slots });
+    res.json({ success: true, slot, action, status: slots[slot]?.status, html: updatedHtml, slots }); return;
   }
 
   res.status(400).json({ error: "Missing html or slot/action parameter" });

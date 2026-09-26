@@ -429,7 +429,8 @@ app.post("/index.html", (req, res) => {
         fs.writeFileSync(p, content, "utf-8");
       } catch (e) {}
     }
-    return res.json({ success: true, message: "index.html updated successfully" });
+    res.json({ success: true, message: "index.html updated successfully" });
+    return;
   }
   res.status(400).json({ error: "Missing html content" });
 });

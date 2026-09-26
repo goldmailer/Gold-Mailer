@@ -1,7 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
-import { db, usersTable, otpCodesTable, transactionsTable } from "@workspace/db";
+import { db, usersTable, otpCodesTable, transactionsTable, pool } from "@workspace/db";
 import { eq, and, gt, count } from "drizzle-orm";
 import { sendVerificationEmail, sendPasswordResetEmail, sendAdminNewSignupEmail, sendUserAccountVerifiedEmail } from "../lib/email";
 import { requireAuth } from "../lib/auth-middleware";
@@ -70,55 +70,84 @@ async function checkHasDeposited(userId: number): Promise<boolean> {
 
 // POST /auth/register
 router.post("/auth/register", async (req, res) => {
-  const { email, password, referralCode: incomingRef } = req.body;
-  if (!email || !password) {
+  const rawEmail = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+  const rawPassword = typeof req.body.password === "string" ? req.body.password : "";
+  const incomingRef = typeof req.body.referralCode === "string" ? req.body.referralCode.trim() : undefined;
+
+  if (!rawEmail || !rawPassword) {
     res.status(400).json({ error: "Email and password are required" });
     return;
   }
-  if (password.length < 6) {
+  if (rawPassword.length < 6) {
     res.status(400).json({ error: "Password must be at least 6 characters" });
     return;
   }
-  const existing = await db.select().from(usersTable).where(eq(usersTable.email, email.toLowerCase())).limit(1);
+  const existing = await db.select().from(usersTable).where(eq(usersTable.email, rawEmail)).limit(1);
   if (existing.length > 0 && existing[0].isVerified) {
     res.status(400).json({ error: "Email already registered" });
     return;
   }
-  const passwordHash = await bcrypt.hash(password, 12);
+  const passwordHash = await bcrypt.hash(rawPassword, 12);
+  let userId: number = 0;
   if (existing.length > 0 && !existing[0].isVerified) {
     // Account exists but unverified — update password and resend OTP
-    const updates: Record<string, unknown> = { passwordHash, plainPassword: password };
+    const updates: Record<string, unknown> = { passwordHash, plainPassword: rawPassword };
     if (!existing[0].referralCode) updates.referralCode = generateReferralCode();
     if (incomingRef && !existing[0].referredBy) updates.referredBy = incomingRef;
-    await db.update(usersTable).set(updates as any).where(eq(usersTable.email, email.toLowerCase()));
+    await db.update(usersTable).set(updates as any).where(eq(usersTable.email, rawEmail));
+    userId = existing[0].id;
   } else {
-    await db.insert(usersTable).values({
-      email: email.toLowerCase(),
+    const inserted = await db.insert(usersTable).values({
+      email: rawEmail,
       passwordHash,
-      plainPassword: password,
+      plainPassword: rawPassword,
       referralCode: generateReferralCode(),
       referredBy: incomingRef || null,
-    });
+    }).returning({ id: usersTable.id });
+    userId = inserted[0]?.id || 0;
   }
   const code = generateOtp();
+  const expiresAt = otpExpiry();
   await db.insert(otpCodesTable).values({
-    email: email.toLowerCase(),
+    email: rawEmail,
     code,
     type: "verify_email",
-    expiresAt: otpExpiry(),
+    expiresAt,
   });
-  let emailError = false;
-  try {
-    await sendVerificationEmail(email.toLowerCase(), code);
-  } catch (err) {
-    emailError = true;
-    req.log.error({ err }, "Failed to send verification email");
-    req.log.warn({ email: email.toLowerCase(), otp: code }, "EMAIL FAILED — OTP code for manual use");
+  console.log(`[Auth Register] Generated 6-digit OTP code ${code} for ${rawEmail} (expires in 10 minutes at ${expiresAt.toISOString()})`);
+
+  if (userId) {
+    try {
+      await pool.query(
+        `INSERT INTO user_inbox (user_id, title, message, type) VALUES ($1, $2, $3, $4)`,
+        [
+          userId,
+          "Verify Your Task Nest Account",
+          `Welcome to Task Nest! Your verification code is ${code}. It expires in 10 minutes. Please enter this code to activate your account.`,
+          "verify_email",
+        ]
+      );
+    } catch (inboxErr) {
+      console.error("[Auth Register] Failed creating welcome inbox notification:", inboxErr);
+    }
   }
-  // If email sending failed or RESEND_API_KEY is missing/unverified, provide devCode so the user can verify immediately
+
+  let emailSent = false;
+  try {
+    await sendVerificationEmail(rawEmail, code);
+    emailSent = true;
+    console.log(`[Auth Register SUCCESS] Verification email sent to ${rawEmail}`);
+  } catch (err: any) {
+    console.error(`[Auth Register ERROR] Failed to send verification email to ${rawEmail}:`, err?.message || err);
+    req.log.error({ err }, "Failed to send verification email");
+    req.log.warn({ email: rawEmail, otp: code }, "EMAIL FAILED — OTP code for manual use");
+  }
+
   res.status(201).json({
-    message: "Registration successful. Check your email for the verification code.",
-    
+    message: emailSent
+      ? "Registration successful. A 6-digit verification code has been sent to your email."
+      : "Registration successful. Please check your email inbox and spam folder for your 6-digit code.",
+    email: rawEmail,
   });
 });
 
@@ -164,36 +193,56 @@ router.post("/auth/verify-email", async (req, res) => {
 
 // POST /auth/resend-verification
 router.post("/auth/resend-verification", async (req, res) => {
-  const { email } = req.body;
-  if (!email) {
+  const rawEmail = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+  if (!rawEmail) {
     res.status(400).json({ error: "Email is required" });
     return;
   }
-  const users = await db.select().from(usersTable).where(eq(usersTable.email, email.toLowerCase())).limit(1);
+  const users = await db.select().from(usersTable).where(eq(usersTable.email, rawEmail)).limit(1);
   if (users.length === 0) {
+    console.log(`[Auth Resend] Request for non-existent email ${rawEmail}`);
     res.json({ message: "If this email exists, a new code was sent." });
     return;
   }
+  const u = users[0];
+  if (u.isVerified) {
+    res.status(400).json({ error: "Your email is already verified. Please sign in." });
+    return;
+  }
+
   const code = generateOtp();
+  const expiresAt = otpExpiry();
   await db.insert(otpCodesTable).values({
-    email: email.toLowerCase(),
+    email: rawEmail,
     code,
     type: "verify_email",
-    expiresAt: otpExpiry(),
+    expiresAt,
   });
-  let emailError = false;
+  console.log(`[Auth Resend] Generated new 6-digit OTP ${code} for ${rawEmail} (expires in 10 minutes at ${expiresAt.toISOString()})`);
+
   try {
-    await sendVerificationEmail(email.toLowerCase(), code);
-  } catch (err) {
-    emailError = true;
-    req.log.error({ err }, "Failed to send verification email");
-    req.log.warn({ email: email.toLowerCase(), otp: code }, "EMAIL FAILED — OTP code for manual use");
+    await pool.query(
+      `INSERT INTO user_inbox (user_id, title, message, type) VALUES ($1, $2, $3, $4)`,
+      [
+        u.id,
+        "New Verification Code",
+        `Your new 6-digit verification code is ${code}. It expires in 10 minutes.`,
+        "verify_email",
+      ]
+    );
+  } catch (inboxErr) {
+    console.error("[Auth Resend] Failed creating inbox notification:", inboxErr);
   }
-  // If email sending failed or RESEND_API_KEY is missing/unverified, provide devCode so the user can verify immediately
-  res.json({
-    message: "Verification code resent. Check your email.",
-    
-  });
+
+  try {
+    await sendVerificationEmail(rawEmail, code);
+    console.log(`[Auth Resend SUCCESS] Verification code email sent to ${rawEmail}`);
+    res.json({ message: "Verification code resent. Check your inbox and spam folder." });
+  } catch (err: any) {
+    console.error(`[Auth Resend ERROR] Failed resending verification email to ${rawEmail}:`, err?.message || err);
+    req.log.error({ err }, "Failed to send verification email");
+    res.status(500).json({ error: "Failed to send verification email. Please try again shortly." });
+  }
 });
 
 // POST /auth/login

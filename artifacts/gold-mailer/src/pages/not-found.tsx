@@ -1,10 +1,20 @@
-import { Link } from "wouter";
+import { useEffect } from "react";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { Home, ArrowLeft } from "lucide-react";
+import { Home, Share2 } from "lucide-react";
 
 export default function NotFound() {
   const { user } = useAuth();
+  const [location, setLocation] = useLocation();
+
+  useEffect(() => {
+    const loc = (location || (typeof window !== "undefined" ? window.location.pathname : "")).toLowerCase();
+    if (loc.includes("social") || loc.includes("profile")) {
+      setLocation("/profile");
+    }
+  }, [location, setLocation]);
+
   const targetHome = user ? "/dashboard" : "/";
   const buttonLabel = user ? "Return to Dashboard" : "Return to Home";
 
@@ -22,13 +32,11 @@ export default function NotFound() {
               <Home size={16} /> {buttonLabel}
             </Button>
           </Link>
-          {user && (
-            <Link href="/profile">
-              <Button variant="outline" className="w-full sm:w-auto border-border hover:border-primary/50 gap-2">
-                Social Accounts
-              </Button>
-            </Link>
-          )}
+          <Link href="/profile">
+            <Button variant="outline" className="w-full sm:w-auto border-border hover:border-primary/50 gap-2 text-primary font-bold">
+              <Share2 size={16} /> My Social Accounts
+            </Button>
+          </Link>
         </div>
       </div>
     </div>

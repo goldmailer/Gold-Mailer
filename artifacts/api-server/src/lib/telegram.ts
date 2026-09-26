@@ -26,7 +26,7 @@ export async function checkTelegramChannelMember(channelTarget: string, userTele
   try {
     const url = `https://api.telegram.org/bot${botToken}/getChatMember?chat_id=${encodeURIComponent(chatId)}&user_id=${encodeURIComponent(username)}`;
     const res = await fetch(url);
-    const data = await res.json();
+    const data = (await res.json()) as any;
     if (data.ok) {
       const status = data.result?.status;
       const isMember = ["creator", "administrator", "member", "restricted"].includes(status);

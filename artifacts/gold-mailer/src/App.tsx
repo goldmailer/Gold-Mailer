@@ -95,6 +95,54 @@ function Router() {
       <Route path="/social-media/:subpath*">
         <ProtectedRoute><Profile /></ProtectedRoute>
       </Route>
+      <Route path="/social-account">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
+      <Route path="/social-account/:subpath*">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
+      <Route path="/my-social-account">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
+      <Route path="/my-social-account/:subpath*">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
+      <Route path="/my-social-accounts">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
+      <Route path="/my-social-accounts/:subpath*">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
+      <Route path="/mysocial">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
+      <Route path="/mysocial/:subpath*">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
+      <Route path="/mysocials">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
+      <Route path="/mysocials/:subpath*">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
+      <Route path="/mysocialaccounts">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
+      <Route path="/mysocialaccounts/:subpath*">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
+      <Route path="/user/socials">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
+      <Route path="/user/socials/:subpath*">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
+      <Route path="/account/socials">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
+      <Route path="/account/socials/:subpath*">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
       <Route path="/setup-profile" component={SetupProfile} />
 
       <Route path="/dashboard">

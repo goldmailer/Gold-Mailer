@@ -843,6 +843,39 @@ export default function Admin() {
     refetchAdminWallet();
   };
 
+  const clearVolumeBalance = async () => {
+    if (!confirm("Are you sure you want to clear the volume balance to $0.00? This will reset the total marketplace volume counter.")) return;
+    try {
+      const response = await fetch("/api/admin/marketplace/clear-volume", {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Failed to clear volume balance");
+      toast({ title: "Volume Balance Cleared", description: "Marketplace volume counter reset to $0.00." });
+      refetchMarketplace();
+    } catch (err: any) {
+      toast({ title: "Clear Failed", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const clearCommissionBalance = async () => {
+    if (!confirm("Are you sure you want to clear the commission balance to $0.00? This will reset marketplace commission earnings and admin commission wallet.")) return;
+    try {
+      const response = await fetch("/api/admin/marketplace/clear-commission", {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Failed to clear commission balance");
+      toast({ title: "Commission Balance Cleared", description: "Marketplace commission and admin wallet reset to $0.00." });
+      refetchMarketplace();
+      refetchAdminWallet();
+    } catch (err: any) {
+      toast({ title: "Clear Failed", description: err.message, variant: "destructive" });
+    }
+  };
+
   const clearFinancialHistory = async () => {
     if (!confirm("This permanently deletes all user deposits, withdrawals, stakes, task history, and resets user balances. Continue?")) return;
     const response = await fetch("/api/admin/maintenance/clear-financial-history", {
@@ -1916,24 +1949,52 @@ export default function Admin() {
               </div>
               <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-5">
                 <p className="text-xs font-bold uppercase tracking-wider text-destructive">Destructive maintenance</p>
-                <h3 className="mt-2 font-bold">Clear user financial history</h3>
-                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Deletes user deposit, withdrawal, stake, and task history and resets non-admin balances. Accounts remain.</p>
-                <Button variant="outline" className="mt-4 border-destructive/40 text-destructive hover:bg-destructive/10" onClick={clearFinancialHistory}><Trash2 size={14} /> Clear all history</Button>
+                <h3 className="mt-2 font-bold">Balance and History Controls</h3>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Clear volume balance, commission balance, or reset user financial history.</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" className="border-amber-500/40 text-amber-400 hover:bg-amber-500/10" onClick={clearVolumeBalance}>
+                    <Trash2 size={13} className="mr-1" /> Clear Volume Balance
+                  </Button>
+                  <Button variant="outline" size="sm" className="border-amber-500/40 text-amber-400 hover:bg-amber-500/10" onClick={clearCommissionBalance}>
+                    <Trash2 size={13} className="mr-1" /> Clear Commission Balance
+                  </Button>
+                  <Button variant="outline" size="sm" className="border-destructive/40 text-destructive hover:bg-destructive/10" onClick={clearFinancialHistory}>
+                    <Trash2 size={13} className="mr-1" /> Clear All History
+                  </Button>
+                </div>
               </div>
             </section>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              {[
-                ["Users", (marketplaceAdminData.summary as any).users ?? 0],
-                ["Pending tasks", (marketplaceAdminData.summary as any).pending_tasks ?? 0],
-                ["Pending proof", (marketplaceAdminData.summary as any).pending_submissions ?? 0],
-                ["Volume", `$${Number((marketplaceAdminData.summary as any).total_volume ?? 0).toFixed(2)}`],
-                ["Commission", `$${Number((marketplaceAdminData.summary as any).total_commission ?? 0).toFixed(2)}`],
-              ].map(([label, value]) => (
-                <div key={String(label)} className="rounded-xl border border-border bg-card p-4">
-                  <p className="text-xs text-muted-foreground">{label}</p>
-                  <p className="mt-1 text-xl font-black text-primary">{value}</p>
+              <div className="rounded-xl border border-border bg-card p-4">
+                <p className="text-xs text-muted-foreground">Users</p>
+                <p className="mt-1 text-xl font-black text-primary">{(marketplaceAdminData.summary as any).users ?? 0}</p>
+              </div>
+              <div className="rounded-xl border border-border bg-card p-4">
+                <p className="text-xs text-muted-foreground">Pending tasks</p>
+                <p className="mt-1 text-xl font-black text-primary">{(marketplaceAdminData.summary as any).pending_tasks ?? 0}</p>
+              </div>
+              <div className="rounded-xl border border-border bg-card p-4">
+                <p className="text-xs text-muted-foreground">Pending proof</p>
+                <p className="mt-1 text-xl font-black text-primary">{(marketplaceAdminData.summary as any).pending_submissions ?? 0}</p>
+              </div>
+              <div className="rounded-xl border border-border bg-card p-4 flex flex-col justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">Volume</p>
+                  <p className="mt-1 text-xl font-black text-primary">${Number((marketplaceAdminData.summary as any).total_volume ?? 0).toFixed(2)}</p>
                 </div>
-              ))}
+                <Button size="sm" variant="ghost" onClick={clearVolumeBalance} className="mt-2 h-7 px-2 text-[11px] text-amber-400 hover:bg-amber-400/10 justify-start">
+                  <Trash2 size={11} className="mr-1" /> Clear volume
+                </Button>
+              </div>
+              <div className="rounded-xl border border-border bg-card p-4 flex flex-col justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">Commission</p>
+                  <p className="mt-1 text-xl font-black text-primary">${Number((marketplaceAdminData.summary as any).total_commission ?? 0).toFixed(2)}</p>
+                </div>
+                <Button size="sm" variant="ghost" onClick={clearCommissionBalance} className="mt-2 h-7 px-2 text-[11px] text-amber-400 hover:bg-amber-400/10 justify-start">
+                  <Trash2 size={11} className="mr-1" /> Clear commission
+                </Button>
+              </div>
             </div>
             <section className="rounded-2xl border border-border bg-card p-5">
               <h3 className="font-bold">Advertiser tasks</h3>

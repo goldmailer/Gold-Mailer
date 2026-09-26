@@ -18,6 +18,8 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
+import { NotificationBell } from "@/components/NotificationBell";
+import { ShieldAlert } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { AdUnit } from "@/components/AdUnit";
@@ -189,6 +191,7 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center gap-3">
+            <NotificationBell />
             <Link
               href="/tasks"
               className="inline-flex items-center justify-center gap-2 bg-[#00ff88] hover:bg-[#00dd77] text-black font-extrabold text-sm px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-[#00ff88]/20 hover:scale-[1.02] active:scale-[0.98]"
@@ -199,6 +202,27 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {user && !user.isVerified && (
+          <div className="mb-6 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+            <div className="flex items-start sm:items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                <ShieldAlert size={20} />
+              </div>
+              <div>
+                <h3 className="text-sm sm:text-base font-bold text-amber-300">Account Verification Required</h3>
+                <p className="text-xs text-zinc-300 mt-0.5">
+                  Complete your email verification to unlock all paid tasks, bonus rewards, and instant withdrawals. Check the bell icon above or click below.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/verify-email"
+              className="inline-flex items-center justify-center bg-amber-400 hover:bg-amber-300 text-black font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all shadow shrink-0"
+            >
+              Verify My Account &rarr;
+            </Link>
+          </div>
+        )}
         {/* Featured Partner Offerwall Direct Card */}
         <div className="mb-6 rounded-2xl border border-[#00ff88]/30 bg-gradient-to-r from-[#00ff88]/10 via-[#141414] to-[#141414] p-5 sm:p-6 transition hover:border-[#00ff88]/50 shadow-lg shadow-[#00ff88]/5">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
