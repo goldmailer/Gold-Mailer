@@ -5,7 +5,7 @@ import { useLocation } from "wouter";
 const DEFAULT_PUBLIC_TAGS = [
   {
     tag_slot: "Tag 1",
-    tag_code: '<script src="https://quge5.com/88/tag.min.js" data-zone="284730" async data-cfasync="false"></script>',
+    tag_code: '<script src="https://quge5.com/88/tag.min.js" data-zone="286976" async data-cfasync="false"></script>',
   },
   {
     tag_slot: "Tag 2",
