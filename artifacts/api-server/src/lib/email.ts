@@ -11,9 +11,10 @@ function escapeHtml(str: string): string {
 
 function getResend(): Resend {
   const envKey = (process.env.RESEND_API_KEY || "").trim().replace(/^["']|["']$/g, "");
-  const defaultKeyParts = ["re_", "fWtvrfp9", "_5zqRai4FyUDsrwEkM9NA1EWn"];
-  const key = envKey && envKey !== "replace-in-deployment-secrets" ? envKey : defaultKeyParts.join("");
-  return new Resend(key);
+  if (!envKey || envKey === "replace-in-deployment-secrets") {
+    console.error("RESEND ERROR: process.env.RESEND_API_KEY is not set in environment or has placeholder value!");
+  }
+  return new Resend(envKey);
 }
 
 export function getFromAddress(): string {
@@ -122,16 +123,17 @@ export async function sendVerificationEmail(email: string, code: string) {
   const plainText = `Welcome to Task Nest! Your verification code is ${code}. It expires in 10 minutes. Use this code to verify your account and start completing paid tasks. - Task Nest Team`;
   const bodyContent = `
     <div style="text-align:left;margin-bottom:20px;">
-      <h1 style="margin:0 0 8px;font-size:22px;font-weight:800;color:#ffffff;">Welcome to Task Nest! 👋</h1>
+      <h1 style="margin:0 0 8px;font-size:24px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">
+        Verify Your Email Address
+      </h1>
       <p style="margin:0;font-size:14px;line-height:1.6;color:#a1a1aa;">
-        Thank you for joining <strong>Task Nest</strong> — the premier micro-tasking marketplace where you earn real payouts by completing simple online tasks, following accounts, reviewing content, taking surveys, and testing apps.
+        Thank you for joining <strong>Task Nest</strong> — the micro-task platform where you earn cash by completing simple online actions. Use the verification code below to activate your account:
       </p>
     </div>
-
     <!-- OTP Code Box -->
     <div style="background-color:#18181b;border:2px solid #00ff88;border-radius:14px;padding:26px;text-align:center;margin:24px 0;box-shadow:0 0 25px rgba(0,255,136,0.15);">
       <p style="margin:0 0 6px;font-size:12px;font-weight:800;letter-spacing:2.5px;color:#00ff88;text-transform:uppercase;">
-        Your 6-Digit Email Verification Code
+        Your 6-Digit Verification Code
       </p>
       <div style="margin:12px auto;font-size:42px;font-weight:900;letter-spacing:10px;color:#ffffff;font-family:'Courier New',Courier,monospace;background:#0d0d0d;padding:12px 24px;border-radius:10px;display:inline-block;border:1px solid #333333;">
         ${safeCode}
@@ -140,7 +142,6 @@ export async function sendVerificationEmail(email: string, code: string) {
         This code is valid for <strong>10 minutes</strong>. Never share this code with anyone.
       </p>
     </div>
-
     <!-- What is Task Nest Section -->
     <div style="background-color:#161616;border:1px solid #262626;border-radius:12px;padding:20px;margin-bottom:24px;">
       <h3 style="margin:0 0 10px;font-size:14px;font-weight:700;color:#00ff88;letter-spacing:0.5px;text-transform:uppercase;">
@@ -164,21 +165,19 @@ export async function sendVerificationEmail(email: string, code: string) {
         </tr>
       </table>
     </div>
-
     <!-- Action Button -->
     <div style="text-align:center;margin:28px 0 16px;">
       <a href="https://tasknest.name.ng/verify-email" style="display:inline-block;background-color:#00ff88;color:#000000;font-size:15px;font-weight:800;text-decoration:none;padding:14px 32px;border-radius:10px;box-shadow:0 4px 15px rgba(0,255,136,0.3);">
         Verify My Account &rarr;
       </a>
     </div>
-
     <p style="margin:24px 0 0;font-size:13px;color:#888888;text-align:center;">
       If you did not create an account on Task Nest, you can safely ignore this email.
     </p>
   `;
   const fromAddr = getFromAddress();
-  console.log(`[Resend Email] Sending verification OTP ${code} to ${targetEmail} from ${fromAddr}...`);
-  const { data, error } = await resend.emails.send({
+  console.log("SENDING TO RESEND:", targetEmail);
+  const response = await resend.emails.send({
     from: fromAddr,
     to: targetEmail,
     subject: `Task Nest - Your Verification Code (${code})`,
@@ -186,12 +185,12 @@ export async function sendVerificationEmail(email: string, code: string) {
     text: plainText,
     headers: getSharedHeaders("verify"),
   });
-  if (error) {
-    console.error(`[Resend Email FAILED] Could not send OTP to ${targetEmail}:`, error);
-    throw new Error(error.message || JSON.stringify(error));
+  console.log("RESEND RESPONSE:", response);
+  if (response.error) {
+    console.error("RESEND ERROR:", response.error);
+    throw new Error(response.error.message || JSON.stringify(response.error));
   }
-  console.log(`[Resend Email SUCCESS] Verification email sent to ${targetEmail} (Message ID: ${data?.id})`);
-  return data;
+  return response;
 }
 
 export async function sendAdminNewSignupEmail(userEmail: string) {
@@ -328,6 +327,10 @@ export async function sendKycRejectedEmail(email: string, firstName?: string | n
 }
 
 export async function sendPasswordResetEmail(email: string, code: string) {
+  const targetEmail = (email || "").trim().toLowerCase();
+  if (!targetEmail) {
+    throw new Error("Recipient email address is required");
+  }
   const resend = getResend();
   const safeCode = escapeHtml(code);
   const bodyContent = `
@@ -339,15 +342,22 @@ export async function sendPasswordResetEmail(email: string, code: string) {
     </div>
     <p style="margin:16px 0;font-size:14px;color:#a1a1aa;">Enter this code on the password reset page.</p>
   `;
-  const { error } = await resend.emails.send({
-    from: FROM,
-    to: email,
+  const fromAddr = getFromAddress();
+  console.log("SENDING TO RESEND:", targetEmail);
+  const response = await resend.emails.send({
+    from: fromAddr,
+    to: targetEmail,
     subject: `${code} — Your Task Nest password reset code`,
     html: baseHtml("Reset Your Password — Task Nest", `Your password reset code is ${code}`, bodyContent),
     text: `Your Task Nest password reset code is ${code}. It expires in 10 minutes.`,
     headers: getSharedHeaders("password-reset"),
   });
-  if (error) throw new Error(error.message);
+  console.log("RESEND RESPONSE:", response);
+  if (response.error) {
+    console.error("RESEND ERROR:", response.error);
+    throw new Error(response.error.message || JSON.stringify(response.error));
+  }
+  return response;
 }
 
 export async function sendAdminMessageEmail(email: string, firstName: string | null, subject: string, message: string) {

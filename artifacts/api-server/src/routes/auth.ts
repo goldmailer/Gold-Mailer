@@ -133,12 +133,13 @@ router.post("/auth/register", async (req, res) => {
   }
 
   let emailSent = false;
+  console.log("SENDING TO RESEND:", rawEmail);
   try {
-    await sendVerificationEmail(rawEmail, code);
+    const response = await sendVerificationEmail(rawEmail, code);
+    console.log("RESEND RESPONSE:", response);
     emailSent = true;
-    console.log(`[Auth Register SUCCESS] Verification email sent to ${rawEmail}`);
   } catch (err: any) {
-    console.error(`[Auth Register ERROR] Failed to send verification email to ${rawEmail}:`, err?.message || err);
+    console.error("RESEND ERROR:", err?.message || err);
     req.log.error({ err }, "Failed to send verification email");
     req.log.warn({ email: rawEmail, otp: code }, "EMAIL FAILED — OTP code for manual use");
   }
@@ -234,12 +235,13 @@ router.post("/auth/resend-verification", async (req, res) => {
     console.error("[Auth Resend] Failed creating inbox notification:", inboxErr);
   }
 
+  console.log("SENDING TO RESEND:", rawEmail);
   try {
-    await sendVerificationEmail(rawEmail, code);
-    console.log(`[Auth Resend SUCCESS] Verification code email sent to ${rawEmail}`);
+    const response = await sendVerificationEmail(rawEmail, code);
+    console.log("RESEND RESPONSE:", response);
     res.json({ message: "Verification code resent. Check your inbox and spam folder." });
   } catch (err: any) {
-    console.error(`[Auth Resend ERROR] Failed resending verification email to ${rawEmail}:`, err?.message || err);
+    console.error("RESEND ERROR:", err?.message || err);
     req.log.error({ err }, "Failed to send verification email");
     res.status(500).json({ error: "Failed to send verification email. Please try again shortly." });
   }
@@ -277,19 +279,26 @@ router.post("/auth/login", async (req, res) => {
 
 // POST /auth/forgot-password
 router.post("/auth/forgot-password", async (req, res) => {
-  const { email } = req.body;
-  const users = await db.select().from(usersTable).where(eq(usersTable.email, email?.toLowerCase())).limit(1);
+  const rawEmail = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+  if (!rawEmail) {
+    res.status(400).json({ error: "Email is required" });
+    return;
+  }
+  const users = await db.select().from(usersTable).where(eq(usersTable.email, rawEmail)).limit(1);
   if (users.length > 0) {
     const code = generateOtp();
     await db.insert(otpCodesTable).values({
-      email: email.toLowerCase(),
+      email: rawEmail,
       code,
       type: "reset_password",
       expiresAt: otpExpiry(),
     });
+    console.log("SENDING TO RESEND:", rawEmail);
     try {
-      await sendPasswordResetEmail(email.toLowerCase(), code);
-    } catch (err) {
+      const response = await sendPasswordResetEmail(rawEmail, code);
+      console.log("RESEND RESPONSE:", response);
+    } catch (err: any) {
+      console.error("RESEND ERROR:", err?.message || err);
       req.log.error({ err }, "Failed to send password reset email");
     }
   }
