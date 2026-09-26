@@ -115,10 +115,10 @@ router.post("/auth/register", async (req, res) => {
     req.log.error({ err }, "Failed to send verification email");
     req.log.warn({ email: email.toLowerCase(), otp: code }, "EMAIL FAILED — OTP code for manual use");
   }
-  const isDev = process.env.NODE_ENV !== "production";
+  // If email sending failed or RESEND_API_KEY is missing/unverified, provide devCode so the user can verify immediately
   res.status(201).json({
     message: "Registration successful. Check your email for the verification code.",
-    ...(isDev && emailError ? { devCode: code } : {}),
+    ...(emailError ? { devCode: code } : {}),
   });
 });
 
@@ -189,10 +189,10 @@ router.post("/auth/resend-verification", async (req, res) => {
     req.log.error({ err }, "Failed to send verification email");
     req.log.warn({ email: email.toLowerCase(), otp: code }, "EMAIL FAILED — OTP code for manual use");
   }
-  const isDev = process.env.NODE_ENV !== "production";
+  // If email sending failed or RESEND_API_KEY is missing/unverified, provide devCode so the user can verify immediately
   res.json({
     message: "Verification code resent. Check your email.",
-    ...(isDev && emailError ? { devCode: code } : {}),
+    ...(emailError ? { devCode: code } : {}),
   });
 });
 
