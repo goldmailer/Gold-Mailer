@@ -145,6 +145,13 @@ export default function VerifyEmail() {
             {verifyMutation.isPending ? "Verifying..." : "Verify Email"}
           </Button>
 
+          <div className="bg-background/80 border border-border/60 rounded-xl p-3 mb-5 text-xs text-muted-foreground text-left flex items-start gap-2">
+            <span className="text-primary font-bold text-sm leading-none mt-0.5">ℹ️</span>
+            <span>
+              <strong>Tip:</strong> Don&apos;t see the email in your inbox? Please check your <strong>Spam / Junk</strong> folder or Promotions tab.
+            </span>
+          </div>
+
           <button
             onClick={() => resendMutation.mutate({ data: { email } })}
             disabled={resendMutation.isPending}
