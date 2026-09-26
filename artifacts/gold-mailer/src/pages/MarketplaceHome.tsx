@@ -7,11 +7,7 @@ import { PopunderAd } from "@/components/PopunderAd";
 import { EarthGlobe } from "@/components/EarthGlobe";
 import { categories } from "@/lib/marketplace";
 
-const featured = [
-  { type: "YouTube Watch & Subscribe", title: "Watch a short video and subscribe", pay: "$0.80" },
-  { type: "Social Follow & Like", title: "Follow a creator and like their latest post", pay: "$0.55" },
-  { type: "Survey & Feedback", title: "Share your opinion in a 3-minute survey", pay: "$1.25" },
-];
+
 
 export default function MarketplaceHome() {
   const [, setLocation] = useLocation();
@@ -166,47 +162,53 @@ export default function MarketplaceHome() {
           </div>
         </section>
 
-        {/* Featured Tasks Section */}
+        {/* Platform Highlights Section */}
         <section className="bg-[#0f0f0f] border-y border-[#1a1a1a] px-5 py-16 lg:px-8">
           <div className="mx-auto max-w-7xl">
             <div className="flex items-end justify-between">
               <div>
                 <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#00ff88]">
-                  Fresh opportunities
+                  Platform Highlights
                 </p>
-                <h2 className="mt-2 text-3xl font-black text-white">Featured tasks</h2>
+                <h2 className="mt-2 text-3xl font-black text-white">Transparent & Direct Earnings</h2>
               </div>
               <Link href="/tasks" className="flex items-center gap-1 text-sm font-bold text-[#00ff88] hover:underline">
-                View all <ChevronRight size={16} />
+                Browse tasks <ChevronRight size={16} />
               </Link>
             </div>
-
             <div className="mt-8 grid gap-4 md:grid-cols-3">
-              {featured.map((task) => (
-                <div
-                  key={task.title}
-                  className="rounded-2xl border border-[#262626] bg-[#1a1a1a] p-5 hover:border-[#00ff88]/40 transition-colors"
-                >
-                  <div className="mb-6 flex items-center justify-between">
-                    <span className="rounded-full bg-[#0a0a0a] border border-[#262626] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#888888]">
-                      {task.type}
-                    </span>
-                    <span className="text-lg font-black text-[#00ff88]">{task.pay}</span>
-                  </div>
-                  <h3 className="text-lg font-bold text-white">{task.title}</h3>
-                  <p className="mt-2 text-sm text-[#888888]">Proof required · Fast review</p>
-                  <Link
-                    href="/register"
-                    className="mt-5 inline-flex items-center gap-1 text-sm font-bold text-[#00ff88] hover:underline"
-                  >
-                    View task <ArrowRight size={14} />
-                  </Link>
+              <div className="rounded-2xl border border-[#262626] bg-[#1a1a1a] p-6 hover:border-[#00ff88]/40 transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-[#00ff88]/15 border border-[#00ff88]/30 flex items-center justify-center text-[#00ff88] font-black mb-4">
+                  01
                 </div>
-              ))}
+                <h3 className="text-lg font-bold text-white">Verified Proof Reviews</h3>
+                <p className="mt-2 text-sm text-[#888888] leading-relaxed">
+                  Every submission is backed by uploaded screenshot proof or automated API checks, ensuring fair payouts for workers and real results for advertisers.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-[#262626] bg-[#1a1a1a] p-6 hover:border-[#00ff88]/40 transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-[#00ff88]/15 border border-[#00ff88]/30 flex items-center justify-center text-[#00ff88] font-black mb-4">
+                  02
+                </div>
+                <h3 className="text-lg font-bold text-white">Social & Micro-Tasks</h3>
+                <p className="mt-2 text-sm text-[#888888] leading-relaxed">
+                  From Instagram and TikTok comments to YouTube subscriptions and app testing, earn on tasks you already do daily.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-[#262626] bg-[#1a1a1a] p-6 hover:border-[#00ff88]/40 transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-[#00ff88]/15 border border-[#00ff88]/30 flex items-center justify-center text-[#00ff88] font-black mb-4">
+                  03
+                </div>
+                <h3 className="text-lg font-bold text-white">Direct Balance Payouts</h3>
+                <p className="mt-2 text-sm text-[#888888] leading-relaxed">
+                  Approved earnings are immediately credited to your balance with zero delays and transparent tracking in your personal dashboard.
+                </p>
+              </div>
             </div>
           </div>
         </section>
-
         {/* Three Steps Section */}
         <section className="mx-auto max-w-7xl px-5 py-20 lg:px-8 bg-[#0a0a0a]">
           <div className="grid gap-12 lg:grid-cols-[.8fr_1.2fr] lg:items-center">
@@ -241,14 +243,26 @@ export default function MarketplaceHome() {
           </div>
         </section>
 
-        {/* Sponsor Banner */}
-        <section className="px-5 pb-16 lg:px-8 bg-[#0a0a0a]">
+        {/* Real Stats Section (Zero-based real database metrics) */}
+        <section className="px-5 pb-20 lg:px-8 bg-[#0a0a0a]">
           <div className="mx-auto max-w-7xl">
             <AdUnit
               placement="general"
               zoneId={import.meta.env.VITE_MONETAG_ZONE_FOOTER || "284731"}
               label="Sponsored"
             />
+            <div className="mt-16 grid gap-5 md:grid-cols-3">
+              {[
+                [formatMetric(stats.users), "registered workers"],
+                [formatMetric(stats.payouts), "approved payouts"],
+                [formatCurrency(stats.payoutAmount), "paid to workers"],
+              ].map(([value, label]) => (
+                <div key={label} className="rounded-2xl border border-[#262626] bg-[#1a1a1a] p-6 text-center">
+                  <p className="text-3xl font-black text-[#00ff88]">{value}</p>
+                  <p className="mt-2 text-sm text-[#888888] font-medium">{label}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       </main>
