@@ -441,9 +441,21 @@ const __serverDir = path.dirname(fileURLToPath(import.meta.url));
 const frontendDistPath = path.resolve(__serverDir, "../../gold-mailer/dist/public");
 
 if (fs.existsSync(frontendDistPath)) {
-  app.use(express.static(frontendDistPath));
+  app.use(express.static(frontendDistPath, {
+    setHeaders: (res, filePath) => {
+      // Never cache index.html so code updates are loaded instantly
+      if (filePath.endsWith("index.html")) {
+        res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        res.setHeader("Pragma", "no-cache");
+        res.setHeader("Expires", "0");
+      }
+    }
+  }));
   // SPA fallback: send index.html for any non-API route so client-side routing works
   app.get("/*path", (_req, res) => {
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
     res.sendFile(path.join(frontendDistPath, "index.html"));
   });
 } else {

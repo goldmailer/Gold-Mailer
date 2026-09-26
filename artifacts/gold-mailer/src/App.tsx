@@ -56,19 +56,43 @@ function Router() {
             <Route path="/profile">
         <ProtectedRoute><Profile /></ProtectedRoute>
       </Route>
+      <Route path="/profile/:subpath*">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
       <Route path="/social">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
+      <Route path="/social/:subpath*">
         <ProtectedRoute><Profile /></ProtectedRoute>
       </Route>
       <Route path="/socials">
         <ProtectedRoute><Profile /></ProtectedRoute>
       </Route>
+      <Route path="/socials/:subpath*">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
       <Route path="/my-social">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
+      <Route path="/my-social/:subpath*">
         <ProtectedRoute><Profile /></ProtectedRoute>
       </Route>
       <Route path="/my-socials">
         <ProtectedRoute><Profile /></ProtectedRoute>
       </Route>
+      <Route path="/my-socials/:subpath*">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
       <Route path="/social-accounts">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
+      <Route path="/social-accounts/:subpath*">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
+      <Route path="/social-media">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
+      <Route path="/social-media/:subpath*">
         <ProtectedRoute><Profile /></ProtectedRoute>
       </Route>
       <Route path="/setup-profile" component={SetupProfile} />
