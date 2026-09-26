@@ -161,6 +161,12 @@ pool.query(`
    ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "advertising_wallet" numeric(15,2) NOT NULL DEFAULT 0;
    ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "payout_address" text;
    ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "is_banned" boolean NOT NULL DEFAULT false;
+   ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "instagram_handle" text;
+   ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "facebook_link" text;
+   ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "tiktok_handle" text;
+   ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "youtube_link" text;
+   ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "twitter_handle" text;
+   ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "telegram_handle" text;
 
    ALTER TABLE "ads_settings" ADD COLUMN IF NOT EXISTS "main_ads_enabled" boolean NOT NULL DEFAULT true;
    ALTER TABLE "ads_settings" ADD COLUMN IF NOT EXISTS "popup_ads_enabled" boolean NOT NULL DEFAULT true;
