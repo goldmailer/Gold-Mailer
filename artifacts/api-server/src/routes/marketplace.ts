@@ -2,6 +2,7 @@ import { Router } from "express";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { pool } from "@workspace/db";
 import { requireAdmin, requireAuth } from "../lib/auth-middleware";
+import { sendNewTaskBroadcastEmail } from "../lib/email";
 
 const router = Router();
 const COMMISSION_RATE = 0.2;
@@ -202,7 +203,31 @@ router.post("/marketplace/tasks", requireAuth, async (req, res) => {
       [req.session.userId, title.trim(), taskType, description.trim(), proofType, workers, pay, totalCost],
     );
     await client.query("COMMIT");
-    res.status(201).json(publicTask(created.rows[0]));
+    const taskRecord = created.rows[0];
+    res.status(201).json(publicTask(taskRecord));
+
+    // Asynchronously notify users about the newly posted task via email
+    (async () => {
+      try {
+        const usersResult = await pool.query(
+          `SELECT email, first_name FROM users WHERE is_verified = true AND is_banned = false AND email IS NOT NULL LIMIT 500`
+        );
+        if (usersResult.rows.length > 0) {
+          await sendNewTaskBroadcastEmail(
+            usersResult.rows.map((r: any) => ({ email: r.email, firstName: r.first_name })),
+            {
+              id: taskRecord.id,
+              title: taskRecord.title,
+              taskType: taskRecord.task_type,
+              payPerTask: Number(taskRecord.pay_per_task),
+              description: taskRecord.description,
+            }
+          );
+        }
+      } catch (err) {
+        console.error("Error broadcasting new task email:", err);
+      }
+    })();
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;

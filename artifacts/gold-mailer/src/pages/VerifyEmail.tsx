@@ -113,22 +113,7 @@ export default function VerifyEmail() {
           </p>
           <p className="text-primary font-medium text-sm mb-6 truncate">{email || "your email address"}</p>
 
-          {devCode && (
-            <button
-              onClick={fillDevCode}
-              className="w-full mb-5 p-3 rounded-xl border border-yellow-500/40 bg-yellow-500/10 text-left flex items-start gap-3 hover:bg-yellow-500/15 transition-colors"
-            >
-              <AlertTriangle size={16} className="text-yellow-500 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-yellow-500 text-xs font-semibold mb-1">Email delivery unavailable</p>
-                <p className="text-muted-foreground text-xs leading-relaxed">
-                  Welcome to Task Nest! Your verification code is{" "}
-                  <span className="text-[#00ff88] font-bold text-sm tracking-widest">{devCode}</span>.
-                  It expires in 10 minutes. Don't share this code with anyone. — Task Nest Team
-                </p>
-              </div>
-            </button>
-          )}
+          
 
           <div className="flex gap-2 justify-center mb-2" onPaste={handlePaste}>
             {code.map((digit, idx) => (
