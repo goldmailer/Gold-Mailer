@@ -432,3 +432,58 @@ export async function sendNewTaskBroadcastEmail(users: Array<{ email: string; fi
     }
   }
 }
+
+export async function sendUnverifiedReminderEmail(email: string, code: string) {
+  const resend = getResend();
+  const safeCode = escapeHtml(code);
+  const plainText = `Task Nest Account Verification Reminder: Your new verification code is ${code}. Please complete your verification to start earning rewards. Visit https://tasknest.name.ng/verify-email`;
+  const bodyContent = `
+    <div style="text-align:left;margin-bottom:20px;">
+      <div style="display:inline-block;background-color:rgba(0,255,136,0.15);border:1px solid #00ff88;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;color:#00ff88;margin-bottom:12px;">
+        ACTION REQUIRED
+      </div>
+      <h1 style="margin:0 0 8px;font-size:22px;font-weight:800;color:#ffffff;">Complete Your Task Nest Verification 🚀</h1>
+      <p style="margin:0;font-size:14px;line-height:1.6;color:#a1a1aa;">
+        You recently registered on <strong>Task Nest</strong>, but your account is not yet verified. Our email delivery system is now fully upgraded with direct inbox delivery.
+      </p>
+    </div>
+
+    <!-- OTP Code Box -->
+    <div style="background-color:#18181b;border:2px solid #00ff88;border-radius:14px;padding:26px;text-align:center;margin:24px 0;box-shadow:0 0 25px rgba(0,255,136,0.15);">
+      <p style="margin:0 0 6px;font-size:12px;font-weight:800;letter-spacing:2.5px;color:#00ff88;text-transform:uppercase;">
+        Your New 6-Digit Verification Code
+      </p>
+      <div style="margin:12px auto;font-size:42px;font-weight:900;letter-spacing:10px;color:#ffffff;font-family:'Courier New',Courier,monospace;background:#0d0d0d;padding:12px 24px;border-radius:10px;display:inline-block;border:1px solid #333333;">
+        ${safeCode}
+      </div>
+      <p style="margin:10px 0 0;font-size:12px;color:#888888;">
+        This code is valid for <strong>10 minutes</strong>.
+      </p>
+    </div>
+
+    <!-- Action Button -->
+    <div style="text-align:center;margin:28px 0 16px;">
+      <a href="https://tasknest.name.ng/verify-email" style="display:inline-block;background-color:#00ff88;color:#000000;font-size:15px;font-weight:800;text-decoration:none;padding:14px 32px;border-radius:10px;box-shadow:0 4px 15px rgba(0,255,136,0.3);">
+        Verify My Account Now &rarr;
+      </a>
+    </div>
+
+    <div style="background-color:#161616;border:1px solid #262626;border-radius:12px;padding:16px;margin-top:20px;text-align:left;">
+      <p style="margin:0;font-size:13px;color:#a1a1aa;line-height:1.5;">
+        💡 <strong>Start Earning Immediately:</strong> Once verified, you will immediately have access to perform tasks, invite friends for bonus rewards, and withdraw your earnings directly to your bank or crypto wallet.
+      </p>
+    </div>
+  `;
+
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to: email,
+    subject: `Task Nest Reminder - Complete Your Verification (${code})`,
+    html: baseHtml("Complete Your Task Nest Verification", `Your verification code is ${code}. Verify your account now!`, bodyContent),
+    text: plainText,
+    headers: getSharedHeaders("unverified-reminder"),
+  });
+  if (error) {
+    throw new Error(error.message);
+  }
+}

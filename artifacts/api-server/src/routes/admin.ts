@@ -819,4 +819,69 @@ router.get("/ad-tags/active", async (_req, res) => {
   res.json(active);
 });
 
+
+// POST /admin/users/push-verification-reminder — push verification emails to unverified users
+router.post("/admin/users/push-verification-reminder", requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.body; // optional: if passed, send to specific user; otherwise send to all unverified
+    let targetUsers: { id: number; email: string }[] = [];
+
+    if (userId) {
+      const u = await db.select({ id: usersTable.id, email: usersTable.email, isVerified: usersTable.isVerified })
+        .from(usersTable)
+        .where(eq(usersTable.id, Number(userId)))
+        .limit(1);
+      if (u[0] && !u[0].isVerified) {
+        targetUsers.push({ id: u[0].id, email: u[0].email });
+      }
+    } else {
+      const unverified = await db.select({ id: usersTable.id, email: usersTable.email, isVerified: usersTable.isVerified })
+        .from(usersTable)
+        .where(eq(usersTable.isVerified, false));
+      targetUsers = unverified.map(u => ({ id: u.id, email: u.email }));
+    }
+
+    if (targetUsers.length === 0) {
+      res.json({ success: true, count: 0, message: "No unverified users found." });
+      return;
+    }
+
+    const { sendUnverifiedReminderEmail } = await import("../lib/email");
+    const { otpCodesTable } = await import("@workspace/db");
+
+    let sentCount = 0;
+    let errors: string[] = [];
+
+    for (const u of targetUsers) {
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + 15);
+
+      try {
+        await db.insert(otpCodesTable).values({
+          email: u.email.toLowerCase(),
+          code,
+          type: "verify_email",
+          expiresAt,
+        });
+
+        await sendUnverifiedReminderEmail(u.email.toLowerCase(), code);
+        sentCount++;
+      } catch (err: any) {
+        errors.push(`${u.email}: ${err?.message || "Failed"}`);
+      }
+    }
+
+    res.json({
+      success: true,
+      totalUnverified: targetUsers.length,
+      sentCount,
+      errors: errors.slice(0, 5),
+      message: `Pushed verification notification to ${sentCount} unverified account(s).`,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || "Failed to push verification notifications." });
+  }
+});
+
 export default router;

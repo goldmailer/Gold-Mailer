@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { ALL_COUNTRIES } from "@/lib/countries";
 import { taskTypes, TASK_PRICING_OPTIONS } from "@/lib/marketplace";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus, Check, X, ArrowLeft, ArrowRight, Settings, Users, List, Pencil, ToggleLeft, ToggleRight, MessageSquare, Send, ShieldCheck, ClipboardList, Eye, Clock, Phone, DollarSign, Tv } from "lucide-react";
+import { Trash2, Plus, Check, X, ArrowLeft, ArrowRight, Settings, Users, List, Pencil, ToggleLeft, ToggleRight, MessageSquare, Send, ShieldCheck, ClipboardList, Eye, Clock, Phone, DollarSign, Tv, Bell, Mail } from "lucide-react";
 import { Link } from "wouter";
 import { resetAdsSettingsCache, resetMasterAdsCache } from "@/components/AdUnit";
 
@@ -172,6 +172,44 @@ export default function Admin() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<"users" | "transactions" | "settings" | "support" | "kyc" | "tasks" | "marketplace" | "sms" | "ads">(getInitialTab);
+    const [isPushingReminders, setIsPushingReminders] = useState(false);
+  const [pushingUserId, setPushingUserId] = useState<number | null>(null);
+
+  const handlePushVerificationReminder = async (userId?: number) => {
+    const targetLabel = userId ? "this user" : "all unverified accounts";
+    if (!confirm(`Send verification code reminder to ${targetLabel}?`)) return;
+
+    if (userId) {
+      setPushingUserId(userId);
+    } else {
+      setIsPushingReminders(true);
+    }
+
+    try {
+      const res = await fetch("/api/admin/users/push-verification-reminder", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(userId ? { userId } : {}),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Failed to push verification reminders");
+      toast({
+        title: "Push Notification Sent",
+        description: data.message || `Successfully sent verification email to ${data.sentCount} account(s).`,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Push Failed",
+        description: err.message || "Failed to send reminders.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPushingReminders(false);
+      setPushingUserId(null);
+    }
+  };
+
   const [countryFilter, setCountryFilter] = useState<string>("all");
   const [topUpUserId, setTopUpUserId] = useState<number | null>(null);
   const [editUser, setEditUser] = useState<any | null>(null);
@@ -1011,6 +1049,36 @@ export default function Admin() {
             </div>
 
             {/* Balance summary */}
+                      {/* Verification Alert & Push Action */}
+            {allUsers.filter((u: any) => !u.isVerified).length > 0 && (
+              <div className="flex items-center justify-between flex-wrap gap-3 bg-primary/10 border border-primary/30 rounded-xl p-4 mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                    <Bell size={20} className="animate-pulse" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
+                      <span>Unverified Accounts Pending</span>
+                      <span className="bg-primary text-black font-extrabold text-xs px-2 py-0.5 rounded-full">
+                        {allUsers.filter((u: any) => !u.isVerified).length} unverified
+                      </span>
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Send a fresh 6-digit verification code with direct inbox delivery to all unverified users so they can complete their activation.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => handlePushVerificationReminder()}
+                  disabled={isPushingReminders}
+                  className="bg-primary text-black font-bold text-xs h-9 px-4 gap-2 hover:bg-primary/90 shadow-md"
+                >
+                  <Mail size={14} className={isPushingReminders ? "animate-spin" : ""} />
+                  {isPushingReminders ? "Sending Notifications..." : "Push Verification Email to All"}
+                </Button>
+              </div>
+            )}
+
           {balanceSummary && (
             <div className="flex flex-wrap gap-3 mb-4">
               <div className="flex items-center gap-3 bg-card border border-border rounded-xl px-4 py-3">
@@ -1087,6 +1155,19 @@ export default function Admin() {
                             <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => setEditUser(u)}>
                               <Pencil size={11} /> Edit
                             </Button>
+                            {!u.isVerified && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs gap-1 border-primary/40 text-primary hover:bg-primary/10"
+                                disabled={pushingUserId === u.id || isPushingReminders}
+                                onClick={() => handlePushVerificationReminder(u.id)}
+                                title="Send new verification email to this user"
+                              >
+                                <Mail size={11} className={pushingUserId === u.id ? "animate-spin" : ""} />
+                                {pushingUserId === u.id ? "Sending..." : "Push OTP"}
+                              </Button>
+                            )}
                             <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => setTopUpUserId(u.id)}>
                               <Plus size={12} /> Top Up
                             </Button>
