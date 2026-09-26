@@ -117,6 +117,8 @@ export default function Settings() {
                 <span className="text-sm text-muted-foreground">Name</span>
                 <span className="font-semibold text-sm">{user.firstName} {user.lastName ?? ""}</span>
               </div>
+
+
             )}
             {(user as any)?.country && (
                <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:justify-between">

@@ -360,6 +360,12 @@ export default function Dashboard() {
                   Browse Tasks <ArrowUpRight size={14} />
                 </Link>
                 <Link
+                  href="/profile"
+                  className="inline-flex items-center gap-2 bg-[#1f1f1f] hover:bg-[#262626] border border-[#333333] hover:border-[#00ff88]/50 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all"
+                >
+                  <Share2 size={14} className="text-[#00ff88]" /> Link Social Accounts
+                </Link>
+                <Link
                   href="/post-task"
                   className="inline-flex items-center gap-2 bg-[#262626] hover:bg-[#333333] text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all"
                 >

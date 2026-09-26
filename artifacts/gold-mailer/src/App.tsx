@@ -53,6 +53,24 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
+            <Route path="/profile">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
+      <Route path="/social">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
+      <Route path="/socials">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
+      <Route path="/my-social">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
+      <Route path="/my-socials">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
+      <Route path="/social-accounts">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
       <Route path="/setup-profile" component={SetupProfile} />
 
       <Route path="/dashboard">
