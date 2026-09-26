@@ -356,6 +356,36 @@ export default function Marketplace() {
             </select>
           </div>
 
+          {/* Featured Monetag Partner Offerwall Banner */}
+          <div className="mt-6 rounded-2xl border border-[#00ff88]/30 bg-gradient-to-r from-[#00ff88]/10 via-[#141414] to-[#141414] p-5 sm:p-6 transition hover:border-[#00ff88]/50 shadow-lg shadow-[#00ff88]/5">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-[#00ff88] text-black px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider">
+                    Featured Partner
+                  </span>
+                  <span className="text-xs font-semibold text-[#00ff88]">
+                    Instant Access · High Reward Offerwall
+                  </span>
+                </div>
+                <h3 className="text-lg sm:text-xl font-black text-white">
+                  Explore Premium Partner Offers & Surveys
+                </h3>
+                <p className="text-xs sm:text-sm text-[#888888] max-w-xl">
+                  Visit our verified partner portal to complete special tasks, quick surveys, and interactive sponsorships with direct rewards.
+                </p>
+              </div>
+              <a
+                href="https://omg10.com/4/11895163"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 whitespace-nowrap rounded-xl bg-[#00ff88] px-5 py-3 text-sm font-black text-black hover:bg-[#00dd77] transition-all shadow-md hover:scale-[1.02] active:scale-[0.98] shrink-0"
+              >
+                Open Partner Offer <ExternalLink size={15} />
+              </a>
+            </div>
+          </div>
+
           <div className="mt-8 space-y-8">
             {isLoading ? (
               <div className="grid gap-4 md:grid-cols-2">
