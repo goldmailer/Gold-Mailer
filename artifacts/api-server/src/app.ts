@@ -307,6 +307,32 @@ pool.query(`
      "created_at" timestamp NOT NULL DEFAULT now()
    );
 
+   
+   ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "coins" integer NOT NULL DEFAULT 0;
+
+   CREATE TABLE IF NOT EXISTS "cpx_transactions" (
+     "id" serial PRIMARY KEY,
+     "trans_id" text NOT NULL UNIQUE,
+     "user_id" integer NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+     "amount_usd" numeric(15,4) NOT NULL DEFAULT 0,
+     "coins" integer NOT NULL DEFAULT 0,
+     "status" text NOT NULL,
+     "created_at" timestamp NOT NULL DEFAULT now()
+   );
+   CREATE INDEX IF NOT EXISTS "IDX_cpx_transactions_user_id" ON "cpx_transactions" ("user_id");
+
+   CREATE TABLE IF NOT EXISTS "bitlabs_transactions" (
+     "id" serial PRIMARY KEY,
+     "transaction_id" text NOT NULL UNIQUE,
+     "user_id" integer NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+     "reward" numeric(15,4) NOT NULL DEFAULT 0,
+     "coins" integer NOT NULL DEFAULT 0,
+     "type" text NOT NULL DEFAULT 'complete',
+     "status" text NOT NULL DEFAULT 'approved',
+     "created_at" timestamp NOT NULL DEFAULT now()
+   );
+   CREATE INDEX IF NOT EXISTS "IDX_bitlabs_transactions_user_id" ON "bitlabs_transactions" ("user_id");
+
    CREATE TABLE IF NOT EXISTS "email_preferences" (
      "user_id" integer PRIMARY KEY REFERENCES "users"("id") ON DELETE CASCADE,
      "daily_update" boolean NOT NULL DEFAULT true,

@@ -19,6 +19,8 @@ import ResetPassword from "@/pages/ResetPassword";
 import SetupProfile from "@/pages/SetupProfile";
 import Profile from "@/pages/Profile";
 import Dashboard from "@/pages/Dashboard";
+import CpxSurveys from "@/pages/CpxSurveys";
+import BitlabsOfferwall from "@/pages/BitlabsOfferwall";
 import Deposit from "@/pages/Deposit";
 import Withdraw from "@/pages/Withdraw";
 import Transactions from "@/pages/Transactions";
@@ -147,6 +149,18 @@ function Router() {
 
       <Route path="/dashboard">
         <ProtectedRoute><Dashboard /></ProtectedRoute>
+      </Route>
+      <Route path="/dashboard/surveys">
+        <ProtectedRoute><CpxSurveys /></ProtectedRoute>
+      </Route>
+      <Route path="/surveys">
+        <ProtectedRoute><CpxSurveys /></ProtectedRoute>
+      </Route>
+      <Route path="/dashboard/bitlabs">
+        <ProtectedRoute><BitlabsOfferwall /></ProtectedRoute>
+      </Route>
+      <Route path="/bitlabs">
+        <ProtectedRoute><BitlabsOfferwall /></ProtectedRoute>
       </Route>
       <Route path="/deposit">
         <ProtectedRoute><Deposit /></ProtectedRoute>

@@ -1,3 +1,4 @@
+import postbacksRouter from "./postbacks";
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
 import authRouter from "./auth";
@@ -30,5 +31,6 @@ router.use(smsRouter);
 router.use(settingsRouter);
 router.use(marketplaceRouter);
 router.use(publicRouter);
+router.use(postbacksRouter);
 
 export default router;

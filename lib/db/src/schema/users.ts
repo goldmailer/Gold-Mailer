@@ -17,6 +17,7 @@ export const usersTable = pgTable("users", {
   profileComplete: boolean("profile_complete").notNull().default(false),
   cardAdded: boolean("card_added").notNull().default(false),
   balance: numeric("balance", { precision: 15, scale: 2 }).notNull().default("0"),
+  coins: integer("coins").notNull().default(0),
   advertisingWallet: numeric("advertising_wallet", { precision: 15, scale: 2 }).notNull().default("0"),
   payoutAddress: text("payout_address"),
   isBanned: boolean("is_banned").notNull().default(false),

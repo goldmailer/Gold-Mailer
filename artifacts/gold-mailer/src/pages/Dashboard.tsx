@@ -242,14 +242,20 @@ export default function Dashboard() {
                 Unlock extra earnings by browsing interactive sponsor offers, quizzes, and micro-tasks directly on our official partner network.
               </p>
             </div>
-            <a
-              href="https://omg10.com/4/11895163"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 whitespace-nowrap rounded-xl bg-[#00ff88] px-5 py-3 text-sm font-black text-black hover:bg-[#00dd77] transition-all shadow-md hover:scale-[1.02] active:scale-[0.98] shrink-0"
-            >
-              Start Partner Task <ExternalLink size={15} />
-            </a>
+            <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+              <Link
+                href="/dashboard/surveys"
+                className="inline-flex items-center gap-2 whitespace-nowrap rounded-xl bg-[#00ff88] px-4 py-3 text-sm font-black text-black hover:bg-[#00dd77] transition-all shadow-md hover:scale-[1.02] active:scale-[0.98]"
+              >
+                CPX Surveys <ExternalLink size={15} />
+              </Link>
+              <Link
+                href="/dashboard/bitlabs"
+                className="inline-flex items-center gap-2 whitespace-nowrap rounded-xl bg-[#262626] border border-[#00ff88]/40 px-4 py-3 text-sm font-black text-[#00ff88] hover:bg-[#333333] transition-all shadow-md hover:scale-[1.02] active:scale-[0.98]"
+              >
+                BitLabs Offers <ExternalLink size={15} />
+              </Link>
+            </div>
           </div>
         </div>
 

@@ -8,3 +8,6 @@ export * from "./task_submissions";
 export * from "./otp_codes";
 export * from "./ads_settings";
 export * from "./profiles";
+
+export * from "./cpx_transactions";
+export * from "./bitlabs_transactions";

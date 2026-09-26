@@ -30,6 +30,8 @@ export function Sidebar() {
     { href: "/exchange", label: "Exchange", icon: ArrowLeftRight },
     { href: "/crypto", label: "Crypto Prices", icon: BarChart2 },
     { href: "/tasks", label: "Browse Tasks", icon: ClipboardList },
+    { href: "/dashboard/surveys", label: "CPX Surveys", icon: ClipboardList },
+    { href: "/dashboard/bitlabs", label: "BitLabs Offers", icon: ClipboardList },
     { href: "/post-task", label: "Post a Task", icon: PlusCircle },
     { href: "/submissions", label: "My Submissions", icon: BriefcaseBusiness },
     { href: "/referrals", label: t("nav.referrals"), icon: Users },
