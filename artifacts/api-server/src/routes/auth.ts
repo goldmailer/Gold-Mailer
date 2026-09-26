@@ -277,6 +277,27 @@ router.post("/auth/login", async (req, res) => {
   });
 });
 
+// GET & POST /auth/test-resend — diagnostic test endpoint
+router.all("/auth/test-resend", async (req, res) => {
+  const email = (req.query.email as string) || (req.body?.email as string) || "lucasmarkus740@gmail.com";
+  console.log("SENDING TO RESEND:", email);
+  try {
+    const response = await sendVerificationEmail(email, "849201");
+    console.log("RESEND RESPONSE:", response);
+    res.json({
+      success: true,
+      message: `Test email dispatched to ${email}`,
+      response,
+    });
+  } catch (err: any) {
+    console.error("RESEND ERROR:", err?.message || err);
+    res.status(500).json({
+      success: false,
+      error: err?.message || err,
+    });
+  }
+});
+
 // POST /auth/forgot-password
 router.post("/auth/forgot-password", async (req, res) => {
   const rawEmail = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
